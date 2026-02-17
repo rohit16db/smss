@@ -13,6 +13,10 @@ import { PayrollPage } from './pages/PayrollPage';
 import { SalaryPage } from './pages/SalaryPage';
 import { ClassManagementPage } from './pages/ClassManagementPage';
 import { SubjectManagementPage } from './pages/SubjectManagementPage';
+import { SalaryStructurePage } from './pages/SalaryStructurePage';
+import { TeacherSalaryAssignmentPage } from './pages/TeacherSalaryAssignmentPage';
+import { BulkSalaryProcessingPage } from './pages/BulkSalaryProcessingPage';
+import SalaryPaymentPage from './pages/SalaryPaymentPage';
 import { LoginPage } from './pages/LoginPage';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { ToastProvider } from './components/providers/ToastProvider';
@@ -53,7 +57,9 @@ function App() {
                 <Route path="attendance" element={<AttendancePage />} />
                 <Route path="payroll" element={<PayrollPage />} />
                 <Route path="salary" element={<SalaryPage />} />
-                <Route path="classes" element={<ClassManagementPage />} />
+                <Route path="salary-structures" element={<SalaryStructurePage />} />
+                <Route path="teacher-salary-assignment" element={<TeacherSalaryAssignmentPage />} />
+                <Route path="bulk-salary-processing" element={<BulkSalaryProcessingPage />} />              <Route path="salary-payments" element={<SalaryPaymentPage />} />                <Route path="classes" element={<ClassManagementPage />} />
                 <Route path="subjects" element={<SubjectManagementPage />} />
               </Route>
             </Routes>

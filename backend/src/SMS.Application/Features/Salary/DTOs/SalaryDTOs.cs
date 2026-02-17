@@ -73,6 +73,7 @@ public class SalaryPaymentDto
     public string? PaymentMethod { get; set; }
     public string? Remarks { get; set; }
     public DateTime CreatedAt { get; set; }
+    public DateTime UpdatedAt { get; set; }
 }
 
 /// <summary>
@@ -105,3 +106,43 @@ public class SalaryHistoryDto
     public int TotalPayments { get; set; }
     public int PendingPayments { get; set; }
 }
+
+/// <summary>
+/// DTO for salary payment summary statistics
+/// </summary>
+public class SalaryPaymentSummaryDto
+{
+    public int TotalPayments { get; set; }
+    public int PendingCount { get; set; }
+    public int ApprovedCount { get; set; }
+    public int PaidCount { get; set; }
+    public int OnHoldCount { get; set; }
+    public int CancelledCount { get; set; }
+    public decimal TotalBaseSalary { get; set; }
+    public decimal TotalDeductions { get; set; }
+    public decimal TotalBonus { get; set; }
+    public decimal TotalNetSalary { get; set; }
+    public decimal TotalPaidAmount { get; set; }
+}
+
+/// <summary>
+/// DTO for marking salary as paid
+/// </summary>
+public class MarkSalaryAsPaidDto
+{
+    public DateOnly PaidDate { get; set; }
+    public string ReferenceNumber { get; set; } = string.Empty;
+    public string? PaymentMethod { get; set; }
+}
+
+/// <summary>
+/// DTO for updating salary payment details
+/// </summary>
+public class UpdateSalaryPaymentDto
+{
+    public decimal? BaseSalary { get; set; }
+    public decimal? Deductions { get; set; }
+    public decimal? Bonus { get; set; }
+    public string? Remarks { get; set; }
+}
+

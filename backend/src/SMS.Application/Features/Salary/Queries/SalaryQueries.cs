@@ -60,3 +60,23 @@ public class SalarySummaryDto
     public int PendingCount { get; set; }
     public decimal AverageSalaryPerTeacher { get; set; }
 }
+
+/// <summary>
+/// Get all salary payments with optional filters
+/// </summary>
+public class GetAllSalaryPaymentsQuery : IRequest<List<SalaryPaymentDto>>
+{
+    public string? Status { get; set; }
+    public Guid? TeacherId { get; set; }
+    public DateTime? PeriodStartDate { get; set; }
+    public DateTime? PeriodEndDate { get; set; }
+}
+
+/// <summary>
+/// Get salary payments summary statistics
+/// </summary>
+public class GetSalaryPaymentsSummaryQuery : IRequest<SalaryPaymentSummaryDto>
+{
+    public DateTime? PeriodStartDate { get; set; }
+    public DateTime? PeriodEndDate { get; set; }
+}

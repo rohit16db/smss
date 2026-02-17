@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 
 interface HeaderProps {
   onMenuClick?: () => void;
@@ -12,6 +12,31 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
   const [financeMenuOpen, setFinanceMenuOpen] = useState(false);
   const [mobileAcademicOpen, setMobileAcademicOpen] = useState(false);
   const [mobileFinanceOpen, setMobileFinanceOpen] = useState(false);
+  
+  const academicTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const financeTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+  const handleAcademicMouseLeave = () => {
+    academicTimeoutRef.current = setTimeout(() => {
+      setAcademicMenuOpen(false);
+    }, 150);
+  };
+
+  const handleFinanceMouseLeave = () => {
+    financeTimeoutRef.current = setTimeout(() => {
+      setFinanceMenuOpen(false);
+    }, 150);
+  };
+
+  const handleAcademicMouseEnter = () => {
+    if (academicTimeoutRef.current) clearTimeout(academicTimeoutRef.current);
+    setAcademicMenuOpen(true);
+  };
+
+  const handleFinanceMouseEnter = () => {
+    if (financeTimeoutRef.current) clearTimeout(financeTimeoutRef.current);
+    setFinanceMenuOpen(true);
+  };
   
   return (
     <header className="bg-gradient-to-r from-blue-600 to-blue-700 shadow-lg sticky top-0 z-50">
@@ -48,8 +73,8 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
             {/* Academic Dropdown */}
             <div
               className="relative"
-              onMouseEnter={() => setAcademicMenuOpen(true)}
-              onMouseLeave={() => setAcademicMenuOpen(false)}
+              onMouseEnter={handleAcademicMouseEnter}
+              onMouseLeave={handleAcademicMouseLeave}
             >
               <button className="px-4 py-2 rounded-lg text-white hover:bg-blue-700 transition-colors duration-200 font-medium flex items-center gap-1">
                 🎓 Academic
@@ -90,8 +115,8 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
             {/* Finance Dropdown */}
             <div
               className="relative"
-              onMouseEnter={() => setFinanceMenuOpen(true)}
-              onMouseLeave={() => setFinanceMenuOpen(false)}
+              onMouseEnter={handleFinanceMouseEnter}
+              onMouseLeave={handleFinanceMouseLeave}
             >
               <button className="px-4 py-2 rounded-lg text-white hover:bg-blue-700 transition-colors duration-200 font-medium flex items-center gap-1">
                 💰 Finance
@@ -100,7 +125,7 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
                 </svg>
               </button>
               {financeMenuOpen && (
-                <div className="absolute top-full left-0 mt-1 w-48 bg-white rounded-lg shadow-xl border border-gray-200 py-2 animate-fadeIn">
+                <div className="absolute top-full left-0 mt-1 w-56 bg-white rounded-lg shadow-xl border border-gray-200 py-2 animate-fadeIn">
                   <button
                     onClick={() => navigate('/fees')}
                     className="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-colors flex items-center gap-2"
@@ -118,6 +143,32 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
                     className="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-colors flex items-center gap-2"
                   >
                     💼 Payroll
+                  </button>
+                  <hr className="my-1 border-gray-200" />
+                  <button
+                    onClick={() => navigate('/salary-structures')}
+                    className="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-colors flex items-center gap-2"
+                  >
+                    📊 Salary Structures
+                  </button>
+                  <button
+                    onClick={() => navigate('/teacher-salary-assignment')}
+                    className="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-colors flex items-center gap-2"
+                  >
+                    👥 Teacher Assignments
+                  </button>
+                  <button
+                    onClick={() => navigate('/bulk-salary-processing')}
+                    className="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-colors flex items-center gap-2"
+                  >
+                    🔄 Bulk Processing
+                  </button>
+                  <hr className="my-1 border-gray-200" />
+                  <button
+                    onClick={() => navigate('/salary-payments')}
+                    className="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-colors flex items-center gap-2"
+                  >
+                    💰 Payment Management
                   </button>
                 </div>
               )}
@@ -262,6 +313,44 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
                       className="w-full px-4 py-2 rounded-lg text-white hover:bg-blue-700 transition-colors duration-200 text-left"
                     >
                       💼 Payroll
+                    </button>
+                    <div className="my-1 border-t border-blue-700"></div>
+                    <button
+                      onClick={() => {
+                        navigate('/salary-structures');
+                        setMobileMenuOpen(false);
+                      }}
+                      className="w-full px-4 py-2 rounded-lg text-white hover:bg-blue-700 transition-colors duration-200 text-left"
+                    >
+                      📊 Salary Structures
+                    </button>
+                    <button
+                      onClick={() => {
+                        navigate('/teacher-salary-assignment');
+                        setMobileMenuOpen(false);
+                      }}
+                      className="w-full px-4 py-2 rounded-lg text-white hover:bg-blue-700 transition-colors duration-200 text-left"
+                    >
+                      👥 Teacher Assignments
+                    </button>
+                    <button
+                      onClick={() => {
+                        navigate('/bulk-salary-processing');
+                        setMobileMenuOpen(false);
+                      }}
+                      className="w-full px-4 py-2 rounded-lg text-white hover:bg-blue-700 transition-colors duration-200 text-left"
+                    >
+                      🔄 Bulk Processing
+                    </button>
+                    <div className="my-1 border-t border-blue-700"></div>
+                    <button
+                      onClick={() => {
+                        navigate('/salary-payments');
+                        setMobileMenuOpen(false);
+                      }}
+                      className="w-full px-4 py-2 rounded-lg text-white hover:bg-blue-700 transition-colors duration-200 text-left"
+                    >
+                      💰 Payment Management
                     </button>
                   </div>
                 )}

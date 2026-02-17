@@ -291,3 +291,75 @@ public class DeleteSalaryPaymentCommandHandler : IRequestHandler<DeleteSalaryPay
         return true;
     }
 }
+
+public class UpdateSalaryPaymentCommandHandler : IRequestHandler<UpdateSalaryPaymentCommand, SalaryPaymentDto>
+{
+    private readonly IApplicationDbContext _context;
+
+    public UpdateSalaryPaymentCommandHandler(IApplicationDbContext context)
+    {
+        _context = context;
+    }
+
+    public async Task<SalaryPaymentDto> Handle(UpdateSalaryPaymentCommand request, CancellationToken cancellationToken)
+    {
+        var salary = await _context.SalaryPayments
+            .Include(s => s.Teacher)
+            .FirstOrDefaultAsync(s => s.Id == request.SalaryPaymentId, cancellationToken);
+
+        if (salary == null)
+            throw new InvalidOperationException($"Salary payment with ID {request.SalaryPaymentId} not found");
+
+        // Cannot update if already paid
+        if (salary.Status == SalaryPaymentStatus.Paid)
+            throw new InvalidOperationException("Cannot update a salary payment that has already been paid");
+
+        // Cannot update if cancelled
+        if (salary.Status == SalaryPaymentStatus.Cancelled)
+            throw new InvalidOperationException("Cannot update a cancelled salary payment");
+
+        if (request.BaseSalary.HasValue)
+            salary.BaseSalary = request.BaseSalary.Value;
+
+        if (request.Deductions.HasValue)
+            salary.Deductions = request.Deductions.Value;
+
+        if (request.Bonus.HasValue)
+            salary.Bonus = request.Bonus.Value;
+
+        // Recalculate net salary
+        salary.NetSalary = salary.BaseSalary + salary.Bonus - salary.Deductions;
+
+        if (!string.IsNullOrWhiteSpace(request.Remarks))
+            salary.Remarks = request.Remarks;
+
+        salary.UpdatedAt = DateTime.UtcNow;
+
+        await _context.SaveChangesAsync(cancellationToken);
+
+        return MapToDto(salary);
+    }
+
+    private SalaryPaymentDto MapToDto(SalaryPayment salary)
+    {
+        return new SalaryPaymentDto
+        {
+            Id = salary.Id,
+            TeacherId = salary.TeacherId,
+            TeacherName = salary.Teacher?.FullName ?? $"{salary.Teacher?.FirstName} {salary.Teacher?.LastName}",
+            PeriodStartDate = salary.PeriodStartDate,
+            PeriodEndDate = salary.PeriodEndDate,
+            BaseSalary = salary.BaseSalary,
+            Deductions = salary.Deductions,
+            Bonus = salary.Bonus,
+            NetSalary = salary.NetSalary,
+            Status = salary.Status.ToString(),
+            PaidDate = salary.PaidDate,
+            ReferenceNumber = salary.ReferenceNumber,
+            PaymentMethod = salary.PaymentMethod?.ToString(),
+            Remarks = salary.Remarks,
+            CreatedAt = salary.CreatedAt,
+            UpdatedAt = salary.UpdatedAt ?? salary.CreatedAt
+        };
+    }
+}

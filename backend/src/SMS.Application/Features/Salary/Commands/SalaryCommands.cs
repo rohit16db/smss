@@ -61,3 +61,15 @@ public class DeleteSalaryPaymentCommand : IRequest<bool>
 {
     public Guid SalaryPaymentId { get; set; }
 }
+
+/// <summary>
+/// Update salary payment amounts (base salary, deductions, bonus)
+/// </summary>
+public class UpdateSalaryPaymentCommand : IRequest<SalaryPaymentDto>
+{
+    public Guid SalaryPaymentId { get; set; }
+    public decimal? BaseSalary { get; set; }
+    public decimal? Deductions { get; set; }
+    public decimal? Bonus { get; set; }
+    public string? Remarks { get; set; }
+}
