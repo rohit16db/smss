@@ -38,6 +38,7 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<TeacherAttendance> TeacherAttendances => Set<TeacherAttendance>();
 
     // Phase 8: Salary Management
+    public DbSet<SalaryStructure> SalaryStructures => Set<SalaryStructure>();
     public DbSet<SalaryPayment> SalaryPayments => Set<SalaryPayment>();
 
     /// <summary>

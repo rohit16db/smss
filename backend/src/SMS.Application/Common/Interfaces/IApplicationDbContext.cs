@@ -33,6 +33,7 @@ public interface IApplicationDbContext
     DbSet<TeacherAttendance> TeacherAttendances { get; }
 
     // Phase 8: Salary Management
+    DbSet<SalaryStructure> SalaryStructures { get; }
     DbSet<SalaryPayment> SalaryPayments { get; }
 
     /// <summary>

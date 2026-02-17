@@ -26,8 +26,15 @@ public class Teacher : BaseEntity
     
     /// <summary>Current employment status</summary>
     public bool IsActive { get; set; } = true;
+
+    /// <summary>Foreign key to SalaryStructure (Phase 3 Salary Module)</summary>
+    public Guid? SalaryStructureId { get; set; }
+
+    /// <summary>Date when salary structure was assigned</summary>
+    public DateOnly? SalaryStructureEffectiveDate { get; set; }
     
     // Navigation properties
+    public SalaryStructure? SalaryStructure { get; set; }
     public ICollection<TeacherAssignment> Assignments { get; set; } = new List<TeacherAssignment>();
     public ICollection<TeacherAttendance> AttendanceRecords { get; set; } = new List<TeacherAttendance>();
     

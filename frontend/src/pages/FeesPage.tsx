@@ -260,7 +260,7 @@ function FeeStructuresTab() {
                     <td className="px-6 py-4 text-sm text-gray-500">{structure.academicYear}</td>
                     <td className="px-6 py-4 text-sm text-gray-500">{structure.frequency}</td>
                     <td className="px-6 py-4">
-                      <div className="text-sm font-semibold text-green-600">${structure.totalAmount.toFixed(2)}</div>
+                      <div className="text-sm font-semibold text-green-600">₹{structure.totalAmount.toFixed(2)}</div>
                     </td>
                     <td className="px-6 py-4">
                       <div className="text-sm text-gray-500">{structure.categories?.length ?? 0} categories</div>
@@ -370,7 +370,7 @@ function FeeStructuresTab() {
                 <div className="bg-blue-50 p-4 rounded-lg">
                   <div className="flex justify-between items-center">
                     <span className="text-sm font-medium text-gray-700">Total Amount:</span>
-                    <span className="text-2xl font-bold text-blue-600">${formData.totalAmount.toFixed(2)}</span>
+                    <span className="text-2xl font-bold text-blue-600">₹{formData.totalAmount.toFixed(2)}</span>
                   </div>
                 </div>
               </div>
@@ -632,12 +632,12 @@ function StudentFeesTab() {
                         <td className="px-6 py-4 text-sm text-gray-500">{fee.feeStructureName || structureMap.get(fee.feeStructureId) || 'N/A'}</td>
                         <td className="px-6 py-4 text-sm text-gray-500">{new Date(fee.startDate).toLocaleDateString()}</td>
                         <td className="px-6 py-4">
-                          <div className="text-sm font-semibold text-green-600">${fee.totalAmount.toFixed(2)}</div>
+                          <div className="text-sm font-semibold text-green-600">₹{fee.totalAmount.toFixed(2)}</div>
                         </td>
                         <td className="px-6 py-4">
                           <div className="text-sm">
-                            <div className="font-medium text-gray-900">Paid: ${fee.paidAmount.toFixed(2)}</div>
-                            <div className="text-gray-500">Balance: ${fee.balanceAmount.toFixed(2)}</div>
+                            <div className="font-medium text-gray-900">Paid: ₹{fee.paidAmount.toFixed(2)}</div>
+                            <div className="text-gray-500">Balance: ₹{fee.balanceAmount.toFixed(2)}</div>
                           </div>
                         </td>
                         <td className="px-6 py-4">
@@ -772,7 +772,7 @@ function StudentFeesTab() {
                     <option value="">Select a fee structure</option>
                     {structures.map((structure) => (
                       <option key={structure.id} value={structure.id}>
-                        {structure.name} - {structure.academicYear} (${structure.totalAmount.toFixed(2)})
+                        {structure.name} - {structure.academicYear} (₹{structure.totalAmount.toFixed(2)})
                       </option>
                     ))}
                   </select>
@@ -1087,7 +1087,7 @@ function PaymentsTab() {
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-900">{getFeeName(payment.studentFeeId)}</td>
                     <td className="px-6 py-4">
-                      <div className="text-sm font-semibold text-green-600">${payment.amountPaid.toFixed(2)}</div>
+                      <div className="text-sm font-semibold text-green-600">₹{payment.amountPaid.toFixed(2)}</div>
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-500">
                       {new Date(payment.paymentDate).toLocaleDateString()}
@@ -1232,9 +1232,9 @@ function PaymentsTab() {
                                 </div>
                               </div>
                               <div className="text-right ml-4">
-                                <div className="text-sm font-semibold text-gray-900">${fee.totalAmount.toFixed(2)}</div>
-                                <div className="text-xs text-gray-500">Paid: ${fee.paidAmount.toFixed(2)}</div>
-                                <div className="text-sm font-semibold text-orange-600">Balance: ${fee.balanceAmount.toFixed(2)}</div>
+                                <div className="text-sm font-semibold text-gray-900">₹{fee.totalAmount.toFixed(2)}</div>
+                                <div className="text-xs text-gray-500">Paid: ₹{fee.paidAmount.toFixed(2)}</div>
+                                <div className="text-sm font-semibold text-orange-600">Balance: ₹{fee.balanceAmount.toFixed(2)}</div>
                               </div>
                             </div>
                             {formData.studentFeeId === fee.id && (
