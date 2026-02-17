@@ -42,3 +42,19 @@ public class InvalidEntityStateException : DomainException
     {
     }
 }
+
+/// <summary>
+/// Exception thrown when validation fails
+/// </summary>
+public class ValidationException : DomainException
+{
+    public ValidationException(string message) : base(message) { }
+}
+
+/// <summary>
+/// Exception thrown when an entity is not found
+/// </summary>
+public class NotFoundException : DomainException
+{
+    public NotFoundException(string message) : base(message) { }
+}

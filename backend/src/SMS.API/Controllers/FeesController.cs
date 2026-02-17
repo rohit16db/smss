@@ -282,6 +282,35 @@ public class FeesController : ControllerBase
     }
 
     /// <summary>
+    /// Get student fees by section ID
+    /// Shows all students in a section and their fee status
+    /// </summary>
+    /// <param name="sectionId">Section ID (GUID)</param>
+    /// <param name="isActive">Filter by active status</param>
+    /// <returns>List of student fees for the section</returns>
+    [HttpGet("student-fees/section/{sectionId}")]
+    [ProducesResponseType(typeof(List<StudentFeeDto>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetStudentFeesBySection(string sectionId, [FromQuery] bool? isActive = null)
+    {
+        try
+        {
+            var query = new GetFeesBySectionQuery
+            {
+                SectionId = sectionId,
+                IsActive = isActive
+            };
+
+            var result = await _mediator.Send(query);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving student fees for section {SectionId}", sectionId);
+            return StatusCode(StatusCodes.Status500InternalServerError, "Error retrieving student fees for section");
+        }
+    }
+
+    /// <summary>
     /// Get student fee by ID
     /// </summary>
     /// <param name="id">Student fee ID (GUID)</param>

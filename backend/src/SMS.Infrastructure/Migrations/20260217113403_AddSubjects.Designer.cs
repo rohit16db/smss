@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using SMS.Infrastructure.Data;
@@ -11,9 +12,11 @@ using SMS.Infrastructure.Data;
 namespace SMS.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260217113403_AddSubjects")]
+    partial class AddSubjects
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -508,6 +511,10 @@ namespace SMS.Infrastructure.Migrations
                         .HasColumnType("date")
                         .HasColumnName("attendance_date");
 
+                    b.Property<Guid>("ClassId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("class_id");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
@@ -529,10 +536,6 @@ namespace SMS.Infrastructure.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)")
                         .HasColumnName("reason");
-
-                    b.Property<Guid>("SectionId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("section_id");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -557,7 +560,7 @@ namespace SMS.Infrastructure.Migrations
 
                     b.HasIndex("AttendanceDate");
 
-                    b.HasIndex("SectionId");
+                    b.HasIndex("ClassId");
 
                     b.HasIndex("Status");
 
@@ -567,7 +570,7 @@ namespace SMS.Infrastructure.Migrations
 
                     NpgsqlIndexBuilderExtensions.IncludeProperties(b.HasIndex("StudentId", "AttendanceDate"), new[] { "Status" });
 
-                    b.HasIndex("StudentId", "SectionId", "AttendanceDate")
+                    b.HasIndex("StudentId", "ClassId", "AttendanceDate")
                         .IsUnique();
 
                     b.ToTable("student_attendances", null, t =>
@@ -1116,17 +1119,6 @@ namespace SMS.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("Class");
-                });
-
-            modelBuilder.Entity("SMS.Domain.Entities.StudentAttendance", b =>
-                {
-                    b.HasOne("SMS.Domain.Entities.Section", "Section")
-                        .WithMany()
-                        .HasForeignKey("SectionId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Section");
                 });
 
             modelBuilder.Entity("SMS.Domain.Entities.StudentFee", b =>

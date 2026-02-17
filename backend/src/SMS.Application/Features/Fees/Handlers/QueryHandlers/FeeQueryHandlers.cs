@@ -172,6 +172,12 @@ public class GetStudentFeesByStudentIdQueryHandler : IRequestHandler<GetStudentF
             .OrderByDescending(sf => sf.CreatedAt)
             .ToListAsync(cancellationToken);
 
+        // Get student's current section
+        var currentSection = await _context.StudentSections
+            .Where(ss => ss.StudentId == studentId && ss.IsCurrent == true)
+            .Select(ss => new { ss.SectionId, ss.Section!.Name })
+            .FirstOrDefaultAsync(cancellationToken);
+
         return studentFees.Select(sf => 
         {
             var paidAmount = sf.Payments?.Sum(p => p.AmountPaid) ?? 0;
@@ -189,6 +195,8 @@ public class GetStudentFeesByStudentIdQueryHandler : IRequestHandler<GetStudentF
                 PaidAmount = paidAmount,
                 BalanceAmount = sf.TotalAmount - paidAmount,
                 IsActive = sf.IsActive,
+                SectionId = currentSection?.SectionId.ToString(),
+                SectionName = currentSection?.Name,
                 CreatedAt = sf.CreatedAt
             };
         }).ToList();
@@ -236,11 +244,21 @@ public class GetAllStudentFeesQueryHandler : IRequestHandler<GetAllStudentFeesQu
             .Take(request.PageSize)
             .ToListAsync(cancellationToken);
 
+        // Get current sections for all students in this result set
+        var studentIds = studentFees.Select(sf => sf.StudentId).Distinct().ToList();
+        var studentSections = await _context.StudentSections
+            .Where(ss => studentIds.Contains(ss.StudentId) && ss.IsCurrent == true)
+            .Select(ss => new { ss.StudentId, ss.SectionId, ss.Section!.Name })
+            .ToListAsync(cancellationToken);
+
+        var sectionMap = studentSections.ToDictionary(x => x.StudentId, x => new { x.SectionId, x.Name });
+
         return new PaginatedStudentFeeListDto
         {
             Items = studentFees.Select(sf =>
             {
                 var paidAmount = sf.Payments?.Sum(p => p.AmountPaid) ?? 0;
+                var sectionInfo = sectionMap.ContainsKey(sf.StudentId) ? sectionMap[sf.StudentId] : null;
                 return new StudentFeeDto
                 {
                     Id = sf.Id.ToString(),
@@ -255,6 +273,8 @@ public class GetAllStudentFeesQueryHandler : IRequestHandler<GetAllStudentFeesQu
                     PaidAmount = paidAmount,
                     BalanceAmount = sf.TotalAmount - paidAmount,
                     IsActive = sf.IsActive,
+                    SectionId = sectionInfo?.SectionId.ToString(),
+                    SectionName = sectionInfo?.Name,
                     CreatedAt = sf.CreatedAt
                 };
             }).ToList(),
@@ -291,6 +311,12 @@ public class GetStudentFeeByIdQueryHandler : IRequestHandler<GetStudentFeeByIdQu
         if (studentFee == null)
             return null;
 
+        // Get student's current section
+        var currentSection = await _context.StudentSections
+            .Where(ss => ss.StudentId == studentFee.StudentId && ss.IsCurrent == true)
+            .Select(ss => new { ss.SectionId, ss.Section!.Name })
+            .FirstOrDefaultAsync(cancellationToken);
+
         var paidAmount = studentFee.Payments?.Sum(p => p.AmountPaid) ?? 0;
         return new StudentFeeDto
         {
@@ -306,6 +332,8 @@ public class GetStudentFeeByIdQueryHandler : IRequestHandler<GetStudentFeeByIdQu
             PaidAmount = paidAmount,
             BalanceAmount = studentFee.TotalAmount - paidAmount,
             IsActive = studentFee.IsActive,
+            SectionId = currentSection?.SectionId.ToString(),
+            SectionName = currentSection?.Name,
             CreatedAt = studentFee.CreatedAt
         };
     }
@@ -396,5 +424,74 @@ public class GetAllFeePaymentsQueryHandler : IRequestHandler<GetAllFeePaymentsQu
             PageSize = request.PageSize,
             TotalCount = totalCount
         };
+    }
+}
+
+/// <summary>
+/// Handler for GetFeesBySectionQuery
+/// Retrieves all student fees for students in a specific section
+/// </summary>
+public class GetFeesBySectionQueryHandler : IRequestHandler<GetFeesBySectionQuery, List<StudentFeeDto>>
+{
+    private readonly IApplicationDbContext _context;
+
+    public GetFeesBySectionQueryHandler(IApplicationDbContext context)
+    {
+        _context = context;
+    }
+
+    public async Task<List<StudentFeeDto>> Handle(GetFeesBySectionQuery request, CancellationToken cancellationToken)
+    {
+        if (!Guid.TryParse(request.SectionId, out var sectionId))
+            return new List<StudentFeeDto>();
+
+        // Get all students in this section
+        var studentsInSection = await _context.StudentSections
+            .Where(ss => ss.SectionId == sectionId && ss.IsCurrent == true)
+            .Select(ss => ss.StudentId)
+            .ToListAsync(cancellationToken);
+
+        if (!studentsInSection.Any())
+            return new List<StudentFeeDto>();
+
+        var query = _context.StudentFees
+            .Where(sf => studentsInSection.Contains(sf.StudentId));
+
+        if (request.IsActive.HasValue)
+            query = query.Where(sf => sf.IsActive == request.IsActive.Value);
+
+        var studentFees = await query
+            .Include(sf => sf.Student)
+            .Include(sf => sf.FeeStructure)
+            .Include(sf => sf.Payments)
+            .OrderBy(sf => sf.Student!.EnrollmentNumber)
+            .ToListAsync(cancellationToken);
+
+        // Get section name for context
+        var section = await _context.Sections
+            .FirstOrDefaultAsync(s => s.Id == sectionId, cancellationToken);
+
+        return studentFees.Select(sf =>
+        {
+            var paidAmount = sf.Payments?.Sum(p => p.AmountPaid) ?? 0;
+            return new StudentFeeDto
+            {
+                Id = sf.Id.ToString(),
+                StudentId = sf.StudentId.ToString(),
+                StudentName = sf.Student != null ? $"{sf.Student.FirstName} {sf.Student.LastName}" : "N/A",
+                EnrollmentNumber = sf.Student?.EnrollmentNumber ?? "N/A",
+                FeeStructureId = sf.FeeStructureId.ToString(),
+                FeeStructureName = sf.FeeStructure?.Name ?? string.Empty,
+                StartDate = sf.StartDate.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc),
+                EndDate = sf.EndDate?.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc),
+                TotalAmount = sf.TotalAmount,
+                PaidAmount = paidAmount,
+                BalanceAmount = sf.TotalAmount - paidAmount,
+                IsActive = sf.IsActive,
+                SectionId = sectionId.ToString(),
+                SectionName = section?.Name,
+                CreatedAt = sf.CreatedAt
+            };
+        }).ToList();
     }
 }

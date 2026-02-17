@@ -12,11 +12,11 @@ public class GetStudentAttendanceByIdQuery : IRequest<StudentAttendanceDto?>
 }
 
 /// <summary>
-/// Query to get student attendance by date and class
+/// Query to get student attendance by date and section
 /// </summary>
 public class GetStudentAttendanceByDateQuery : IRequest<List<StudentAttendanceDto>>
 {
-    public string ClassId { get; set; } = string.Empty;
+    public string SectionId { get; set; } = string.Empty;
     public DateTime AttendanceDate { get; set; }
 }
 
@@ -26,7 +26,7 @@ public class GetStudentAttendanceByDateQuery : IRequest<List<StudentAttendanceDt
 public class GetStudentAttendanceHistoryQuery : IRequest<PaginatedStudentAttendanceListDto>
 {
     public string? StudentId { get; set; }
-    public string? ClassId { get; set; }
+    public string? SectionId { get; set; }
     public DateTime? StartDate { get; set; }
     public DateTime? EndDate { get; set; }
     public string? Status { get; set; }

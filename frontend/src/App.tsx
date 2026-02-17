@@ -12,6 +12,7 @@ import { AttendancePage } from './pages/AttendancePage';
 import { PayrollPage } from './pages/PayrollPage';
 import { SalaryPage } from './pages/SalaryPage';
 import { ClassManagementPage } from './pages/ClassManagementPage';
+import { SubjectManagementPage } from './pages/SubjectManagementPage';
 import { LoginPage } from './pages/LoginPage';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { ToastProvider } from './components/providers/ToastProvider';
@@ -53,6 +54,7 @@ function App() {
                 <Route path="payroll" element={<PayrollPage />} />
                 <Route path="salary" element={<SalaryPage />} />
                 <Route path="classes" element={<ClassManagementPage />} />
+                <Route path="subjects" element={<SubjectManagementPage />} />
               </Route>
             </Routes>
           </BrowserRouter>

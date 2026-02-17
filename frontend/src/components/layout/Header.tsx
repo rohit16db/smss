@@ -8,6 +8,10 @@ interface HeaderProps {
 export const Header = ({ onMenuClick }: HeaderProps) => {
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [academicMenuOpen, setAcademicMenuOpen] = useState(false);
+  const [financeMenuOpen, setFinanceMenuOpen] = useState(false);
+  const [mobileAcademicOpen, setMobileAcademicOpen] = useState(false);
+  const [mobileFinanceOpen, setMobileFinanceOpen] = useState(false);
   
   return (
     <header className="bg-gradient-to-r from-blue-600 to-blue-700 shadow-lg sticky top-0 z-50">
@@ -40,48 +44,91 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
           </div>
 
           {/* Desktop Navigation */}
-          <div className="hidden lg:flex items-center space-x-2">
-            <button
-              onClick={() => navigate('/teachers')}
-              className="px-4 py-2 rounded-lg text-white hover:bg-blue-700 transition-colors duration-200 font-medium"
+          <div className="hidden lg:flex items-center space-x-1">
+            {/* Academic Dropdown */}
+            <div
+              className="relative"
+              onMouseEnter={() => setAcademicMenuOpen(true)}
+              onMouseLeave={() => setAcademicMenuOpen(false)}
             >
-              👨‍🏫 Teachers
-            </button>
-            <button
-              onClick={() => navigate('/students')}
-              className="px-4 py-2 rounded-lg text-white hover:bg-blue-700 transition-colors duration-200 font-medium"
+              <button className="px-4 py-2 rounded-lg text-white hover:bg-blue-700 transition-colors duration-200 font-medium flex items-center gap-1">
+                🎓 Academic
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              {academicMenuOpen && (
+                <div className="absolute top-full left-0 mt-1 w-48 bg-white rounded-lg shadow-xl border border-gray-200 py-2 animate-fadeIn">
+                  <button
+                    onClick={() => navigate('/students')}
+                    className="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-colors flex items-center gap-2"
+                  >
+                    👨‍🎓 Students
+                  </button>
+                  <button
+                    onClick={() => navigate('/teachers')}
+                    className="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-colors flex items-center gap-2"
+                  >
+                    👨‍🏫 Teachers
+                  </button>
+                  <button
+                    onClick={() => navigate('/classes')}
+                    className="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-colors flex items-center gap-2"
+                  >
+                    📚 Classes
+                  </button>
+                  <button
+                    onClick={() => navigate('/subjects')}
+                    className="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-colors flex items-center gap-2"
+                  >
+                    📖 Subjects
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Finance Dropdown */}
+            <div
+              className="relative"
+              onMouseEnter={() => setFinanceMenuOpen(true)}
+              onMouseLeave={() => setFinanceMenuOpen(false)}
             >
-              👨‍🎓 Students
-            </button>
-            <button
-              onClick={() => navigate('/fees')}
-              className="px-4 py-2 rounded-lg text-white hover:bg-blue-700 transition-colors duration-200 font-medium"
-            >
-              💰 Fees
-            </button>
+              <button className="px-4 py-2 rounded-lg text-white hover:bg-blue-700 transition-colors duration-200 font-medium flex items-center gap-1">
+                💰 Finance
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              {financeMenuOpen && (
+                <div className="absolute top-full left-0 mt-1 w-48 bg-white rounded-lg shadow-xl border border-gray-200 py-2 animate-fadeIn">
+                  <button
+                    onClick={() => navigate('/fees')}
+                    className="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-colors flex items-center gap-2"
+                  >
+                    💰 Fees
+                  </button>
+                  <button
+                    onClick={() => navigate('/salary')}
+                    className="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-colors flex items-center gap-2"
+                  >
+                    🧾 Salary
+                  </button>
+                  <button
+                    onClick={() => navigate('/payroll')}
+                    className="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-colors flex items-center gap-2"
+                  >
+                    💼 Payroll
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Attendance Direct Link */}
             <button
               onClick={() => navigate('/attendance')}
               className="px-4 py-2 rounded-lg text-white hover:bg-blue-700 transition-colors duration-200 font-medium"
             >
               📊 Attendance
-            </button>
-            <button
-              onClick={() => navigate('/payroll')}
-              className="px-4 py-2 rounded-lg text-white hover:bg-blue-700 transition-colors duration-200 font-medium"
-            >
-              💼 Payroll
-            </button>
-            <button
-              onClick={() => navigate('/salary')}
-              className="px-4 py-2 rounded-lg text-white hover:bg-blue-700 transition-colors duration-200 font-medium"
-            >
-              🧾 Salary
-            </button>
-            <button
-              onClick={() => navigate('/classes')}
-              className="px-4 py-2 rounded-lg text-white hover:bg-blue-700 transition-colors duration-200 font-medium"
-            >
-              📚 Classes
             </button>
           </div>
 
@@ -113,33 +160,114 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
         {mobileMenuOpen && (
           <div className="lg:hidden pb-4 animate-fade-in">
             <div className="flex flex-col space-y-2">
-              <button
-                onClick={() => {
-                  navigate('/teachers');
-                  setMobileMenuOpen(false);
-                }}
-                className="px-4 py-2 rounded-lg text-white hover:bg-blue-700 transition-colors duration-200 font-medium text-left"
-              >
-                👨‍🏫 Teachers
-              </button>
-              <button
-                onClick={() => {
-                  navigate('/students');
-                  setMobileMenuOpen(false);
-                }}
-                className="px-4 py-2 rounded-lg text-white hover:bg-blue-700 transition-colors duration-200 font-medium text-left"
-              >
-                👨‍🎓 Students
-              </button>
-              <button
-                onClick={() => {
-                  navigate('/fees');
-                  setMobileMenuOpen(false);
-                }}
-                className="px-4 py-2 rounded-lg text-white hover:bg-blue-700 transition-colors duration-200 font-medium text-left"
-              >
-                💰 Fees
-              </button>
+              {/* Academic Section */}
+              <div className="border-b border-blue-700 pb-2">
+                <button
+                  onClick={() => setMobileAcademicOpen(!mobileAcademicOpen)}
+                  className="w-full px-4 py-2 rounded-lg text-white hover:bg-blue-700 transition-colors duration-200 font-medium text-left flex items-center justify-between"
+                >
+                  <span>🎓 Academic</span>
+                  <svg
+                    className={`w-5 h-5 transition-transform ${mobileAcademicOpen ? 'rotate-180' : ''}`}
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                {mobileAcademicOpen && (
+                  <div className="mt-2 ml-4 space-y-1 animate-fade-in">
+                    <button
+                      onClick={() => {
+                        navigate('/students');
+                        setMobileMenuOpen(false);
+                      }}
+                      className="w-full px-4 py-2 rounded-lg text-white hover:bg-blue-700 transition-colors duration-200 text-left"
+                    >
+                      👨‍🎓 Students
+                    </button>
+                    <button
+                      onClick={() => {
+                        navigate('/teachers');
+                        setMobileMenuOpen(false);
+                      }}
+                      className="w-full px-4 py-2 rounded-lg text-white hover:bg-blue-700 transition-colors duration-200 text-left"
+                    >
+                      👨‍🏫 Teachers
+                    </button>
+                    <button
+                      onClick={() => {
+                        navigate('/classes');
+                        setMobileMenuOpen(false);
+                      }}
+                      className="w-full px-4 py-2 rounded-lg text-white hover:bg-blue-700 transition-colors duration-200 text-left"
+                    >
+                      📚 Classes
+                    </button>
+                    <button
+                      onClick={() => {
+                        navigate('/subjects');
+                        setMobileMenuOpen(false);
+                      }}
+                      className="w-full px-4 py-2 rounded-lg text-white hover:bg-blue-700 transition-colors duration-200 text-left"
+                    >
+                      📖 Subjects
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Finance Section */}
+              <div className="border-b border-blue-700 pb-2">
+                <button
+                  onClick={() => setMobileFinanceOpen(!mobileFinanceOpen)}
+                  className="w-full px-4 py-2 rounded-lg text-white hover:bg-blue-700 transition-colors duration-200 font-medium text-left flex items-center justify-between"
+                >
+                  <span>💰 Finance</span>
+                  <svg
+                    className={`w-5 h-5 transition-transform ${mobileFinanceOpen ? 'rotate-180' : ''}`}
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                {mobileFinanceOpen && (
+                  <div className="mt-2 ml-4 space-y-1 animate-fade-in">
+                    <button
+                      onClick={() => {
+                        navigate('/fees');
+                        setMobileMenuOpen(false);
+                      }}
+                      className="w-full px-4 py-2 rounded-lg text-white hover:bg-blue-700 transition-colors duration-200 text-left"
+                    >
+                      💰 Fees
+                    </button>
+                    <button
+                      onClick={() => {
+                        navigate('/salary');
+                        setMobileMenuOpen(false);
+                      }}
+                      className="w-full px-4 py-2 rounded-lg text-white hover:bg-blue-700 transition-colors duration-200 text-left"
+                    >
+                      🧾 Salary
+                    </button>
+                    <button
+                      onClick={() => {
+                        navigate('/payroll');
+                        setMobileMenuOpen(false);
+                      }}
+                      className="w-full px-4 py-2 rounded-lg text-white hover:bg-blue-700 transition-colors duration-200 text-left"
+                    >
+                      💼 Payroll
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Attendance Direct Link */}
               <button
                 onClick={() => {
                   navigate('/attendance');
@@ -148,33 +276,6 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
                 className="px-4 py-2 rounded-lg text-white hover:bg-blue-700 transition-colors duration-200 font-medium text-left"
               >
                 📊 Attendance
-              </button>
-              <button
-                onClick={() => {
-                  navigate('/payroll');
-                  setMobileMenuOpen(false);
-                }}
-                className="px-4 py-2 rounded-lg text-white hover:bg-blue-700 transition-colors duration-200 font-medium text-left"
-              >
-                💼 Payroll
-              </button>
-              <button
-                onClick={() => {
-                  navigate('/salary');
-                  setMobileMenuOpen(false);
-                }}
-                className="px-4 py-2 rounded-lg text-white hover:bg-blue-700 transition-colors duration-200 font-medium text-left"
-              >
-                🧾 Salary
-              </button>
-              <button
-                onClick={() => {
-                  navigate('/classes');
-                  setMobileMenuOpen(false);
-                }}
-                className="px-4 py-2 rounded-lg text-white hover:bg-blue-700 transition-colors duration-200 font-medium text-left"
-              >
-                📚 Classes
               </button>
             </div>
           </div>

@@ -171,6 +171,25 @@ export type PaginatedTeacherList = {
   pageSize: number;
 };
 
+export type TeacherAssignment = {
+  id: string;
+  teacherId: string;
+  classId: string;
+  subjectId: string;
+  assignmentDate: string;
+  removalDate?: string;
+  className?: string;
+  subjectName?: string;
+  subjectCode?: string;
+  isActive: boolean;
+};
+
+export type CreateTeacherAssignmentDto = {
+  classId: string;
+  subjectId: string;
+  assignmentDate?: string;
+};
+
 export const teacherApi = {
   getAll: async (params?: { pageNumber?: number; pageSize?: number; searchTerm?: string; isActive?: boolean }) => {
     const response = await api.get<PaginatedTeacherList>('/teachers', { params });
@@ -204,6 +223,25 @@ export const teacherApi = {
   deactivate: async (id: string) => {
     const response = await api.patch<Teacher>(`/teachers/${id}/deactivate`);
     return response.data;
+  },
+
+  // Teacher Assignment APIs
+  getAssignments: async (teacherId: string, activeOnly?: boolean) => {
+    const response = await api.get<TeacherAssignment[]>(`/teachers/${teacherId}/assignments`, {
+      params: { activeOnly }
+    });
+    return response.data;
+  },
+
+  createAssignment: async (teacherId: string, data: CreateTeacherAssignmentDto) => {
+    const response = await api.post<TeacherAssignment>(`/teachers/${teacherId}/assignments`, data);
+    return response.data;
+  },
+
+  removeAssignment: async (teacherId: string, assignmentId: string, removalDate?: string) => {
+    await api.delete(`/teachers/${teacherId}/assignments/${assignmentId}`, {
+      data: { assignmentId, removalDate }
+    });
   },
 };
 
@@ -245,6 +283,9 @@ export type StudentFee = {
   paidAmount: number;
   balanceAmount: number;
   isActive: boolean;
+  // Section context (student's current enrolled section)
+  sectionId?: string;
+  sectionName?: string;
 };
 
 export type CreateStudentFeeDto = {
@@ -331,6 +372,13 @@ export const feeApi = {
     return response.data;
   },
 
+  getStudentFeesBySection: async (sectionId: string, isActive?: boolean) => {
+    const response = await api.get<StudentFee[]>(`/fees/student-fees/section/${sectionId}`, {
+      params: isActive !== undefined ? { isActive } : undefined,
+    });
+    return response.data;
+  },
+
   assignFeeToStudent: async (data: CreateStudentFeeDto) => {
     const response = await api.post<StudentFee>('/fees/student-fees', data);
     return response.data;
@@ -362,6 +410,7 @@ export const feeApi = {
 export type StudentAttendance = {
   id: string;
   studentId: string;
+  sectionId: string;  // Kept in response - shows which section was recorded
   studentEnrollmentNumber?: string;
   studentName?: string;
   attendanceDate: string;
@@ -383,7 +432,7 @@ export type TeacherAttendance = {
 
 export type CreateStudentAttendanceDto = {
   studentId: string;
-  classId: string;
+  // sectionId removed - auto-detected from student's current enrollment
   attendanceDate: string;
   status: 'Present' | 'Absent' | 'Late' | 'Leave';
   reason?: string;
@@ -589,4 +638,83 @@ export const classApi = {
     return response.data;
   },
 };
+
+// Subject Types
+export type Subject = {
+  id: string;
+  name: string;
+  code: string;
+  description?: string;
+  credits?: number;
+  isActive: boolean;
+  displayOrder: number;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type SubjectListDto = {
+  id: string;
+  name: string;
+  code: string;
+  credits?: number;
+  isActive: boolean;
+  displayOrder: number;
+};
+
+export type PaginatedSubjectListDto = {
+  items: SubjectListDto[];
+  totalCount: number;
+  pageNumber: number;
+  pageSize: number;
+};
+
+export type CreateSubjectDto = {
+  name: string;
+  code: string;
+  description?: string;
+  credits?: number;
+  displayOrder: number;
+};
+
+export type UpdateSubjectDto = {
+  name: string;
+  code: string;
+  description?: string;
+  credits?: number;
+  isActive: boolean;
+  displayOrder: number;
+};
+
+// Subject API
+export const subjectApi = {
+  getAll: async (params?: { pageNumber?: number; pageSize?: number; searchTerm?: string; isActive?: boolean }) => {
+    const response = await api.get<PaginatedSubjectListDto>('/subjects', { params });
+    return response.data;
+  },
+
+  getById: async (id: string) => {
+    const response = await api.get<Subject>(`/subjects/${id}`);
+    return response.data;
+  },
+
+  getActive: async () => {
+    const response = await api.get<SubjectListDto[]>('/subjects/active');
+    return response.data;
+  },
+
+  create: async (data: CreateSubjectDto) => {
+    const response = await api.post<Subject>('/subjects', data);
+    return response.data;
+  },
+
+  update: async (id: string, data: UpdateSubjectDto) => {
+    const response = await api.put<Subject>(`/subjects/${id}`, data);
+    return response.data;
+  },
+
+  delete: async (id: string) => {
+    await api.delete(`/subjects/${id}`);
+  },
+};
+
 

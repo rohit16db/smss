@@ -24,18 +24,24 @@ public class MarkStudentAttendanceCommandHandler : IRequestHandler<MarkStudentAt
         if (!Guid.TryParse(request.StudentId, out var studentId))
             throw new InvalidOperationException($"Invalid student ID format: {request.StudentId}");
 
-        if (!Guid.TryParse(request.ClassId, out var classId))
-            throw new InvalidOperationException($"Invalid class ID format: {request.ClassId}");
-
         if (!Guid.TryParse(request.CreatedByUserId, out var markedByUserId))
             throw new InvalidOperationException($"Invalid user ID format: {request.CreatedByUserId}");
+
+        // Auto-detect section from student's current enrollment
+        var currentSection = await _context.StudentSections
+            .Where(ss => ss.StudentId == studentId && ss.IsCurrent == true)
+            .Select(ss => ss.SectionId)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (currentSection == Guid.Empty || currentSection == default)
+            throw new InvalidOperationException($"Student {request.StudentId} is not enrolled in any active section. Please enroll the student in a section before marking attendance.");
 
         var attendanceDate = DateOnly.FromDateTime(request.AttendanceDate);
 
         // Check if attendance already exists for this student on this date
         var existingAttendance = await _context.StudentAttendances
             .FirstOrDefaultAsync(a => a.StudentId == studentId && 
-                                     a.ClassId == classId && 
+                                     a.SectionId == currentSection && 
                                      a.AttendanceDate == attendanceDate, 
                                 cancellationToken);
 
@@ -46,7 +52,7 @@ public class MarkStudentAttendanceCommandHandler : IRequestHandler<MarkStudentAt
         {
             Id = Guid.NewGuid(),
             StudentId = studentId,
-            ClassId = classId,
+            SectionId = currentSection,  // Auto-detected from enrollment
             AttendanceDate = attendanceDate,
             Status = request.Status.ToLower(),
             Reason = request.Reason,
@@ -63,7 +69,7 @@ public class MarkStudentAttendanceCommandHandler : IRequestHandler<MarkStudentAt
         {
             Id = attendance.Id.ToString(),
             StudentId = attendance.StudentId.ToString(),
-            ClassId = attendance.ClassId.ToString(),
+            SectionId = attendance.SectionId.ToString(),
             AttendanceDate = attendance.AttendanceDate.ToDateTime(TimeOnly.MinValue),
             Status = attendance.Status,
             Reason = attendance.Reason,
@@ -106,7 +112,7 @@ public class UpdateStudentAttendanceCommandHandler : IRequestHandler<UpdateStude
         {
             Id = attendance.Id.ToString(),
             StudentId = attendance.StudentId.ToString(),
-            ClassId = attendance.ClassId.ToString(),
+            SectionId = attendance.SectionId.ToString(),
             AttendanceDate = attendance.AttendanceDate.ToDateTime(TimeOnly.MinValue),
             Status = attendance.Status,
             Reason = attendance.Reason,

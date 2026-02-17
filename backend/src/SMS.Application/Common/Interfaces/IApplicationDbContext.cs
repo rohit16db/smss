@@ -20,6 +20,7 @@ public interface IApplicationDbContext
     // Phase 3: Teacher Management
     DbSet<Teacher> Teachers { get; }
     DbSet<TeacherAssignment> TeacherAssignments { get; }
+    DbSet<Subject> Subjects { get; }
     
     // Phase 3: Fee Management
     DbSet<FeeStructure> FeeStructures { get; }
