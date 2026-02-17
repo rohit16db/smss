@@ -25,6 +25,7 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     // Phase 3: Teacher Management
     public DbSet<Teacher> Teachers => Set<Teacher>();
     public DbSet<TeacherAssignment> TeacherAssignments => Set<TeacherAssignment>();
+    public DbSet<Subject> Subjects => Set<Subject>();
     
     // Phase 3: Fee Management
     public DbSet<FeeStructure> FeeStructures => Set<FeeStructure>();
