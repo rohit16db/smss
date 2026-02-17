@@ -163,6 +163,13 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
                   >
                     🔄 Bulk Processing
                   </button>
+                  <hr className="my-1 border-gray-200" />
+                  <button
+                    onClick={() => navigate('/salary-payments')}
+                    className="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-colors flex items-center gap-2"
+                  >
+                    💰 Payment Management
+                  </button>
                 </div>
               )}
             </div>
@@ -334,6 +341,16 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
                       className="w-full px-4 py-2 rounded-lg text-white hover:bg-blue-700 transition-colors duration-200 text-left"
                     >
                       🔄 Bulk Processing
+                    </button>
+                    <div className="my-1 border-t border-blue-700"></div>
+                    <button
+                      onClick={() => {
+                        navigate('/salary-payments');
+                        setMobileMenuOpen(false);
+                      }}
+                      className="w-full px-4 py-2 rounded-lg text-white hover:bg-blue-700 transition-colors duration-200 text-left"
+                    >
+                      💰 Payment Management
                     </button>
                   </div>
                 )}

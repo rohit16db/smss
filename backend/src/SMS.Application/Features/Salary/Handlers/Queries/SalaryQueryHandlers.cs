@@ -261,3 +261,100 @@ public class GetSalarySummaryQueryHandler : IRequestHandler<GetSalarySummaryQuer
         };
     }
 }
+
+public class GetAllSalaryPaymentsQueryHandler : IRequestHandler<GetAllSalaryPaymentsQuery, List<SalaryPaymentDto>>
+{
+    private readonly IApplicationDbContext _context;
+
+    public GetAllSalaryPaymentsQueryHandler(IApplicationDbContext context)
+    {
+        _context = context;
+    }
+
+    public async Task<List<SalaryPaymentDto>> Handle(GetAllSalaryPaymentsQuery request, CancellationToken cancellationToken)
+    {
+        var query = _context.SalaryPayments
+            .Include(sp => sp.Teacher)
+            .AsQueryable();
+
+        // Apply filters
+        if (!string.IsNullOrWhiteSpace(request.Status) && Enum.TryParse<SalaryPaymentStatus>(request.Status, true, out var statusEnum))
+            query = query.Where(sp => sp.Status == statusEnum);
+
+        if (request.TeacherId.HasValue)
+            query = query.Where(sp => sp.TeacherId == request.TeacherId.Value);
+
+        if (request.PeriodStartDate.HasValue)
+            query = query.Where(sp => sp.PeriodStartDate >= DateOnly.FromDateTime(request.PeriodStartDate.Value));
+
+        if (request.PeriodEndDate.HasValue)
+            query = query.Where(sp => sp.PeriodEndDate <= DateOnly.FromDateTime(request.PeriodEndDate.Value));
+
+        var payments = await query
+            .OrderByDescending(sp => sp.PeriodStartDate)
+            .ToListAsync(cancellationToken);
+
+        return payments.Select(MapToDto).ToList();
+    }
+
+    private static SalaryPaymentDto MapToDto(SalaryPayment payment)
+    {
+        return new SalaryPaymentDto
+        {
+            Id = payment.Id,
+            TeacherId = payment.TeacherId,
+            TeacherName = payment.Teacher?.FullName ?? $"{payment.Teacher?.FirstName} {payment.Teacher?.LastName}",
+            PeriodStartDate = payment.PeriodStartDate,
+            PeriodEndDate = payment.PeriodEndDate,
+            BaseSalary = payment.BaseSalary,
+            Deductions = payment.Deductions,
+            Bonus = payment.Bonus,
+            NetSalary = payment.NetSalary,
+            Status = payment.Status.ToString(),
+            PaidDate = payment.PaidDate,
+            ReferenceNumber = payment.ReferenceNumber,
+            PaymentMethod = payment.PaymentMethod?.ToString(),
+            Remarks = payment.Remarks,
+            CreatedAt = payment.CreatedAt,
+            UpdatedAt = payment.UpdatedAt ?? payment.CreatedAt
+        };
+    }
+}
+
+public class GetSalaryPaymentsSummaryQueryHandler : IRequestHandler<GetSalaryPaymentsSummaryQuery, SalaryPaymentSummaryDto>
+{
+    private readonly IApplicationDbContext _context;
+
+    public GetSalaryPaymentsSummaryQueryHandler(IApplicationDbContext context)
+    {
+        _context = context;
+    }
+
+    public async Task<SalaryPaymentSummaryDto> Handle(GetSalaryPaymentsSummaryQuery request, CancellationToken cancellationToken)
+    {
+        var query = _context.SalaryPayments.AsQueryable();
+
+        if (request.PeriodStartDate.HasValue)
+            query = query.Where(sp => sp.PeriodStartDate >= DateOnly.FromDateTime(request.PeriodStartDate.Value));
+
+        if (request.PeriodEndDate.HasValue)
+            query = query.Where(sp => sp.PeriodEndDate <= DateOnly.FromDateTime(request.PeriodEndDate.Value));
+
+        var payments = await query.ToListAsync(cancellationToken);
+
+        return new SalaryPaymentSummaryDto
+        {
+            TotalPayments = payments.Count,
+            PendingCount = payments.Count(p => p.Status == SalaryPaymentStatus.Pending),
+            ApprovedCount = payments.Count(p => p.Status == SalaryPaymentStatus.Approved),
+            PaidCount = payments.Count(p => p.Status == SalaryPaymentStatus.Paid),
+            OnHoldCount = payments.Count(p => p.Status == SalaryPaymentStatus.OnHold),
+            CancelledCount = payments.Count(p => p.Status == SalaryPaymentStatus.Cancelled),
+            TotalBaseSalary = payments.Sum(p => p.BaseSalary),
+            TotalDeductions = payments.Sum(p => p.Deductions),
+            TotalBonus = payments.Sum(p => p.Bonus),
+            TotalNetSalary = payments.Sum(p => p.NetSalary),
+            TotalPaidAmount = payments.Where(p => p.Status == SalaryPaymentStatus.Paid).Sum(p => p.NetSalary)
+        };
+    }
+}
