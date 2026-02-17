@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import toast from 'react-hot-toast';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { subjectApi, type CreateSubjectDto, type UpdateSubjectDto, type Subject } from '../services/api';
+import type { AxiosError } from 'axios';
+import { subjectApi, type CreateSubjectDto, type UpdateSubjectDto, type Subject, type SubjectListDto } from '../services/api';
 
 export function SubjectManagementPage() {
   const queryClient = useQueryClient();
@@ -32,8 +33,8 @@ export function SubjectManagementPage() {
       queryClient.invalidateQueries({ queryKey: ['subjects'] });
       handleCloseDialog();
     },
-    onError: (error: any) => {
-      toast.error(error?.response?.data?.message || 'Failed to create subject');
+    onError: (error: AxiosError<{ message?: string }>) => {
+      toast.error(error.response?.data?.message || 'Failed to create subject');
     },
   });
 
@@ -44,8 +45,8 @@ export function SubjectManagementPage() {
       queryClient.invalidateQueries({ queryKey: ['subjects'] });
       handleCloseDialog();
     },
-    onError: (error: any) => {
-      toast.error(error?.response?.data?.message || 'Failed to update subject');
+    onError: (error: AxiosError<{ message?: string }>) => {
+      toast.error(error.response?.data?.message || 'Failed to update subject');
     },
   });
 
@@ -55,8 +56,8 @@ export function SubjectManagementPage() {
       toast.success('Subject deleted successfully!');
       queryClient.invalidateQueries({ queryKey: ['subjects'] });
     },
-    onError: (error: any) => {
-      toast.error(error?.response?.data?.message || 'Failed to delete subject');
+    onError: (error: AxiosError<{ message?: string }>) => {
+      toast.error(error.response?.data?.message || 'Failed to delete subject');
     },
   });
 
@@ -178,7 +179,7 @@ export function SubjectManagementPage() {
             </div>
           ) : subjectsData && subjectsData.items.length > 0 ? (
             <div className="space-y-3">
-              {subjectsData.items.map((subject) => (
+              {subjectsData.items.map((subject: SubjectListDto) => (
                 <div
                   key={subject.id}
                   className="group flex items-center justify-between p-4 border-2 border-gray-100 rounded-xl hover:border-purple-300 hover:shadow-md transition-all hover:bg-gradient-to-r hover:from-purple-50 hover:to-indigo-50"

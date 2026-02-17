@@ -18,6 +18,9 @@ import { TeacherSalaryAssignmentPage } from './pages/TeacherSalaryAssignmentPage
 import { BulkSalaryProcessingPage } from './pages/BulkSalaryProcessingPage';
 import SalaryPaymentPage from './pages/SalaryPaymentPage';
 import { LoginPage } from './pages/LoginPage';
+import { ChangePasswordPage } from './pages/ChangePasswordPage';
+import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
+import { ResetPasswordPage } from './pages/ResetPasswordPage';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { ToastProvider } from './components/providers/ToastProvider';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
@@ -42,6 +45,8 @@ function App() {
           <BrowserRouter>
             <Routes>
               <Route path="/login" element={<LoginPage />} />
+              <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+              <Route path="/reset-password" element={<ResetPasswordPage />} />
               <Route
                 path="/"
                 element={
@@ -59,7 +64,8 @@ function App() {
                 <Route path="salary" element={<SalaryPage />} />
                 <Route path="salary-structures" element={<SalaryStructurePage />} />
                 <Route path="teacher-salary-assignment" element={<TeacherSalaryAssignmentPage />} />
-                <Route path="bulk-salary-processing" element={<BulkSalaryProcessingPage />} />              <Route path="salary-payments" element={<SalaryPaymentPage />} />                <Route path="classes" element={<ClassManagementPage />} />
+                <Route path="bulk-salary-processing" element={<BulkSalaryProcessingPage />} />              <Route path="salary-payments" element={<SalaryPaymentPage />} />                <Route path="change-password" element={<ChangePasswordPage />} />
+                <Route path="classes" element={<ClassManagementPage />} />
                 <Route path="subjects" element={<SubjectManagementPage />} />
               </Route>
             </Routes>

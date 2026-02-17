@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import toast from 'react-hot-toast';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { feeApi, studentApi, type CreateFeeStructureDto, type FeeStructure, type CreateStudentFeeDto, type StudentFee, type CreateFeePaymentDto, type Student } from '../services/api';
+import type { AxiosError } from 'axios';
 
 type TabType = 'structures' | 'assignments' | 'payments';
 
@@ -95,8 +96,8 @@ function FeeStructuresTab() {
       queryClient.invalidateQueries({ queryKey: ['feeStructures'] });
       handleCloseDialog();
     },
-    onError: (error: any) => {
-      toast.error(error?.response?.data?.message || 'Failed to create fee structure');
+    onError: (error: AxiosError<{ message?: string }>) => {
+      toast.error(error.response?.data?.message || 'Failed to create fee structure');
     },
   });
 
@@ -108,8 +109,8 @@ function FeeStructuresTab() {
       queryClient.invalidateQueries({ queryKey: ['feeStructures'] });
       handleCloseDialog();
     },
-    onError: (error: any) => {
-      toast.error(error?.response?.data?.message || 'Failed to update fee structure');
+    onError: (error: AxiosError<{ message?: string }>) => {
+      toast.error(error.response?.data?.message || 'Failed to update fee structure');
     },
   });
 
@@ -119,8 +120,8 @@ function FeeStructuresTab() {
       toast.success('Fee structure deleted successfully!');
       queryClient.invalidateQueries({ queryKey: ['feeStructures'] });
     },
-    onError: (error: any) => {
-      toast.error(error?.response?.data?.message || 'Failed to delete fee structure');
+    onError: (error: AxiosError<{ message?: string }>) => {
+      toast.error(error.response?.data?.message || 'Failed to delete fee structure');
     },
   });
 
@@ -453,8 +454,8 @@ function StudentFeesTab() {
       queryClient.invalidateQueries({ queryKey: ['studentFees'] });
       handleCloseDialog();
     },
-    onError: (error: any) => {
-      toast.error(error?.response?.data?.message || 'Failed to assign fee');
+    onError: (error: AxiosError<{ message?: string }>) => {
+      toast.error(error.response?.data?.message || 'Failed to assign fee');
     },
   });
 
@@ -465,8 +466,8 @@ function StudentFeesTab() {
       toast.success('Fee assignment terminated successfully!');
       queryClient.invalidateQueries({ queryKey: ['studentFees'] });
     },
-    onError: (error: any) => {
-      toast.error(error?.response?.data?.message || 'Failed to terminate fee');
+    onError: (error: AxiosError<{ message?: string }>) => {
+      toast.error(error.response?.data?.message || 'Failed to terminate fee');
     },
   });
 
@@ -565,7 +566,7 @@ function StudentFeesTab() {
             className="input-field flex-1 max-w-xs"
           >
             <option value="">All Sections</option>
-            {data?.items.reduce((sections: any[], fee) => {
+            {data?.items.reduce((sections: Array<{ id: string; name: string }>, fee) => {
               if (fee.sectionId && !sections.find(s => s.id === fee.sectionId)) {
                 sections.push({ id: fee.sectionId, name: fee.sectionName || 'Unknown' });
               }
@@ -954,8 +955,8 @@ function PaymentsTab() {
       queryClient.invalidateQueries({ queryKey: ['studentFees'] });
       handleCloseDialog();
     },
-    onError: (error: any) => {
-      toast.error(error?.response?.data?.message || 'Failed to record payment');
+    onError: (error: AxiosError<{ message?: string }>) => {
+      toast.error(error.response?.data?.message || 'Failed to record payment');
     },
   });
 

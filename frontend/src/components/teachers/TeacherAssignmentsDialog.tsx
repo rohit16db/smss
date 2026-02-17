@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
+import type { AxiosError } from 'axios';
 import { teacherApi, classApi, subjectApi, type Teacher, type TeacherAssignment, type CreateTeacherAssignmentDto } from '../../services/api';
 
 interface TeacherAssignmentsDialogProps {
@@ -66,8 +67,8 @@ export function TeacherAssignmentsDialog({ teacher, open, onClose }: TeacherAssi
         assignmentDate: new Date().toISOString().split('T')[0],
       });
     },
-    onError: (error: any) => {
-      toast.error(error?.response?.data?.message || 'Failed to create assignment');
+    onError: (error: AxiosError<{ message?: string }>) => {
+      toast.error(error.response?.data?.message || 'Failed to create assignment');
     },
   });
 
@@ -79,8 +80,8 @@ export function TeacherAssignmentsDialog({ teacher, open, onClose }: TeacherAssi
       toast.success('Assignment removed successfully!');
       queryClient.invalidateQueries({ queryKey: ['teacher-assignments', teacher?.id] });
     },
-    onError: (error: any) => {
-      toast.error(error?.response?.data?.message || 'Failed to remove assignment');
+    onError: (error: AxiosError<{ message?: string }>) => {
+      toast.error(error.response?.data?.message || 'Failed to remove assignment');
     },
   });
 
@@ -154,7 +155,7 @@ export function TeacherAssignmentsDialog({ teacher, open, onClose }: TeacherAssi
                     required
                   >
                     <option value="">Select Class</option>
-                    {classesData?.map((cls: any) => (
+                    {classesData?.map((cls) => (
                       <option key={cls.id} value={cls.id}>
                         {cls.name}
                       </option>
@@ -173,7 +174,7 @@ export function TeacherAssignmentsDialog({ teacher, open, onClose }: TeacherAssi
                     required
                   >
                     <option value="">Select Subject</option>
-                    {subjectsData?.map((subject: any) => (
+                    {subjectsData?.map((subject) => (
                       <option key={subject.id} value={subject.id}>
                         {subject.name} ({subject.code})
                       </option>

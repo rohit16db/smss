@@ -229,32 +229,49 @@ export function StudentsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4 sm:p-6 lg:p-8">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-2">👨‍🎓 Students Management</h1>
-          <p className="text-gray-600 mt-1">Manage student information, enrollments, and details</p>
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-purple-50 pb-8">
+      {/* Header Section */}
+      <div className="bg-gradient-to-r from-indigo-600 to-blue-600 shadow-lg">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm">
+              <svg className="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+              </svg>
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold text-white">Students Management</h1>
+              <p className="text-blue-100 mt-1">Manage student information, enrollments, and details</p>
+            </div>
+          </div>
         </div>
+      </div>
 
-        {/* Action Bar */}
-        <div className="bg-white rounded-lg shadow-md p-4 mb-6">
-          <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
-            <div className="flex-1 w-full sm:w-auto">
-              <input
-                type="text"
-                placeholder="Search students..."
-                value={searchTerm}
-                onChange={(e) => {
-                  setSearchTerm(e.target.value);
-                  setPage(0);
-                }}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Search and Stats Section */}
+        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 mb-8 hover:shadow-xl transition-shadow">
+          <div className="flex flex-col lg:flex-row gap-6 items-start lg:items-center justify-between">
+            <div className="flex-1 w-full lg:max-w-md">
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Search Students</label>
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="Search by name, email, or ID..."
+                  value={searchTerm}
+                  onChange={(e) => {
+                    setSearchTerm(e.target.value);
+                    setPage(0);
+                  }}
+                  className="w-full px-4 py-3 pl-10 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
+                />
+                <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </div>
             </div>
             <button
               onClick={() => handleOpenDialog()}
-              className="w-full sm:w-auto px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition"
+              className="w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white font-semibold rounded-xl transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
             >
               + Add Student
             </button>
@@ -262,7 +279,7 @@ export function StudentsPage() {
         </div>
 
         {/* Desktop Table View */}
-        <div className="hidden lg:block bg-white rounded-lg shadow-md overflow-hidden">
+        <div className="hidden lg:block bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden\">
           {isLoading ? (
             <LoadingSkeleton rows={rowsPerPage} type="table" />
           ) : studentsData?.items.length === 0 ? (
@@ -278,37 +295,39 @@ export function StudentsPage() {
           ) : (
             <>
               <table className="w-full">
-                <thead className="bg-gray-50 border-b border-gray-200">
+                <thead className="bg-gradient-to-r from-indigo-600 to-blue-600">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Student ID</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Phone</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Section</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-white uppercase">Student ID</th>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-white uppercase">Name</th>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-white uppercase">Email</th>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-white uppercase">Phone</th>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-white uppercase">Section</th>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-white uppercase">Status</th>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-white uppercase">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-200">
+                <tbody className="divide-y divide-gray-100">
                   {studentsData?.items.map((student, index) => (
-                    <tr key={student.id} className="hover:bg-gray-50">
+                    <tr key={student.id} className="hover:bg-gradient-to-r hover:from-indigo-50 hover:to-blue-50 transition-all">
                       <td className="px-6 py-4 text-sm">
-                        <span className="font-mono font-semibold text-blue-600">{student.enrollmentNumber}</span>
+                        <span className="font-mono font-bold text-indigo-600 bg-indigo-50 px-3 py-1 rounded-lg">{student.enrollmentNumber}</span>
                       </td>
-                      <td className="px-6 py-4 text-sm font-medium text-gray-900">
+                      <td className="px-6 py-4 text-sm font-bold text-gray-900">
                         <div className="flex items-center gap-3">
-                          <div className={`w-10 h-10 ${getAvatarColor(index)} rounded-full flex items-center justify-center text-white font-semibold`}>
+                          <div className={`w-12 h-12 ${getAvatarColor(index)} rounded-full flex items-center justify-center text-white font-bold text-lg shadow-md`}>
                             {getInitials(student.firstName, student.lastName)}
                           </div>
-                          {student.firstName} {student.lastName}
+                          <div>
+                            <div>{student.firstName} {student.lastName}</div>
+                          </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-600">{student.email}</td>
-                      <td className="px-6 py-4 text-sm text-gray-600">{student.phone || '-'}</td>
+                      <td className="px-6 py-4 text-sm font-medium text-gray-900\">{student.email}</td>
+                      <td className="px-6 py-4 text-sm text-gray-700\">{student.phone || '-'}</td>
                       <td className="px-6 py-4 text-sm">
                         <button
                           onClick={() => handleOpenSectionDialog(student)}
-                          className="px-3 py-1 bg-purple-100 hover:bg-purple-200 text-purple-700 rounded transition text-xs font-medium"
+                          className="px-3 py-2 bg-gradient-to-r from-purple-100 to-purple-200 hover:from-purple-200 hover:to-purple-300 text-purple-700 rounded-lg transition text-xs font-bold shadow-sm hover:shadow-md"
                         >
                           📚 Assign
                         </button>
@@ -316,10 +335,11 @@ export function StudentsPage() {
                       <td className="px-6 py-4 text-sm">
                         <button
                           onClick={() => handleToggleActive(student)}
-                          className={`px-3 py-1 rounded-full text-xs font-semibold ${student.isActive
-                            ? 'bg-green-100 text-green-800'
-                            : 'bg-gray-100 text-gray-800'
-                            }`}
+                          className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
+                            student.isActive
+                              ? 'bg-green-100 text-green-700 shadow-sm hover:shadow-md hover:bg-green-200'
+                              : 'bg-gray-100 text-gray-700 shadow-sm hover:shadow-md hover:bg-gray-200'
+                          }`}
                         >
                           {student.isActive ? '✓ Active' : '○ Inactive'}
                         </button>
@@ -328,15 +348,15 @@ export function StudentsPage() {
                         <div className="flex gap-2">
                           <button
                             onClick={() => handleOpenDialog(student)}
-                            className="px-3 py-1 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded transition text-xs font-medium"
+                            className="px-3 py-2 bg-gradient-to-r from-blue-100 to-blue-200 hover:from-blue-200 hover:to-blue-300 text-blue-700 rounded-lg transition text-xs font-bold shadow-sm hover:shadow-md"
                           >
-                            Edit
+                            ✏️ Edit
                           </button>
                           <button
                             onClick={() => handleDelete(student.id)}
-                            className="px-3 py-1 bg-red-100 hover:bg-red-200 text-red-700 rounded transition text-xs font-medium"
+                            className="px-3 py-2 bg-gradient-to-r from-red-100 to-red-200 hover:from-red-200 hover:to-red-300 text-red-700 rounded-lg transition text-xs font-bold shadow-sm hover:shadow-md"
                           >
-                            Delete
+                            🗑️ Delete
                           </button>
                         </div>
                       </td>
@@ -345,34 +365,34 @@ export function StudentsPage() {
                 </tbody>
               </table>
               {/* Pagination */}
-              <div className="bg-gray-50 border-t border-gray-200 px-6 py-4 flex items-center justify-between">
-                <div className="text-sm text-gray-600">
-                  Page {page + 1} of {totalPages} (Total: {studentsData?.totalCount} students)
+              <div className="bg-gradient-to-r from-gray-50 to-gray-100 border-t-2 border-gray-200 px-6 py-4 flex items-center justify-between">
+                <div className="text-sm font-semibold text-gray-700">
+                  Page <span className="font-bold text-indigo-600">{page + 1}</span> of <span className="font-bold text-indigo-600">{totalPages}</span> (Total: <span className="font-bold text-indigo-600\">{studentsData?.totalCount}</span> students)
                 </div>
                 <div className="flex gap-2 items-center">
                   <button
                     onClick={() => handleChangePage(page - 1)}
                     disabled={page === 0}
-                    className="px-4 py-2 border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="px-4 py-2 border-2 border-gray-300 rounded-lg hover:bg-white hover:border-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed font-semibold transition-all"
                   >
-                    Previous
+                    ← Previous
                   </button>
                   <select
                     value={rowsPerPage}
                     onChange={handleChangeRowsPerPage}
-                    className="px-3 py-2 border border-gray-300 rounded"
+                    className="px-3 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 font-semibold"
                   >
-                    <option value={5}>5</option>
-                    <option value={10}>10</option>
-                    <option value={25}>25</option>
-                    <option value={50}>50</option>
+                    <option value={5}>5 rows</option>
+                    <option value={10}>10 rows</option>
+                    <option value={25}>25 rows</option>
+                    <option value={50}>50 rows</option>
                   </select>
                   <button
                     onClick={() => handleChangePage(page + 1)}
                     disabled={page >= totalPages - 1}
-                    className="px-4 py-2 border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="px-4 py-2 border-2 border-gray-300 rounded-lg hover:bg-white hover:border-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed font-semibold transition-all"
                   >
-                    Next
+                    Next →
                   </button>
                 </div>
               </div>
@@ -389,51 +409,52 @@ export function StudentsPage() {
           ) : (
             <>
               {studentsData?.items.map((student, index) => (
-                <div key={student.id} className="bg-white rounded-lg shadow-md p-4">
-                  <div className="flex items-start gap-3 mb-3">
-                    <div className={`w-12 h-12 ${getAvatarColor(index)} rounded-full flex items-center justify-center text-white font-semibold flex-shrink-0`}>
+                <div key={student.id} className="bg-white rounded-2xl shadow-lg border border-gray-100 p-5 hover:shadow-xl hover:border-indigo-200 transition-all">
+                  <div className="flex items-start gap-4 mb-4">
+                    <div className={`w-14 h-14 ${getAvatarColor(index)} rounded-full flex items-center justify-center text-white font-bold text-lg flex-shrink-0 shadow-md`}>
                       {getInitials(student.firstName, student.lastName)}
                     </div>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="font-mono text-xs font-semibold text-blue-600 bg-blue-50 px-2 py-1 rounded">{student.enrollmentNumber}</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="font-mono text-xs font-bold text-indigo-600 bg-indigo-50 px-3 py-1 rounded-lg">{student.enrollmentNumber}</span>
                       </div>
-                      <h3 className="font-semibold text-gray-900">{student.firstName} {student.lastName}</h3>
-                      <p className="text-sm text-gray-600">{student.email}</p>
+                      <h3 className="font-bold text-gray-900">{student.firstName} {student.lastName}</h3>
+                      <p className="text-xs text-gray-600 mt-1">{student.email}</p>
                     </div>
                     <button
                       onClick={() => handleToggleActive(student)}
-                      className={`px-2 py-1 rounded text-xs font-semibold ${student.isActive
-                        ? 'bg-green-100 text-green-800'
-                        : 'bg-gray-100 text-gray-800'
-                        }`}
+                      className={`px-2 py-1.5 rounded-lg text-xs font-bold ${
+                        student.isActive
+                          ? 'bg-green-100 text-green-700 shadow-sm hover:shadow-md hover:bg-green-200'
+                          : 'bg-gray-100 text-gray-700 shadow-sm hover:shadow-md hover:bg-gray-200'
+                      }`}
                     >
                       {student.isActive ? '✓' : '○'}
                     </button>
                   </div>
-                  <div className="text-sm text-gray-600 space-y-1 mb-3">
-                    {student.phone && <p>Phone: {student.phone}</p>}
-                    <p>DOB: {new Date(student.dateOfBirth).toLocaleDateString()}</p>
-                    {student.parentName && <p>Parent: {student.parentName}</p>}
+                  <div className="text-xs text-gray-700 space-y-1.5 mb-4 bg-gray-50 p-3 rounded-lg border border-gray-200">
+                    {student.phone && <p><span className="font-semibold">Phone:</span> {student.phone}</p>}
+                    <p><span className="font-semibold">DOB:</span> {new Date(student.dateOfBirth).toLocaleDateString()}</p>
+                    {student.parentName && <p><span className="font-semibold">Parent:</span> {student.parentName}</p>}
                   </div>
                   <div className="flex gap-2">
                     <button
                       onClick={() => handleOpenSectionDialog(student)}
-                      className="flex-1 px-3 py-2 bg-purple-100 hover:bg-purple-200 text-purple-700 rounded transition text-sm font-medium"
+                      className="flex-1 px-3 py-2.5 bg-gradient-to-r from-purple-100 to-purple-200 hover:from-purple-200 hover:to-purple-300 text-purple-700 rounded-lg transition text-xs font-bold shadow-sm hover:shadow-md"
                     >
-                      📚 Section
+                      📚 Assign
                     </button>
                     <button
                       onClick={() => handleOpenDialog(student)}
-                      className="flex-1 px-3 py-2 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded transition text-sm font-medium"
+                      className="flex-1 px-3 py-2.5 bg-gradient-to-r from-blue-100 to-blue-200 hover:from-blue-200 hover:to-blue-300 text-blue-700 rounded-lg transition text-xs font-bold shadow-sm hover:shadow-md"
                     >
-                      Edit
+                      ✏️ Edit
                     </button>
                     <button
                       onClick={() => handleDelete(student.id)}
-                      className="flex-1 px-3 py-2 bg-red-100 hover:bg-red-200 text-red-700 rounded transition text-sm font-medium"
+                      className="flex-1 px-3 py-2.5 bg-gradient-to-r from-red-100 to-red-200 hover:from-red-200 hover:to-red-300 text-red-700 rounded-lg transition text-xs font-bold shadow-sm hover:shadow-md"
                     >
-                      Delete
+                      🗑️ Delete
                     </button>
                   </div>
                 </div>

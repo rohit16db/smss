@@ -31,7 +31,34 @@ export const authService = {
     return response.data;
   },
 
-  logout: () => {
+  logout: async (): Promise<void> => {
+    await api.post('/auth/logout');
     localStorage.removeItem('authToken');
+    localStorage.removeItem('refreshToken');
+    localStorage.removeItem('user');
+  },
+
+  changePassword: async (currentPassword: string, newPassword: string): Promise<void> => {
+    await api.post('/auth/change-password', {
+      currentPassword,
+      newPassword
+    });
+  },
+
+  forgotPassword: async (email: string): Promise<void> => {
+    await api.post('/auth/forgot-password', { email });
+  },
+
+  resetPassword: async (email: string, resetToken: string, newPassword: string): Promise<void> => {
+    await api.post('/auth/reset-password', {
+      email,
+      resetToken,
+      newPassword
+    });
+  },
+
+  getCurrentUser: async (): Promise<AuthResponse['user']> => {
+    const response = await api.get<AuthResponse['user']>('/auth/me');
+    return response.data;
   },
 };

@@ -4,6 +4,7 @@ import {
   useBulkCreateSalaryPayments,
 } from '../services/salaryStructureService';
 import { AlertCircle, CheckCircle } from 'lucide-react';
+import type { SalaryPaymentReportDto } from '../types/salary';
 
 export const BulkSalaryProcessingPage: React.FC = () => {
   const { data: teachersWithAssignments, isLoading } = useTeachersWithSalaryStructures(true);
@@ -15,7 +16,7 @@ export const BulkSalaryProcessingPage: React.FC = () => {
     fixedDeductions: 0,
   });
 
-  const [result, setResult] = useState<any>(null);
+  const [result, setResult] = useState<SalaryPaymentReportDto | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -140,7 +141,7 @@ export const BulkSalaryProcessingPage: React.FC = () => {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100">
-                      {result.paymentDetails.map((payment: any, idx: number) => (
+                      {result.paymentDetails.map((payment, idx: number) => (
                         <tr key={idx} className="hover:bg-blue-50 transition-colors duration-200">
                           <td className="px-6 py-4">
                             <p className="font-semibold text-gray-900">{payment.teacherName}</p>

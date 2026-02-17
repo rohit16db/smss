@@ -205,3 +205,140 @@ public class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand, A
         };
     }
 }
+
+public class ChangePasswordCommandHandler : IRequestHandler<ChangePasswordCommand, Unit>
+{
+    private readonly IApplicationDbContext _context;
+    private readonly IPasswordHasher _passwordHasher;
+
+    public ChangePasswordCommandHandler(
+        IApplicationDbContext context,
+        IPasswordHasher passwordHasher)
+    {
+        _context = context;
+        _passwordHasher = passwordHasher;
+    }
+
+    public async Task<Unit> Handle(ChangePasswordCommand request, CancellationToken cancellationToken)
+    {
+        var user = await _context.Users
+            .FirstOrDefaultAsync(u => u.Id == request.UserId && u.IsActive, cancellationToken);
+
+        if (user == null)
+        {
+            throw new BusinessRuleValidationException("User not found");
+        }
+
+        if (!_passwordHasher.VerifyPassword(request.CurrentPassword, user.PasswordHash))
+        {
+            throw new BusinessRuleValidationException("Current password is incorrect");
+        }
+
+        user.PasswordHash = _passwordHasher.HashPassword(request.NewPassword);
+        user.UpdatedAt = DateTime.UtcNow;
+
+        await _context.SaveChangesAsync(cancellationToken);
+
+        return Unit.Value;
+    }
+}
+
+public class ForgotPasswordCommandHandler : IRequestHandler<ForgotPasswordCommand, Unit>
+{
+    private readonly IApplicationDbContext _context;
+
+    public ForgotPasswordCommandHandler(IApplicationDbContext context)
+    {
+        _context = context;
+    }
+
+    public async Task<Unit> Handle(ForgotPasswordCommand request, CancellationToken cancellationToken)
+    {
+        var user = await _context.Users
+            .FirstOrDefaultAsync(u => u.Email == request.Email && u.IsActive, cancellationToken);
+
+        if (user == null)
+        {
+            // Don't reveal if email exists - return success anyway
+            return Unit.Value;
+        }
+
+        // Generate a secure reset token
+        user.PasswordResetToken = Guid.NewGuid().ToString("N");
+        user.PasswordResetTokenExpiry = DateTime.UtcNow.AddHours(1);
+        user.UpdatedAt = DateTime.UtcNow;
+
+        await _context.SaveChangesAsync(cancellationToken);
+
+        // TODO: Send email with reset token
+        // For now, the reset token is stored in the database
+        // In production, implement email service to send reset link
+
+        return Unit.Value;
+    }
+}
+
+public class ResetPasswordCommandHandler : IRequestHandler<ResetPasswordCommand, Unit>
+{
+    private readonly IApplicationDbContext _context;
+    private readonly IPasswordHasher _passwordHasher;
+
+    public ResetPasswordCommandHandler(
+        IApplicationDbContext context,
+        IPasswordHasher passwordHasher)
+    {
+        _context = context;
+        _passwordHasher = passwordHasher;
+    }
+
+    public async Task<Unit> Handle(ResetPasswordCommand request, CancellationToken cancellationToken)
+    {
+        var user = await _context.Users
+            .FirstOrDefaultAsync(u => u.Email == request.Email && u.IsActive, cancellationToken);
+
+        if (user == null || 
+            user.PasswordResetToken != request.ResetToken ||
+            user.PasswordResetTokenExpiry == null ||
+            user.PasswordResetTokenExpiry < DateTime.UtcNow)
+        {
+            throw new BusinessRuleValidationException("Invalid or expired reset token");
+        }
+
+        user.PasswordHash = _passwordHasher.HashPassword(request.NewPassword);
+        user.PasswordResetToken = null;
+        user.PasswordResetTokenExpiry = null;
+        user.UpdatedAt = DateTime.UtcNow;
+
+        await _context.SaveChangesAsync(cancellationToken);
+
+        return Unit.Value;
+    }
+}
+
+public class LogoutCommandHandler : IRequestHandler<LogoutCommand, Unit>
+{
+    private readonly IApplicationDbContext _context;
+
+    public LogoutCommandHandler(IApplicationDbContext context)
+    {
+        _context = context;
+    }
+
+    public async Task<Unit> Handle(LogoutCommand request, CancellationToken cancellationToken)
+    {
+        var user = await _context.Users
+            .FirstOrDefaultAsync(u => u.Id == request.UserId, cancellationToken);
+
+        if (user != null)
+        {
+            // Revoke refresh token
+            user.RefreshToken = null;
+            user.RefreshTokenExpiryTime = null;
+            user.UpdatedAt = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync(cancellationToken);
+        }
+
+        return Unit.Value;
+    }
+}

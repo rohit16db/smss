@@ -42,3 +42,21 @@ public class UserDto
     public UserRole Role { get; set; }
     public bool IsActive { get; set; }
 }
+
+public class ChangePasswordRequest
+{
+    public string CurrentPassword { get; set; } = string.Empty;
+    public string NewPassword { get; set; } = string.Empty;
+}
+
+public class ForgotPasswordRequest
+{
+    public string Email { get; set; } = string.Empty;
+}
+
+public class ResetPasswordRequest
+{
+    public string Email { get; set; } = string.Empty;
+    public string ResetToken { get; set; } = string.Empty;
+    public string NewPassword { get; set; } = string.Empty;
+}

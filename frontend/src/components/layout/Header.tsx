@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { useState, useRef } from 'react';
+import { authService } from '../../services/authService';
 
 interface HeaderProps {
   onMenuClick?: () => void;
@@ -12,9 +13,11 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
   const [financeMenuOpen, setFinanceMenuOpen] = useState(false);
   const [mobileAcademicOpen, setMobileAcademicOpen] = useState(false);
   const [mobileFinanceOpen, setMobileFinanceOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
   
   const academicTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const financeTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const userMenuTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   const handleAcademicMouseLeave = () => {
     academicTimeoutRef.current = setTimeout(() => {
@@ -36,6 +39,31 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
   const handleFinanceMouseEnter = () => {
     if (financeTimeoutRef.current) clearTimeout(financeTimeoutRef.current);
     setFinanceMenuOpen(true);
+  };
+
+  const handleUserMenuMouseLeave = () => {
+    userMenuTimeoutRef.current = setTimeout(() => {
+      setUserMenuOpen(false);
+    }, 150);
+  };
+
+  const handleUserMenuMouseEnter = () => {
+    if (userMenuTimeoutRef.current) clearTimeout(userMenuTimeoutRef.current);
+    setUserMenuOpen(true);
+  };
+
+  const handleLogout = async () => {
+    try {
+      await authService.logout();
+      navigate('/login');
+    } catch (error) {
+      console.error('Logout error:', error);
+      // Clear local storage even if API call fails
+      localStorage.removeItem('authToken');
+      localStorage.removeItem('refreshToken');
+      localStorage.removeItem('user');
+      navigate('/login');
+    }
   };
   
   return (
@@ -183,13 +211,40 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
             </button>
           </div>
 
-          {/* User Menu */}
-          <div className="flex items-center">
-            <button className="p-2 rounded-full text-white hover:bg-blue-700 transition-colors">
+          {/* User Profile Dropdown */}
+          <div 
+            className="hidden lg:block relative"
+            onMouseEnter={handleUserMenuMouseEnter}
+            onMouseLeave={handleUserMenuMouseLeave}
+          >
+            <button className="p-2 rounded-full text-white hover:bg-blue-700 transition-colors flex items-center gap-2">
               <svg className="h-8 w-8" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
               </svg>
             </button>
+            {userMenuOpen && (
+              <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-xl py-2 z-50">
+                <button
+                  onClick={() => {
+                    navigate('/change-password');
+                    setUserMenuOpen(false);
+                  }}
+                  className="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-colors flex items-center gap-2"
+                >
+                  🔒 Change Password
+                </button>
+                <hr className="my-1 border-gray-200" />
+                <button
+                  onClick={() => {
+                    setUserMenuOpen(false);
+                    handleLogout();
+                  }}
+                  className="w-full text-left px-4 py-2 hover:bg-red-50 text-gray-700 hover:text-red-600 transition-colors flex items-center gap-2"
+                >
+                  🚪 Logout
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Mobile menu button */}
@@ -366,6 +421,28 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
               >
                 📊 Attendance
               </button>
+
+              {/* Account Section */}
+              <div className="border-t border-blue-700 pt-2 space-y-1">
+                <button
+                  onClick={() => {
+                    navigate('/change-password');
+                    setMobileMenuOpen(false);
+                  }}
+                  className="w-full px-4 py-2 rounded-lg text-white hover:bg-blue-700 transition-colors duration-200 text-left"
+                >
+                  🔒 Change Password
+                </button>
+                <button
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    handleLogout();
+                  }}
+                  className="w-full px-4 py-2 rounded-lg text-white hover:bg-red-600 transition-colors duration-200 text-left"
+                >
+                  🚪 Logout
+                </button>
+              </div>
             </div>
           </div>
         )}

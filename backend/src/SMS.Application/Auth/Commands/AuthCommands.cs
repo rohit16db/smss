@@ -24,3 +24,27 @@ public class RefreshTokenCommand : IRequest<AuthResponse>
     public string AccessToken { get; set; } = string.Empty;
     public string RefreshToken { get; set; } = string.Empty;
 }
+
+public class ChangePasswordCommand : IRequest<Unit>
+{
+    public Guid UserId { get; set; }
+    public string CurrentPassword { get; set; } = string.Empty;
+    public string NewPassword { get; set; } = string.Empty;
+}
+
+public class ForgotPasswordCommand : IRequest<Unit>
+{
+    public string Email { get; set; } = string.Empty;
+}
+
+public class ResetPasswordCommand : IRequest<Unit>
+{
+    public string Email { get; set; } = string.Empty;
+    public string ResetToken { get; set; } = string.Empty;
+    public string NewPassword { get; set; } = string.Empty;
+}
+
+public class LogoutCommand : IRequest<Unit>
+{
+    public Guid UserId { get; set; }
+}

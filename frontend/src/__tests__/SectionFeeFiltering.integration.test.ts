@@ -18,7 +18,7 @@ describe('Section-Based Fee Filtering Integration Tests', () => {
   });
 
   let sectionId: string;
-  let studentFeeId: string;
+  // let studentFeeId: string;
 
   beforeEach(async () => {
     // Setup: Get a valid section ID (assumes sections exist)
@@ -34,7 +34,7 @@ describe('Section-Based Fee Filtering Integration Tests', () => {
       expect(Array.isArray(response.data)).toBe(true);
       
       // All returned fees should belong to the specified section
-      response.data.forEach((fee: any) => {
+      response.data.forEach((fee: { sectionId: string }) => {
         expect(fee.sectionId).toBe(sectionId);
       });
     });
@@ -48,7 +48,7 @@ describe('Section-Based Fee Filtering Integration Tests', () => {
       expect(Array.isArray(response.data)).toBe(true);
       
       // All returned fees should be active
-      response.data.forEach((fee: any) => {
+      response.data.forEach((fee: { isActive: boolean; sectionId: string }) => {
         expect(fee.isActive).toBe(true);
         expect(fee.sectionId).toBe(sectionId);
       });
@@ -90,9 +90,9 @@ describe('Section-Based Fee Filtering Integration Tests', () => {
       try {
         await client.get(`/fees/student-fees/section/${invalidSectionId}`);
         // If successful, should return empty or valid response
-      } catch (error: any) {
+      } catch (error: unknown) {
         // Either 400 Bad Request or 404 Not Found is acceptable
-        expect([400, 404]).toContain(error.response?.status);
+        expect([400, 404]).toContain((error as AxiosError).response?.status);
       }
     });
 
@@ -113,7 +113,7 @@ describe('Section-Based Fee Filtering Integration Tests', () => {
     it('should correctly calculate balance amounts', async () => {
       const response = await client.get(`/fees/student-fees/section/${sectionId}`);
       
-      response.data.forEach((fee: any) => {
+      response.data.forEach((fee: { totalAmount: number; paidAmount: number; balanceAmount: number }) => {
         // balanceAmount should equal totalAmount - paidAmount
         const expectedBalance = fee.totalAmount - fee.paidAmount;
         expect(fee.balanceAmount).toBe(expectedBalance);
@@ -135,11 +135,11 @@ describe('Section-Based Fee Filtering Integration Tests', () => {
       expect(inactiveFeeResponse.status).toBe(200);
       
       // Verify active/inactive status
-      activeFeeResponse.data.forEach((fee: any) => {
+      activeFeeResponse.data.forEach((fee: { isActive: boolean }) => {
         expect(fee.isActive).toBe(true);
       });
       
-      inactiveFeeResponse.data.forEach((fee: any) => {
+      inactiveFeeResponse.data.forEach((fee: { isActive: boolean }) => {
         expect(fee.isActive).toBe(false);
       });
     });
@@ -168,9 +168,9 @@ describe('Section-Based Fee Filtering Integration Tests', () => {
         const response = await client.get(`/fees/student-fees/section/${encodeURIComponent(specialId)}`);
         // Should handle gracefully (either success or 404)
         expect([200, 404]).toContain(response.status);
-      } catch (error: any) {
+      } catch (error: unknown) {
         // Or throw appropriate error
-        expect([400, 404]).toContain(error.response?.status);
+        expect([400, 404]).toContain((error as AxiosError).response?.status);
       }
     });
 
