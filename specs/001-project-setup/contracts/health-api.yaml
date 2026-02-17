@@ -1,0 +1,145 @@
+openapi: 3.0.3
+info:
+  title: School Management Software - Health Check API
+  description: |
+    Health check endpoint for monitoring School Management Software backend API status.
+    This endpoint verifies that the API is running and can connect to the PostgreSQL database.
+  version: 1.0.0
+  contact:
+    name: SMS Development Team
+    email: dev@sms.local
+
+servers:
+  - url: http://localhost:5000
+    description: Local development server (HTTP)
+  - url: https://localhost:5001
+    description: Local development server (HTTPS)
+
+tags:
+  - name: Health
+    description: System health and readiness checks
+
+paths:
+  /health:
+    get:
+      tags:
+        - Health
+      summary: Check API health status
+      description: |
+        Returns the health status of the API and its dependencies (database).
+        Used for monitoring, load balancer health probes, and container orchestration readiness checks.
+        
+        **Performance Target**: Response time < 100ms
+        
+        **Status Codes**:
+        - 200: All checks passed (Healthy)
+        - 503: One or more checks failed (Unhealthy/Degraded)
+      operationId: getHealth
+      responses:
+        '200':
+          description: Service is healthy - all checks passed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthCheckResponse'
+              examples:
+                healthy:
+                  summary: All systems operational
+                  value:
+                    status: Healthy
+                    timestamp: '2026-01-12T10:30:00Z'
+                    checks:
+                      database: Healthy
+                      api: Healthy
+                    duration: '00:00:00.0234567'
+        '503':
+          description: Service is unhealthy - one or more checks failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthCheckResponse'
+              examples:
+                unhealthy:
+                  summary: Database connection failed
+                  value:
+                    status: Unhealthy
+                    timestamp: '2026-01-12T10:30:00Z'
+                    checks:
+                      database: Unhealthy
+                      api: Healthy
+                    duration: '00:00:00.1234567'
+                    error: 'Unable to connect to PostgreSQL database'
+                degraded:
+                  summary: System is degraded
+                  value:
+                    status: Degraded
+                    timestamp: '2026-01-12T10:30:00Z'
+                    checks:
+                      database: Degraded
+                      api: Healthy
+                    duration: '00:00:00.5234567'
+                    error: 'Database connection slow (>500ms)'
+
+components:
+  schemas:
+    HealthCheckResponse:
+      type: object
+      required:
+        - status
+        - timestamp
+        - checks
+        - duration
+      properties:
+        status:
+          type: string
+          enum:
+            - Healthy
+            - Degraded
+            - Unhealthy
+          description: Overall health status of the service
+          example: Healthy
+        timestamp:
+          type: string
+          format: date-time
+          description: ISO 8601 timestamp when the health check was performed (UTC)
+          example: '2026-01-12T10:30:00Z'
+        checks:
+          type: object
+          description: Individual health check results for each component
+          properties:
+            database:
+              type: string
+              enum:
+                - Healthy
+                - Degraded
+                - Unhealthy
+              description: PostgreSQL database connectivity status
+              example: Healthy
+            api:
+              type: string
+              enum:
+                - Healthy
+                - Degraded
+                - Unhealthy
+              description: API application status
+              example: Healthy
+          required:
+            - database
+            - api
+        duration:
+          type: string
+          format: duration
+          description: Time taken to complete all health checks (TimeSpan format)
+          example: '00:00:00.0234567'
+        error:
+          type: string
+          description: Error message if any check failed (optional, only present when status is not Healthy)
+          example: 'Unable to connect to PostgreSQL database'
+
+  securitySchemes: {}
+
+security: []
+
+externalDocs:
+  description: ASP.NET Core Health Checks Documentation
+  url: https://learn.microsoft.com/en-us/aspnet/core/host-and-deploy/health-checks

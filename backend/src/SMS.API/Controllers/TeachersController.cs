@@ -1,0 +1,286 @@
+using MediatR;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using SMS.Application.Features.Teachers.Commands;
+using SMS.Application.Features.Teachers.DTOs;
+using SMS.Application.Features.Teachers.Queries;
+
+namespace SMS.API.Controllers;
+
+/// <summary>
+/// API controller for Teacher management
+/// </summary>
+[ApiController]
+[Route("api/[controller]")]
+[Authorize]
+public class TeachersController : ControllerBase
+{
+    private readonly IMediator _mediator;
+
+    public TeachersController(IMediator mediator)
+    {
+        _mediator = mediator;
+    }
+
+    /// <summary>
+    /// Get all teachers with pagination
+    /// </summary>
+    /// <param name="pageNumber">Page number (default: 1)</param>
+    /// <param name="pageSize">Page size (default: 10)</param>
+    /// <param name="searchTerm">Optional search term for name, email, or phone</param>
+    /// <param name="isActive">Optional filter for active/inactive teachers</param>
+    /// <returns>Paginated list of teachers</returns>
+    [HttpGet]
+    [ProducesResponseType(typeof(PaginatedTeacherListDto), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetAll(
+        [FromQuery] int pageNumber = 1,
+        [FromQuery] int pageSize = 10,
+        [FromQuery] string? searchTerm = null,
+        [FromQuery] bool? isActive = null,
+        CancellationToken cancellationToken = default)
+    {
+        var query = new GetAllTeachersQuery
+        {
+            PageNumber = pageNumber,
+            PageSize = pageSize,
+            SearchTerm = searchTerm,
+            IsActive = isActive
+        };
+
+        var result = await _mediator.Send(query, cancellationToken);
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Get a teacher by ID
+    /// </summary>
+    /// <param name="id">Teacher ID (GUID)</param>
+    /// <returns>Teacher details</returns>
+    [HttpGet("{id}")]
+    [ProducesResponseType(typeof(TeacherDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetById(string id, CancellationToken cancellationToken)
+    {
+        var query = new GetTeacherByIdQuery { Id = id };
+        var result = await _mediator.Send(query, cancellationToken);
+
+        if (result == null)
+            return NotFound(new { message = $"Teacher with ID {id} not found" });
+
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Get a teacher by email
+    /// </summary>
+    /// <param name="email">Teacher email</param>
+    /// <returns>Teacher details</returns>
+    [HttpGet("by-email/{email}")]
+    [ProducesResponseType(typeof(TeacherDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetByEmail(string email, CancellationToken cancellationToken)
+    {
+        var query = new GetTeacherByEmailQuery { Email = email };
+        var result = await _mediator.Send(query, cancellationToken);
+
+        if (result == null)
+            return NotFound(new { message = $"Teacher with email {email} not found" });
+
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Create a new teacher
+    /// </summary>
+    /// <param name="dto">Teacher creation data</param>
+    /// <returns>Created teacher details</returns>
+    [HttpPost]
+    [ProducesResponseType(typeof(TeacherDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> Create(
+        [FromBody] CreateTeacherDto dto,
+        CancellationToken cancellationToken)
+    {
+        var command = new CreateTeacherCommand
+        {
+            FirstName = dto.FirstName,
+            LastName = dto.LastName,
+            Email = dto.Email,
+            Phone = dto.Phone,
+            Qualification = dto.Qualification,
+            ExperienceYears = dto.ExperienceYears,
+            JoiningDate = dto.JoiningDate,
+            CreatedByUserId = GetCurrentUserId()
+        };
+
+        var result = await _mediator.Send(command, cancellationToken);
+        return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
+    }
+
+    /// <summary>
+    /// Update a teacher
+    /// </summary>
+    /// <param name="id">Teacher ID (GUID)</param>
+    /// <param name="dto">Teacher update data</param>
+    /// <returns>Updated teacher details</returns>
+    [HttpPut("{id}")]
+    [ProducesResponseType(typeof(TeacherDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> Update(
+        string id,
+        [FromBody] UpdateTeacherDto dto,
+        CancellationToken cancellationToken)
+    {
+        if (id != dto.Id)
+            return BadRequest(new { message = "ID in URL and body do not match" });
+
+        var command = new UpdateTeacherCommand
+        {
+            Id = dto.Id,
+            FirstName = dto.FirstName,
+            LastName = dto.LastName,
+            Email = dto.Email,
+            Phone = dto.Phone,
+            Qualification = dto.Qualification,
+            ExperienceYears = dto.ExperienceYears,
+            IsActive = dto.IsActive,
+            UpdatedByUserId = GetCurrentUserId()
+        };
+
+        try
+        {
+            var result = await _mediator.Send(command, cancellationToken);
+            return Ok(result);
+        }
+        catch (InvalidOperationException)
+        {
+            return NotFound(new { message = $"Teacher with ID {id} not found" });
+        }
+    }
+
+    /// <summary>
+    /// Deactivate a teacher
+    /// </summary>
+    /// <param name="id">Teacher ID (GUID)</param>
+    /// <returns>Success status</returns>
+    [HttpPatch("{id}/deactivate")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Deactivate(string id, CancellationToken cancellationToken)
+    {
+        var command = new DeactivateTeacherCommand
+        {
+            Id = id,
+            UpdatedByUserId = GetCurrentUserId()
+        };
+
+        try
+        {
+            await _mediator.Send(command, cancellationToken);
+            return NoContent();
+        }
+        catch (InvalidOperationException)
+        {
+            return NotFound(new { message = $"Teacher with ID {id} not found" });
+        }
+    }
+
+    /// <summary>
+    /// Activate a teacher
+    /// </summary>
+    /// <param name="id">Teacher ID (GUID)</param>
+    /// <returns>Success status</returns>
+    [HttpPatch("{id}/activate")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Activate(string id, CancellationToken cancellationToken)
+    {
+        var command = new ActivateTeacherCommand
+        {
+            Id = id,
+            UpdatedByUserId = GetCurrentUserId()
+        };
+
+        try
+        {
+            await _mediator.Send(command, cancellationToken);
+            return NoContent();
+        }
+        catch (InvalidOperationException)
+        {
+            return NotFound(new { message = $"Teacher with ID {id} not found" });
+        }
+    }
+
+    /// <summary>
+    /// Delete a teacher
+    /// </summary>
+    /// <param name="id">Teacher ID (GUID)</param>
+    /// <returns>Success status</returns>
+    [HttpDelete("{id}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Delete(string id, CancellationToken cancellationToken)
+    {
+        var command = new DeleteTeacherCommand { Id = id };
+
+        try
+        {
+            await _mediator.Send(command, cancellationToken);
+            return NoContent();
+        }
+        catch (InvalidOperationException)
+        {
+            return NotFound(new { message = $"Teacher with ID {id} not found" });
+        }
+    }
+
+    /// <summary>
+    /// Get active teachers for selection
+    /// </summary>
+    /// <param name="searchTerm">Optional search term</param>
+    /// <returns>List of active teachers</returns>
+    [HttpGet("active")]
+    [ProducesResponseType(typeof(List<TeacherListDto>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetActive(
+        [FromQuery] string? searchTerm = null,
+        CancellationToken cancellationToken = default)
+    {
+        var query = new GetActiveTeachersQuery { SearchTerm = searchTerm };
+        var result = await _mediator.Send(query, cancellationToken);
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Check if email exists (for validation)
+    /// </summary>
+    /// <param name="email">Teacher email</param>
+    /// <param name="excludeTeacherId">Optional teacher ID to exclude from check</param>
+    /// <returns>Boolean indicating if email exists</returns>
+    [HttpGet("check-email/{email}")]
+    [ProducesResponseType(typeof(bool), StatusCodes.Status200OK)]
+    public async Task<IActionResult> CheckEmailExists(
+        string email,
+        [FromQuery] string? excludeTeacherId = null,
+        CancellationToken cancellationToken = default)
+    {
+        var query = new TeacherEmailExistsQuery
+        {
+            Email = email,
+            ExcludeTeacherId = excludeTeacherId
+        };
+
+        var exists = await _mediator.Send(query, cancellationToken);
+        return Ok(new { exists });
+    }
+
+    /// <summary>
+    /// Helper method to get current user ID from claims
+    /// </summary>
+    private string GetCurrentUserId()
+    {
+        var userIdClaim = User.FindFirst("sub") ?? User.FindFirst("nameid");
+        return userIdClaim?.Value ?? Guid.Empty.ToString();
+    }
+}

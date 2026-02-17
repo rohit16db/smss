@@ -1,0 +1,66 @@
+bin/
+obj/
+*.suo
+*.user
+*.userosdf
+*.sln.docstates
+.vs/
+.vscode/
+
+# Build results
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Bb]in/
+[Oo]bj/
+
+# User-specific files
+*.user
+*.suo
+*.sln.docstates
+
+# Secrets and environment files
+appsettings.Development.json
+appsettings.*.json
+*.env
+*.env.*
+secrets.json
+
+# NuGet Packages
+*.nupkg
+packages/
+.nuget/
+
+# Rider
+.idea/
+*.sln.iml
+
+# Test results
+[Tt]est[Rr]esult*/
+[Bb]uild[Ll]og.*
+
+# NCrunch
+*.ncrunch*
+.*crunch*.local.xml
+
+# ReSharper
+_ReSharper*/
+*.[Rr]e[Ss]harper
+*.DotSettings.user
+
+# Build directories
+publish/
+PublishProfiles/
+
+# Backup files
+*.bak
+*.tmp
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Docker
+docker-compose.override.yml
