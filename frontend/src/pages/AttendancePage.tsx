@@ -30,7 +30,7 @@ export function AttendancePage() {
   
   const [studentFormData, setStudentFormData] = useState<CreateStudentAttendanceDto>({
     studentId: '',
-    classId: '00000000-0000-0000-0000-000000000000',
+    // sectionId removed - auto-detected from student enrollment
     attendanceDate: dateFilter,
     status: 'Present',
     reason: '',
@@ -232,7 +232,7 @@ export function AttendancePage() {
         const studentRec = record as StudentAttendance;
         setStudentFormData({
           studentId: studentRec.studentId,
-          classId: '00000000-0000-0000-0000-000000000000',
+          // sectionId removed - auto-detected
           attendanceDate: studentRec.attendanceDate.split('T')[0],
           status: studentRec.status as any,
           reason: studentRec.remarks || '',
@@ -278,7 +278,7 @@ export function AttendancePage() {
       setDialogTeacherSearchTerm('');
       setStudentFormData({
         studentId: '',
-        classId: '00000000-0000-0000-0000-000000000000',
+        // sectionId removed - auto-detected
         attendanceDate: dateFilter,
         status: 'Present',
         reason: '',

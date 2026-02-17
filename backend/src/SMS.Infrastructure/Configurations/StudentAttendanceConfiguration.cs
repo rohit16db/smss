@@ -21,8 +21,8 @@ public class StudentAttendanceConfiguration : IEntityTypeConfiguration<StudentAt
             .HasColumnName("student_id")
             .IsRequired();
         
-        builder.Property(sa => sa.ClassId)
-            .HasColumnName("class_id")
+        builder.Property(sa => sa.SectionId)
+            .HasColumnName("section_id")
             .IsRequired();
         
         builder.Property(sa => sa.AttendanceDate)
@@ -61,15 +61,21 @@ public class StudentAttendanceConfiguration : IEntityTypeConfiguration<StudentAt
         
         // Indexes
         builder.HasIndex(sa => sa.StudentId);
-        builder.HasIndex(sa => sa.ClassId);
+        builder.HasIndex(sa => sa.SectionId);
         builder.HasIndex(sa => sa.AttendanceDate);
         builder.HasIndex(sa => sa.Status);
         builder.HasIndex(sa => new { sa.StudentId, sa.AttendanceDate })
             .IncludeProperties(sa => new { sa.Status });
         
-        // Unique constraint: No duplicate attendance for same student on same date in same class
-        builder.HasIndex(sa => new { sa.StudentId, sa.ClassId, sa.AttendanceDate })
+        // Unique constraint: No duplicate attendance for same student on same date in same section
+        builder.HasIndex(sa => new { sa.StudentId, sa.SectionId, sa.AttendanceDate })
             .IsUnique();
+        
+        // Foreign key
+        builder.HasOne(sa => sa.Section)
+            .WithMany()
+            .HasForeignKey(sa => sa.SectionId)
+            .OnDelete(DeleteBehavior.Restrict);
         
         // Check constraint: Status must be valid
         builder.ToTable(tb => tb.HasCheckConstraint("ck_student_attendances_status", 

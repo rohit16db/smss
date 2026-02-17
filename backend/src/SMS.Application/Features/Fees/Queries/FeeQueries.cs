@@ -75,3 +75,13 @@ public class GetAllFeePaymentsQuery : IRequest<PaginatedFeePaymentListDto>
     public int PageSize { get; set; } = 10;
     public string? StudentFeeId { get; set; }
 }
+
+/// <summary>
+/// Query to get student fees by section ID
+/// Shows all students in a section and their fee status
+/// </summary>
+public class GetFeesBySectionQuery : IRequest<List<StudentFeeDto>>
+{
+    public required string SectionId { get; set; }
+    public bool? IsActive { get; set; }
+}

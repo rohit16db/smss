@@ -1,7 +1,7 @@
 namespace SMS.Domain.Entities;
 
 /// <summary>
-/// Represents attendance record for a student in a class on a specific date.
+/// Represents attendance record for a student in a section on a specific date.
 /// Tracks status (present, absent, leave, unexcused) and full edit history.
 /// </summary>
 public class StudentAttendance
@@ -11,8 +11,8 @@ public class StudentAttendance
     /// <summary>Student ID (from Phase 2)</summary>
     public Guid StudentId { get; set; }
     
-    /// <summary>Class ID (from existing class entity)</summary>
-    public Guid ClassId { get; set; }
+    /// <summary>Section ID - attendance is tracked at section level</summary>
+    public Guid SectionId { get; set; }
     
     /// <summary>Date of attendance</summary>
     public DateOnly AttendanceDate { get; set; }
@@ -34,4 +34,7 @@ public class StudentAttendance
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
     public string? CreatedBy { get; set; }
     public string? UpdatedBy { get; set; }
+    
+    // Navigation property
+    public Section? Section { get; set; }
 }

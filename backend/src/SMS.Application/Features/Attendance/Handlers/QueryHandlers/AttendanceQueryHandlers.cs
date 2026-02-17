@@ -34,7 +34,7 @@ public class GetStudentAttendanceByIdQueryHandler : IRequestHandler<GetStudentAt
         {
             Id = attendance.Id.ToString(),
             StudentId = attendance.StudentId.ToString(),
-            ClassId = attendance.ClassId.ToString(),
+            SectionId = attendance.SectionId.ToString(),
             AttendanceDate = attendance.AttendanceDate.ToDateTime(TimeOnly.MinValue),
             Status = attendance.Status,
             Reason = attendance.Reason,
@@ -59,13 +59,13 @@ public class GetStudentAttendanceByDateQueryHandler : IRequestHandler<GetStudent
 
     public async Task<List<StudentAttendanceDto>> Handle(GetStudentAttendanceByDateQuery request, CancellationToken cancellationToken)
     {
-        if (!Guid.TryParse(request.ClassId, out var classId))
+        if (!Guid.TryParse(request.SectionId, out var sectionId))
             return new List<StudentAttendanceDto>();
 
         var attendanceDate = DateOnly.FromDateTime(request.AttendanceDate);
 
         var attendances = await _context.StudentAttendances
-            .Where(a => a.ClassId == classId && a.AttendanceDate == attendanceDate)
+            .Where(a => a.SectionId == sectionId && a.AttendanceDate == attendanceDate)
             .OrderBy(a => a.StudentId)
             .ToListAsync(cancellationToken);
 
@@ -73,7 +73,7 @@ public class GetStudentAttendanceByDateQueryHandler : IRequestHandler<GetStudent
         {
             Id = a.Id.ToString(),
             StudentId = a.StudentId.ToString(),
-            ClassId = a.ClassId.ToString(),
+            SectionId = a.SectionId.ToString(),
             AttendanceDate = a.AttendanceDate.ToDateTime(TimeOnly.MinValue),
             Status = a.Status,
             Reason = a.Reason,
@@ -104,8 +104,8 @@ public class GetStudentAttendanceHistoryQueryHandler : IRequestHandler<GetStuden
         if (!string.IsNullOrEmpty(request.StudentId) && Guid.TryParse(request.StudentId, out var studentId))
             query = query.Where(a => a.StudentId == studentId);
 
-        if (!string.IsNullOrEmpty(request.ClassId) && Guid.TryParse(request.ClassId, out var classId))
-            query = query.Where(a => a.ClassId == classId);
+        if (!string.IsNullOrEmpty(request.SectionId) && Guid.TryParse(request.SectionId, out var sectionId))
+            query = query.Where(a => a.SectionId == sectionId);
 
         if (request.StartDate.HasValue)
         {
@@ -140,7 +140,7 @@ public class GetStudentAttendanceHistoryQueryHandler : IRequestHandler<GetStuden
                     StudentId = attendance.StudentId.ToString(),
                     StudentEnrollmentNumber = student.EnrollmentNumber,
                     StudentName = student.FirstName + " " + student.LastName,
-                    ClassId = attendance.ClassId.ToString(),
+                    SectionId = attendance.SectionId.ToString(),
                     AttendanceDate = attendance.AttendanceDate.ToDateTime(TimeOnly.MinValue),
                     Status = attendance.Status,
                     Reason = attendance.Reason

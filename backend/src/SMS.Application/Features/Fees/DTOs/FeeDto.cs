@@ -95,7 +95,9 @@ public class TerminateStudentFeeDto
 }
 
 /// <summary>
+/// <summary>
 /// DTO for student fee information
+/// Includes section context (student's current enrolled section)
 /// </summary>
 public class StudentFeeDto
 {
@@ -111,6 +113,11 @@ public class StudentFeeDto
     public decimal PaidAmount { get; set; }
     public decimal BalanceAmount { get; set; }
     public bool IsActive { get; set; }
+    
+    // Section context (read-only - from student's current enrollment)
+    public string? SectionId { get; set; }
+    public string? SectionName { get; set; }
+    
     public DateTime CreatedAt { get; set; }
 }
 

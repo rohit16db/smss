@@ -26,6 +26,7 @@ public class AttendanceController : ControllerBase
 
     /// <summary>
     /// Mark student attendance
+    /// Section is auto-detected from student's current enrollment
     /// </summary>
     /// <param name="dto">Student attendance data</param>
     /// <returns>Created attendance record</returns>
@@ -40,7 +41,7 @@ public class AttendanceController : ControllerBase
             var command = new MarkStudentAttendanceCommand
             {
                 StudentId = dto.StudentId,
-                ClassId = dto.ClassId,
+                // SectionId removed - auto-detected from student enrollment
                 AttendanceDate = dto.AttendanceDate,
                 Status = dto.Status,
                 Reason = dto.Reason,
@@ -95,20 +96,20 @@ public class AttendanceController : ControllerBase
     }
 
     /// <summary>
-    /// Get student attendance by date and class
+    /// Get student attendance by date and section
     /// </summary>
-    /// <param name="classId">Class ID (GUID)</param>
+    /// <param name="sectionId">Section ID (GUID)</param>
     /// <param name="date">Attendance date</param>
     /// <returns>List of student attendance records</returns>
     [HttpGet("students/by-date")]
     [ProducesResponseType(typeof(List<StudentAttendanceDto>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetStudentAttendanceByDate([FromQuery] string classId, [FromQuery] DateTime date)
+    public async Task<IActionResult> GetStudentAttendanceByDate([FromQuery] string sectionId, [FromQuery] DateTime date)
     {
         try
         {
             var query = new GetStudentAttendanceByDateQuery
             {
-                ClassId = classId,
+                SectionId = sectionId,
                 AttendanceDate = date
             };
 
@@ -117,7 +118,7 @@ public class AttendanceController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error retrieving student attendance for class {ClassId} on {Date}", classId, date);
+            _logger.LogError(ex, "Error retrieving student attendance for section {SectionId} on {Date}", sectionId, date);
             return StatusCode(StatusCodes.Status500InternalServerError, "Error retrieving student attendance");
         }
     }
@@ -126,7 +127,7 @@ public class AttendanceController : ControllerBase
     /// Get student attendance history with pagination and filtering
     /// </summary>
     /// <param name="studentId">Filter by student ID</param>
-    /// <param name="classId">Filter by class ID</param>
+    /// <param name="sectionId">Filter by section ID</param>
     /// <param name="startDate">Filter by start date</param>
     /// <param name="endDate">Filter by end date</param>
     /// <param name="status">Filter by status</param>
@@ -137,7 +138,7 @@ public class AttendanceController : ControllerBase
     [ProducesResponseType(typeof(PaginatedStudentAttendanceListDto), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetStudentAttendanceHistory(
         [FromQuery] string? studentId = null,
-        [FromQuery] string? classId = null,
+        [FromQuery] string? sectionId = null,
         [FromQuery] DateTime? startDate = null,
         [FromQuery] DateTime? endDate = null,
         [FromQuery] string? status = null,
@@ -149,7 +150,7 @@ public class AttendanceController : ControllerBase
             var query = new GetStudentAttendanceHistoryQuery
             {
                 StudentId = studentId,
-                ClassId = classId,
+                SectionId = sectionId,
                 StartDate = startDate,
                 EndDate = endDate,
                 Status = status,

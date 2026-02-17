@@ -2,11 +2,12 @@ namespace SMS.Application.Features.Attendance.DTOs;
 
 /// <summary>
 /// DTO for creating student attendance record
+/// Section is auto-detected from student's current enrollment
 /// </summary>
 public class MarkStudentAttendanceDto
 {
     public string StudentId { get; set; } = string.Empty;
-    public string ClassId { get; set; } = string.Empty;
+    // SectionId removed - auto-detected from student_sections where is_current = true
     public DateTime AttendanceDate { get; set; }
     public string Status { get; set; } = string.Empty;
     public string? Reason { get; set; }
@@ -29,7 +30,7 @@ public class StudentAttendanceDto
 {
     public string Id { get; set; } = string.Empty;
     public string StudentId { get; set; } = string.Empty;
-    public string ClassId { get; set; } = string.Empty;
+    public string SectionId { get; set; } = string.Empty;
     public DateTime AttendanceDate { get; set; }
     public string Status { get; set; } = string.Empty;
     public string? Reason { get; set; }
@@ -47,7 +48,7 @@ public class StudentAttendanceListDto
     public string StudentId { get; set; } = string.Empty;
     public string StudentEnrollmentNumber { get; set; } = string.Empty;
     public string StudentName { get; set; } = string.Empty;
-    public string ClassId { get; set; } = string.Empty;
+    public string SectionId { get; set; } = string.Empty;
     public DateTime AttendanceDate { get; set; }
     public string Status { get; set; } = string.Empty;
     public string? Reason { get; set; }

@@ -276,6 +276,91 @@ public class TeachersController : ControllerBase
     }
 
     /// <summary>
+    /// Get assignments for a teacher
+    /// </summary>
+    /// <param name="id">Teacher ID</param>
+    /// <param name="activeOnly">Filter for active assignments only</param>
+    /// <returns>List of teacher assignments</returns>
+    [HttpGet("{id}/assignments")]
+    [ProducesResponseType(typeof(List<TeacherAssignmentDto>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetAssignments(
+        string id,
+        [FromQuery] bool? activeOnly = null,
+        CancellationToken cancellationToken = default)
+    {
+        if (!Guid.TryParse(id, out var teacherId))
+            return BadRequest(new { message = "Invalid teacher ID format" });
+
+        var query = new GetTeacherAssignmentsQuery
+        {
+            TeacherId = teacherId,
+            ActiveOnly = activeOnly
+        };
+
+        var result = await _mediator.Send(query, cancellationToken);
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Create a new teacher assignment
+    /// </summary>
+    /// <param name="id">Teacher ID</param>
+    /// <param name="dto">Assignment details</param>
+    /// <returns>Created assignment</returns>
+    [HttpPost("{id}/assignments")]
+    [ProducesResponseType(typeof(TeacherAssignmentDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> CreateAssignment(
+        string id,
+        [FromBody] CreateTeacherAssignmentDto dto,
+        CancellationToken cancellationToken = default)
+    {
+        if (!Guid.TryParse(id, out var teacherId))
+            return BadRequest(new { message = "Invalid teacher ID format" });
+
+        var command = new CreateTeacherAssignmentCommand
+        {
+            TeacherId = teacherId,
+            ClassId = dto.ClassId,
+            SubjectId = dto.SubjectId,
+            AssignmentDate = dto.AssignmentDate
+        };
+
+        var result = await _mediator.Send(command, cancellationToken);
+        return CreatedAtAction(nameof(GetAssignments), new { id = teacherId }, result);
+    }
+
+    /// <summary>
+    /// Remove a teacher assignment
+    /// </summary>
+    /// <param name="id">Teacher ID</param>
+    /// <param name="assignmentId">Assignment ID</param>
+    /// <param name="dto">Removal details</param>
+    /// <returns>Success response</returns>
+    [HttpDelete("{id}/assignments/{assignmentId}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> RemoveAssignment(
+        string id,
+        string assignmentId,
+        [FromBody] RemoveTeacherAssignmentDto? dto = null,
+        CancellationToken cancellationToken = default)
+    {
+        if (!Guid.TryParse(assignmentId, out var parsedAssignmentId))
+            return BadRequest(new { message = "Invalid assignment ID format" });
+
+        var command = new RemoveTeacherAssignmentCommand
+        {
+            AssignmentId = parsedAssignmentId,
+            RemovalDate = dto?.RemovalDate
+        };
+
+        await _mediator.Send(command, cancellationToken);
+        return Ok(new { message = "Assignment removed successfully" });
+    }
+
+    /// <summary>
     /// Helper method to get current user ID from claims
     /// </summary>
     private string GetCurrentUserId()

@@ -5,11 +5,12 @@ namespace SMS.Application.Features.Attendance.Commands;
 
 /// <summary>
 /// Command to mark student attendance
+/// Section is auto-detected from student's current enrollment
 /// </summary>
 public class MarkStudentAttendanceCommand : IRequest<StudentAttendanceDto>
 {
     public string StudentId { get; set; } = string.Empty;
-    public string ClassId { get; set; } = string.Empty;
+    // SectionId removed - auto-detected from student_sections
     public DateTime AttendanceDate { get; set; }
     public string Status { get; set; } = string.Empty;
     public string? Reason { get; set; }

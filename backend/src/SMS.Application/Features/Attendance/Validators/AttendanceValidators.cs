@@ -16,10 +16,7 @@ public class MarkStudentAttendanceCommandValidator : AbstractValidator<MarkStude
             .Must(BeValidGuid)
             .WithMessage("Student ID must be a valid GUID");
 
-        RuleFor(x => x.ClassId)
-            .NotEmpty()
-            .Must(BeValidGuid)
-            .WithMessage("Class ID must be a valid GUID");
+        // SectionId validation removed - section is auto-detected from enrollment
 
         RuleFor(x => x.AttendanceDate)
             .NotEmpty()

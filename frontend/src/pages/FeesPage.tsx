@@ -398,6 +398,7 @@ function StudentFeesTab() {
   const [openTerminateDialog, setOpenTerminateDialog] = useState(false);
   const [terminateFeeId, setTerminateFeeId] = useState<string | null>(null);
   const [terminateEndDate, setTerminateEndDate] = useState('');
+  const [selectedSectionId, setSelectedSectionId] = useState(''); // Section filter
   const [structures, setStructures] = useState<FeeStructure[]>([]);
   const [studentSearch, setStudentSearch] = useState('');
   const [showStudentDropdown, setShowStudentDropdown] = useState(false);
@@ -551,6 +552,33 @@ function StudentFeesTab() {
         </div>
       </div>
 
+      {/* Section Filter */}
+      <div className="card mb-6">
+        <div className="flex items-center gap-4">
+          <label className="block text-sm font-medium text-gray-700">Filter by Section:</label>
+          <select 
+            value={selectedSectionId} 
+            onChange={(e) => {
+              setSelectedSectionId(e.target.value);
+              setPage(0); // Reset to first page
+            }}
+            className="input-field flex-1 max-w-xs"
+          >
+            <option value="">All Sections</option>
+            {data?.items.reduce((sections: any[], fee) => {
+              if (fee.sectionId && !sections.find(s => s.id === fee.sectionId)) {
+                sections.push({ id: fee.sectionId, name: fee.sectionName || 'Unknown' });
+              }
+              return sections;
+            }, []).map(section => (
+              <option key={section.id} value={section.id}>
+                {section.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
       {/* Table */}
       <div className="hidden lg:block card overflow-hidden">
         <div className="overflow-x-auto">
@@ -582,42 +610,57 @@ function StudentFeesTab() {
                   </td>
                 </tr>
               ) : (
-                data?.items.map((fee) => (
-                  <tr key={fee.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-6 py-4">
-                      <div className="text-sm font-medium text-gray-900">{fee.studentName}</div>
-                      <div className="text-xs font-mono text-blue-600">{fee.enrollmentNumber}</div>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-500">{fee.feeStructureName || structureMap.get(fee.feeStructureId) || 'N/A'}</td>
-                    <td className="px-6 py-4 text-sm text-gray-500">{new Date(fee.startDate).toLocaleDateString()}</td>
-                    <td className="px-6 py-4">
-                      <div className="text-sm font-semibold text-green-600">${fee.totalAmount.toFixed(2)}</div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="text-sm">
-                        <div className="font-medium text-gray-900">Paid: ${fee.paidAmount.toFixed(2)}</div>
-                        <div className="text-gray-500">Balance: ${fee.balanceAmount.toFixed(2)}</div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className={`badge ${fee.isActive ? 'badge-success' : 'badge-danger'}`}>
-                        {fee.isActive ? 'Active' : 'Terminated'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <button
-                        onClick={() => handleTerminate(fee.id)}
-                        disabled={!fee.isActive}
-                        className="text-orange-600 hover:text-orange-900 p-2 hover:bg-orange-50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                        title="Terminate"
+                (() => {
+                  // Filter items by selected section
+                  const filteredItems = selectedSectionId
+                    ? data?.items.filter(fee => fee.sectionId === selectedSectionId) || []
+                    : data?.items || [];
+                  
+                  return filteredItems.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} className="px-6 py-12 text-center text-gray-500">
+                        <p>No student fee assignments found for the selected section</p>
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredItems.map((fee) => (
+                      <tr key={fee.id} className="hover:bg-gray-50 transition-colors">
+                        <td className="px-6 py-4">
+                          <div className="text-sm font-medium text-gray-900">{fee.studentName}</div>
+                          <div className="text-xs font-mono text-blue-600">{fee.enrollmentNumber}</div>
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-500">{fee.feeStructureName || structureMap.get(fee.feeStructureId) || 'N/A'}</td>
+                        <td className="px-6 py-4 text-sm text-gray-500">{new Date(fee.startDate).toLocaleDateString()}</td>
+                        <td className="px-6 py-4">
+                          <div className="text-sm font-semibold text-green-600">${fee.totalAmount.toFixed(2)}</div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="text-sm">
+                            <div className="font-medium text-gray-900">Paid: ${fee.paidAmount.toFixed(2)}</div>
+                            <div className="text-gray-500">Balance: ${fee.balanceAmount.toFixed(2)}</div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className={`badge ${fee.isActive ? 'badge-success' : 'badge-danger'}`}>
+                            {fee.isActive ? 'Active' : 'Terminated'}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                          <button
+                            onClick={() => handleTerminate(fee.id)}
+                            disabled={!fee.isActive}
+                            className="text-orange-600 hover:text-orange-900 p-2 hover:bg-orange-50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            title="Terminate"
                       >
                         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                         </svg>
-                      </button>
-                    </td>
-                  </tr>
-                ))
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  );
+                })()
               )}
             </tbody>
           </table>
