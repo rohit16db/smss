@@ -7,6 +7,7 @@ import { MainLayout } from './components/layout/MainLayout';
 import { HomePage } from './pages/HomePage';
 import { TeachersPage } from './pages/TeachersPage';
 import { FeesPage } from './pages/FeesPage';
+import { FeeReportPage } from './pages/FeeReportPage';
 import { StudentsPage } from './pages/StudentsPage';
 import { AttendancePage } from './pages/AttendancePage';
 import { PayrollPage } from './pages/PayrollPage';
@@ -78,6 +79,14 @@ function App() {
                   element={
                     <ProtectedRoute allowedRoles={["Admin", "Accountant"]}>
                       <FeesPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="fee-report"
+                  element={
+                    <ProtectedRoute allowedRoles={["Admin", "Accountant"]}>
+                      <FeeReportPage />
                     </ProtectedRoute>
                   }
                 />

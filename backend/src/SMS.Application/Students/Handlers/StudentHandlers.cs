@@ -311,7 +311,12 @@ public class GetAllStudentsQueryHandler : IRequestHandler<GetAllStudentsQuery, P
 
     public async Task<PagedResult<StudentDto>> Handle(GetAllStudentsQuery request, CancellationToken cancellationToken)
     {
-        var query = _context.Students.AsQueryable();
+        var query = _context.Students
+            .Include(s => s.StudentSections
+                .Where(ss => ss.IsCurrent))
+                .ThenInclude(ss => ss.Section)
+                .ThenInclude(sec => sec.Class)
+            .AsQueryable();
 
         // Apply filters
         if (!string.IsNullOrWhiteSpace(request.SearchTerm))
@@ -353,25 +358,33 @@ public class GetAllStudentsQueryHandler : IRequestHandler<GetAllStudentsQuery, P
         };
     }
 
-    private static StudentDto MapToDto(Student student) => new()
+    private static StudentDto MapToDto(Student student)
     {
-        Id = student.Id,
-        FirstName = student.FirstName,
-        LastName = student.LastName,
-        Email = student.Email,
-        PhoneNumber = student.PhoneNumber,
-        DateOfBirth = student.DateOfBirth,
-        Address = student.Address,
-        City = student.City,
-        State = student.State,
-        PostalCode = student.PostalCode,
-        EnrollmentNumber = student.EnrollmentNumber,
-        EnrollmentDate = student.EnrollmentDate,
-        IsActive = student.IsActive,
-        GuardianName = student.GuardianName,
-        GuardianPhone = student.GuardianPhone,
-        GuardianEmail = student.GuardianEmail,
-        CreatedAt = student.CreatedAt,
-        UpdatedAt = student.UpdatedAt
-    };
+        var currentSection = student.StudentSections?.FirstOrDefault(ss => ss.IsCurrent);
+        
+        return new StudentDto
+        {
+            Id = student.Id,
+            FirstName = student.FirstName,
+            LastName = student.LastName,
+            Email = student.Email,
+            PhoneNumber = student.PhoneNumber,
+            DateOfBirth = student.DateOfBirth,
+            Address = student.Address,
+            City = student.City,
+            State = student.State,
+            PostalCode = student.PostalCode,
+            EnrollmentNumber = student.EnrollmentNumber,
+            EnrollmentDate = student.EnrollmentDate,
+            IsActive = student.IsActive,
+            GuardianName = student.GuardianName,
+            GuardianPhone = student.GuardianPhone,
+            GuardianEmail = student.GuardianEmail,
+            CreatedAt = student.CreatedAt,
+            UpdatedAt = student.UpdatedAt,
+            CurrentSectionId = currentSection?.SectionId,
+            CurrentSectionName = currentSection?.Section?.SectionName,
+            CurrentClassName = currentSection?.Section?.Class?.ClassName
+        };
+    }
 }

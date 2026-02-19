@@ -29,6 +29,7 @@ export function TeachersPage() {
     queryFn: () => teacherApi.getAll({
       pageNumber: page + 1,
       pageSize: rowsPerPage,
+      isActive: true, // Only show active teachers
     }),
   });
 

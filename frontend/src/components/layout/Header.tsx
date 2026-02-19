@@ -236,6 +236,14 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
                         💰 Fees
                       </button>
                     )}
+                    {canViewFees && (
+                      <button
+                        onClick={() => navigate('/fee-report')}
+                        className="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-colors flex items-center gap-2"
+                      >
+                        📊 Fee Report
+                      </button>
+                    )}
                     {canViewSalary && (
                       <button
                         onClick={() => navigate('/salary')}
@@ -468,6 +476,17 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
                           className="w-full px-4 py-2 rounded-lg text-white hover:bg-blue-700 transition-colors duration-200 text-left"
                         >
                           💰 Fees
+                        </button>
+                      )}
+                      {canViewFees && (
+                        <button
+                          onClick={() => {
+                            navigate('/fee-report');
+                            setMobileMenuOpen(false);
+                          }}
+                          className="w-full px-4 py-2 rounded-lg text-white hover:bg-blue-700 transition-colors duration-200 text-left"
+                        >
+                          📊 Fee Report
                         </button>
                       )}
                       {canViewSalary && (

@@ -57,6 +57,9 @@ export type Student = {
   enrollmentDate: string;
   enrollmentNumber: string;
   isActive: boolean;
+  currentSectionId?: string;
+  currentSectionName?: string;
+  currentClassName?: string;
 };
 
 export type CreateStudentDto = {
@@ -335,6 +338,38 @@ export type PaginatedFeePaymentList = {
   pageSize: number;
 };
 
+export type FeeReport = {
+  id: string;
+  studentId: string;
+  studentName: string;
+  enrollmentNumber: string;
+  sectionId?: string;
+  sectionName?: string;
+  feeStructureId: string;
+  feeStructureName: string;
+  totalAmount: number;
+  paidAmount: number;
+  balanceAmount: number;
+  status: 'Paid' | 'Partial' | 'Due' | 'Overdue';
+  lastPaymentDate?: string;
+  startDate: string;
+  dueDate?: string;
+};
+
+export type PaginatedFeeReportList = {
+  items: FeeReport[];
+  totalCount: number;
+  pageNumber: number;
+  pageSize: number;
+  totalDueAmount: number;
+  totalPaidAmount: number;
+  totalBalanceAmount: number;
+  paidCount: number;
+  partialCount: number;
+  dueCount: number;
+  overdueCount: number;
+};
+
 export const feeApi = {
   // Fee Structures
   getAllStructures: async (params?: { pageNumber?: number; pageSize?: number; searchTerm?: string; isActive?: boolean }) => {
@@ -402,6 +437,20 @@ export const feeApi = {
 
   recordPayment: async (data: CreateFeePaymentDto) => {
     const response = await api.post<FeePayment>('/fees/payments', data);
+    return response.data;
+  },
+
+  // Fee Report
+  getReport: async (params?: { 
+    pageNumber?: number; 
+    pageSize?: number; 
+    studentId?: string; 
+    sectionId?: string; 
+    status?: string;
+    startDate?: string;
+    endDate?: string;
+  }) => {
+    const response = await api.get<PaginatedFeeReportList>('/fees/report', { params });
     return response.data;
   },
 };

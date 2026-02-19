@@ -30,6 +30,7 @@ export function StudentsPage() {
     queryFn: () => studentApi.getAll({
       pageNumber: page + 1,
       pageSize: rowsPerPage,
+      isActive: true, // Only show active students
     }),
   });
 
@@ -251,6 +252,7 @@ export function StudentsPage() {
                     <tr>
                       <th className="px-6 py-4 text-left text-sm font-bold text-gray-900">Student</th>
                       <th className="px-6 py-4 text-left text-sm font-bold text-gray-900">Contact</th>
+                      <th className="px-6 py-4 text-left text-sm font-bold text-gray-900">Class & Section</th>
                       <th className="px-6 py-4 text-left text-sm font-bold text-gray-900">Enrollment Date</th>
                       <th className="px-6 py-4 text-left text-sm font-bold text-gray-900">Status</th>
                       <th className="px-6 py-4 text-right text-sm font-bold text-gray-900">Actions</th>
@@ -273,6 +275,17 @@ export function StudentsPage() {
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="text-sm font-medium text-gray-900">{student.email}</div>
                           <div className="text-xs text-gray-600">{student.phone || 'No phone'}</div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          {student.currentClassName && student.currentSectionName ? (
+                            <div className="flex items-center gap-2">
+                              <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-800">
+                                {student.currentClassName} - {student.currentSectionName}
+                              </span>
+                            </div>
+                          ) : (
+                            <span className="text-xs text-gray-500 italic">Not assigned</span>
+                          )}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-700">
                           {new Date(student.enrollmentDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}

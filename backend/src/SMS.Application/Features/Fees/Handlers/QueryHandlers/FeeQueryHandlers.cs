@@ -495,3 +495,174 @@ public class GetFeesBySectionQueryHandler : IRequestHandler<GetFeesBySectionQuer
         }).ToList();
     }
 }
+
+/// <summary>
+/// Handler for GetFeeReportQuery
+/// Generates a fee report with payment status and summary statistics
+/// </summary>
+public class GetFeeReportQueryHandler : IRequestHandler<GetFeeReportQuery, PaginatedFeeReportListDto>
+{
+    private readonly IApplicationDbContext _context;
+
+    public GetFeeReportQueryHandler(IApplicationDbContext context)
+    {
+        _context = context;
+    }
+
+    public async Task<PaginatedFeeReportListDto> Handle(GetFeeReportQuery request, CancellationToken cancellationToken)
+    {
+        var query = _context.StudentFees
+            .Where(sf => sf.IsActive == true);
+
+        // Apply filters
+        if (!string.IsNullOrWhiteSpace(request.StudentId))
+        {
+            if (Guid.TryParse(request.StudentId, out var studentId))
+            {
+                query = query.Where(sf => sf.StudentId == studentId);
+            }
+        }
+
+        // Filter by section
+        if (!string.IsNullOrWhiteSpace(request.SectionId) && Guid.TryParse(request.SectionId, out var sectionIdGuid))
+        {
+            var studentsInSection = await _context.StudentSections
+                .Where(ss => ss.SectionId == sectionIdGuid && ss.IsCurrent == true)
+                .Select(ss => ss.StudentId)
+                .ToListAsync(cancellationToken);
+
+            query = query.Where(sf => studentsInSection.Contains(sf.StudentId));
+        }
+
+        // Filter by date range
+        if (request.StartDate.HasValue)
+        {
+            var startDateOnly = DateOnly.FromDateTime(request.StartDate.Value);
+            query = query.Where(sf => sf.StartDate >= startDateOnly);
+        }
+
+        if (request.EndDate.HasValue)
+        {
+            var endDateOnly = DateOnly.FromDateTime(request.EndDate.Value);
+            query = query.Where(sf => sf.StartDate <= endDateOnly);
+        }
+
+        // Get all student fees with includes
+        var allStudentFees = await query
+            .Include(sf => sf.Student)
+            .Include(sf => sf.FeeStructure)
+            .Include(sf => sf.Payments)
+            .OrderBy(sf => sf.Student!.EnrollmentNumber)
+            .ToListAsync(cancellationToken);
+
+        // Get current sections for all students
+        var studentIds = allStudentFees.Select(sf => sf.StudentId).Distinct().ToList();
+        var studentSections = await _context.StudentSections
+            .Where(ss => studentIds.Contains(ss.StudentId) && ss.IsCurrent == true)
+            .Select(ss => new { ss.StudentId, ss.SectionId, ss.Section!.SectionName })
+            .ToListAsync(cancellationToken);
+
+        var sectionMap = studentSections.ToDictionary(x => x.StudentId, x => new { x.SectionId, x.SectionName });
+
+        // Calculate status and create report items
+        var reportItems = allStudentFees.Select(sf =>
+        {
+            var paidAmount = sf.Payments?.Sum(p => p.AmountPaid) ?? 0;
+            var balanceAmount = sf.TotalAmount - paidAmount;
+            var lastPaymentDate = sf.Payments?.Any() == true 
+                ? sf.Payments.Max(p => p.PaymentDate).ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc)
+                : (DateTime?)null;
+
+            // Calculate status
+            var status = CalculateStatus(sf.TotalAmount, paidAmount, balanceAmount, sf.StartDate);
+
+            var sectionInfo = sectionMap.ContainsKey(sf.StudentId) ? sectionMap[sf.StudentId] : null;
+
+            return new FeeReportDto
+            {
+                Id = sf.Id.ToString(),
+                StudentId = sf.StudentId.ToString(),
+                StudentName = sf.Student != null ? $"{sf.Student.FirstName} {sf.Student.LastName}" : "N/A",
+                EnrollmentNumber = sf.Student?.EnrollmentNumber ?? "N/A",
+                SectionId = sectionInfo?.SectionId.ToString(),
+                SectionName = sectionInfo?.SectionName,
+                FeeStructureId = sf.FeeStructureId.ToString(),
+                FeeStructureName = sf.FeeStructure?.Name ?? string.Empty,
+                TotalAmount = sf.TotalAmount,
+                PaidAmount = paidAmount,
+                BalanceAmount = balanceAmount,
+                Status = status,
+                LastPaymentDate = lastPaymentDate,
+                StartDate = sf.StartDate.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc),
+                DueDate = CalculateDueDate(sf.StartDate, sf.FeeStructure?.Frequency)
+            };
+        }).ToList();
+
+        // Filter by status if provided
+        if (!string.IsNullOrWhiteSpace(request.Status))
+        {
+            reportItems = reportItems.Where(r => r.Status.Equals(request.Status, StringComparison.OrdinalIgnoreCase)).ToList();
+        }
+
+        // Calculate summary statistics
+        var totalDueAmount = reportItems.Sum(r => r.TotalAmount);
+        var totalPaidAmount = reportItems.Sum(r => r.PaidAmount);
+        var totalBalanceAmount = reportItems.Sum(r => r.BalanceAmount);
+        var paidCount = reportItems.Count(r => r.Status == "Paid");
+        var partialCount = reportItems.Count(r => r.Status == "Partial");
+        var dueCount = reportItems.Count(r => r.Status == "Due");
+        var overdueCount = reportItems.Count(r => r.Status == "Overdue");
+
+        var totalCount = reportItems.Count;
+
+        // Apply pagination
+        var paginatedItems = reportItems
+            .Skip((request.PageNumber - 1) * request.PageSize)
+            .Take(request.PageSize)
+            .ToList();
+
+        return new PaginatedFeeReportListDto
+        {
+            Items = paginatedItems,
+            TotalCount = totalCount,
+            PageNumber = request.PageNumber,
+            PageSize = request.PageSize,
+            TotalDueAmount = totalDueAmount,
+            TotalPaidAmount = totalPaidAmount,
+            TotalBalanceAmount = totalBalanceAmount,
+            PaidCount = paidCount,
+            PartialCount = partialCount,
+            DueCount = dueCount,
+            OverdueCount = overdueCount
+        };
+    }
+
+    private static string CalculateStatus(decimal totalAmount, decimal paidAmount, decimal balanceAmount, DateOnly startDate)
+    {
+        if (balanceAmount <= 0)
+            return "Paid";
+
+        if (paidAmount > 0 && balanceAmount < totalAmount)
+            return "Partial";
+
+        // Check if overdue (e.g., more than 30 days from start date)
+        var dueDate = startDate.AddMonths(1);
+        if (DateOnly.FromDateTime(DateTime.UtcNow) > dueDate)
+            return "Overdue";
+
+        return "Due";
+    }
+
+    private static DateTime? CalculateDueDate(DateOnly startDate, string? frequency)
+    {
+        // Calculate due date based on frequency
+        return frequency?.ToLower() switch
+        {
+            "monthly" => startDate.AddMonths(1).ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc),
+            "quarterly" => startDate.AddMonths(3).ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc),
+            "half-yearly" => startDate.AddMonths(6).ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc),
+            "yearly" => startDate.AddYears(1).ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc),
+            _ => startDate.AddMonths(1).ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc) // Default to monthly
+        };
+    }
+}

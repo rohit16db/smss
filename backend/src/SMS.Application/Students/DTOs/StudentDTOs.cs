@@ -22,6 +22,11 @@ public class StudentDto
     public string? GuardianEmail { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
+    
+    // Current Section Information
+    public Guid? CurrentSectionId { get; set; }
+    public string? CurrentSectionName { get; set; }
+    public string? CurrentClassName { get; set; }
 }
 
 public class CreateStudentRequest

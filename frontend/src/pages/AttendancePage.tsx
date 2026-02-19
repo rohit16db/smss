@@ -53,28 +53,28 @@ export function AttendancePage() {
   // Student search query for filter
   const { data: studentsData } = useQuery({
     queryKey: ['students', searchTerm],
-    queryFn: () => studentApi.getAll({ searchTerm: searchTerm || undefined, pageSize: 50 }),
+    queryFn: () => studentApi.getAll({ searchTerm: searchTerm || undefined, pageSize: 50, isActive: true }),
     enabled: activeTab === 'student' && searchTerm.length >= 2,
   });
 
   // Student search query for dialog
   const { data: dialogStudentsData } = useQuery({
     queryKey: ['dialogStudents', dialogSearchTerm],
-    queryFn: () => studentApi.getAll({ searchTerm: dialogSearchTerm || undefined, pageSize: 50 }),
+    queryFn: () => studentApi.getAll({ searchTerm: dialogSearchTerm || undefined, pageSize: 50, isActive: true }),
     enabled: openDialog && activeTab === 'student' && dialogSearchTerm.length >= 2,
   });
 
   // Teacher search query for filter
   const { data: teachersData } = useQuery({
     queryKey: ['teachers', teacherSearchTerm],
-    queryFn: () => teacherApi.getAll({ searchTerm: teacherSearchTerm || undefined, pageSize: 50 }),
+    queryFn: () => teacherApi.getAll({ searchTerm: teacherSearchTerm || undefined, pageSize: 50, isActive: true }),
     enabled: activeTab === 'teacher' && teacherSearchTerm.length >= 2,
   });
 
   // Teacher search query for dialog
   const { data: dialogTeachersData } = useQuery({
     queryKey: ['dialogTeachers', dialogTeacherSearchTerm],
-    queryFn: () => teacherApi.getAll({ searchTerm: dialogTeacherSearchTerm || undefined, pageSize: 50 }),
+    queryFn: () => teacherApi.getAll({ searchTerm: dialogTeacherSearchTerm || undefined, pageSize: 50, isActive: true }),
     enabled: openDialog && activeTab === 'teacher' && dialogTeacherSearchTerm.length >= 2,
   });
 
