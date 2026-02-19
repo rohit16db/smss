@@ -195,6 +195,7 @@ public class GetStudentAttendanceSummaryQueryHandler : IRequestHandler<GetStuden
         {
             TotalPresent = attendances.Count(a => a.Status == AttendanceStatus.Present),
             TotalAbsent = attendances.Count(a => a.Status == AttendanceStatus.Absent),
+            TotalLate = attendances.Count(a => a.Status == AttendanceStatus.Late),
             TotalLeave = attendances.Count(a => a.Status == AttendanceStatus.Leave),
             TotalUnexcused = attendances.Count(a => a.Status == AttendanceStatus.Unexcused),
             TotalRecords = attendances.Count
@@ -387,6 +388,7 @@ public class GetTeacherAttendanceSummaryQueryHandler : IRequestHandler<GetTeache
         {
             TotalPresent = attendances.Count(a => a.Status == AttendanceStatus.Present),
             TotalAbsent = attendances.Count(a => a.Status == AttendanceStatus.Absent),
+            TotalLate = attendances.Count(a => a.Status == AttendanceStatus.Late),
             TotalLeave = attendances.Count(a => a.Status == AttendanceStatus.Leave),
             TotalUnexcused = attendances.Count(a => a.Status == AttendanceStatus.Unexcused),
             TotalRecords = attendances.Count

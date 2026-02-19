@@ -133,6 +133,7 @@ public class AttendanceStatisticsDto
 {
     public int TotalPresent { get; set; }
     public int TotalAbsent { get; set; }
+    public int TotalLate { get; set; }
     public int TotalLeave { get; set; }
     public int TotalUnexcused { get; set; }
     public int TotalRecords { get; set; }

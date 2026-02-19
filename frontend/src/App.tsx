@@ -13,6 +13,7 @@ import { PayrollPage } from './pages/PayrollPage';
 import { SalaryPage } from './pages/SalaryPage';
 import { ClassManagementPage } from './pages/ClassManagementPage';
 import { SubjectManagementPage } from './pages/SubjectManagementPage';
+import { HolidaysPage } from './pages/HolidaysPage';
 import { SalaryStructurePage } from './pages/SalaryStructurePage';
 import { TeacherSalaryAssignmentPage } from './pages/TeacherSalaryAssignmentPage';
 import { BulkSalaryProcessingPage } from './pages/BulkSalaryProcessingPage';
@@ -157,6 +158,14 @@ function App() {
                   element={
                     <ProtectedRoute allowedRoles={["Admin", "Clerk"]}>
                       <SubjectManagementPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="holidays"
+                  element={
+                    <ProtectedRoute allowedRoles={["Admin"]}>
+                      <HolidaysPage />
                     </ProtectedRoute>
                   }
                 />

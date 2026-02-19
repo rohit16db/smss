@@ -200,6 +200,14 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
                     >
                       📖 Subjects
                     </button>
+                    {isAdmin && (
+                      <button
+                        onClick={() => navigate('/holidays')}
+                        className="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-colors flex items-center gap-2"
+                      >
+                        🏖️ Holidays
+                      </button>
+                    )}
                   </div>
                 )}
               </div>
@@ -416,6 +424,17 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
                       >
                         📖 Subjects
                       </button>
+                      {isAdmin && (
+                        <button
+                          onClick={() => {
+                            navigate('/holidays');
+                            setMobileMenuOpen(false);
+                          }}
+                          className="w-full px-4 py-2 rounded-lg text-white hover:bg-blue-700 transition-colors duration-200 text-left"
+                        >
+                          🏖️ Holidays
+                        </button>
+                      )}
                     </div>
                   )}
                 </div>
