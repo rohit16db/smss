@@ -461,7 +461,15 @@ export type PaginatedTeacherAttendanceList = {
 
 export const attendanceApi = {
   // Student Attendance
-  getAllStudentAttendance: async (params?: { pageNumber?: number; pageSize?: number; studentId?: string; attendanceDate?: string }) => {
+  getAllStudentAttendance: async (params?: {
+    pageNumber?: number;
+    pageSize?: number;
+    studentId?: string;
+    attendanceDate?: string;
+    startDate?: string;
+    endDate?: string;
+    status?: string;
+  }) => {
     const response = await api.get<PaginatedStudentAttendanceList>('/attendance/students/history', { params });
     return response.data;
   },
@@ -486,7 +494,15 @@ export const attendanceApi = {
   },
 
   // Teacher Attendance
-  getAllTeacherAttendance: async (params?: { pageNumber?: number; pageSize?: number; teacherId?: string; attendanceDate?: string }) => {
+  getAllTeacherAttendance: async (params?: {
+    pageNumber?: number;
+    pageSize?: number;
+    teacherId?: string;
+    attendanceDate?: string;
+    startDate?: string;
+    endDate?: string;
+    status?: string;
+  }) => {
     const response = await api.get<PaginatedTeacherAttendanceList>('/attendance/teachers/history', { params });
     return response.data;
   },
@@ -717,4 +733,79 @@ export const subjectApi = {
   },
 };
 
+// Holiday Types
+export type Holiday = {
+  id: string;
+  name: string;
+  holidayDate: string; // Date string in ISO format
+  description?: string;
+  type?: string;
+  academicYear: string; // Format: YYYY-YYYY
+  createdAt: string;
+  updatedAt: string;
+  createdBy?: string;
+  updatedBy?: string;
+};
 
+export type CreateHolidayDto = {
+  name: string;
+  holidayDate: string; // Date string in ISO format
+  description?: string;
+  type?: string;
+  academicYear: string; // Format: YYYY-YYYY
+};
+
+export type UpdateHolidayDto = {
+  name: string;
+  holidayDate: string;
+  description?: string;
+  type?: string;
+  academicYear: string;
+};
+
+export type PaginatedHolidayListDto = {
+  items: Holiday[];
+  totalCount: number;
+  pageNumber: number;
+  pageSize: number;
+  totalPages: number;
+};
+
+// Holiday API
+export const holidayApi = {
+  getAll: async (params?: {
+    pageNumber?: number;
+    pageSize?: number;
+    academicYear?: string;
+    startDate?: string;
+    endDate?: string;
+    type?: string;
+  }) => {
+    const response = await api.get<PaginatedHolidayListDto>('/holidays', { params });
+    return response.data;
+  },
+
+  getById: async (id: string) => {
+    const response = await api.get<Holiday>(`/holidays/${id}`);
+    return response.data;
+  },
+
+  getHolidaysByMonth: async (year: number, month: number) => {
+    const response = await api.get<Holiday[]>(`/holidays/month/${year}/${month}`);
+    return response.data;
+  },
+
+  create: async (data: CreateHolidayDto) => {
+    const response = await api.post<Holiday>('/holidays', data);
+    return response.data;
+  },
+
+  update: async (id: string, data: UpdateHolidayDto) => {
+    const response = await api.put<Holiday>(`/holidays/${id}`, data);
+    return response.data;
+  },
+
+  delete: async (id: string) => {
+    await api.delete(`/holidays/${id}`);
+  },
+};

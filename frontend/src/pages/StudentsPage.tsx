@@ -3,13 +3,11 @@ import toast from 'react-hot-toast';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { studentApi, classApi, type CreateStudentDto, type UpdateStudentDto, type Student } from '../services/api';
 import { LoadingSkeleton } from '../components/common/LoadingSkeleton';
-import { EmptyState, NoDataIcon } from '../components/common/EmptyState';
 
 export function StudentsPage() {
   const queryClient = useQueryClient();
   const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [rowsPerPage] = useState(10);
   const [openDialog, setOpenDialog] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [sectionDialogOpen, setSectionDialogOpen] = useState(false);
@@ -28,11 +26,10 @@ export function StudentsPage() {
   });
 
   const { data: studentsData, isLoading } = useQuery({
-    queryKey: ['students', page + 1, rowsPerPage, searchTerm],
+    queryKey: ['students', page + 1, rowsPerPage],
     queryFn: () => studentApi.getAll({
       pageNumber: page + 1,
       pageSize: rowsPerPage,
-      searchTerm: searchTerm || undefined,
     }),
   });
 
@@ -213,11 +210,6 @@ export function StudentsPage() {
     setPage(newPage);
   };
 
-  const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    setRowsPerPage(parseInt(event.target.value, 10));
-    setPage(0);
-  };
-
   const totalPages = studentsData ? Math.ceil(studentsData.totalCount / rowsPerPage) : 0;
   const getInitials = (firstName: string, lastName: string) => {
     return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
@@ -229,233 +221,154 @@ export function StudentsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4 sm:p-6 lg:p-8">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-2">👨‍🎓 Students Management</h1>
-          <p className="text-gray-600 mt-1">Manage student information, enrollments, and details</p>
-        </div>
-
-        {/* Action Bar */}
-        <div className="bg-white rounded-lg shadow-md p-4 mb-6">
-          <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
-            <div className="flex-1 w-full sm:w-auto">
-              <input
-                type="text"
-                placeholder="Search students..."
-                value={searchTerm}
-                onChange={(e) => {
-                  setSearchTerm(e.target.value);
-                  setPage(0);
-                }}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="space-y-6">
+          {/* Header */}
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div>
+              <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent">
+                Student Management
+              </h1>
+              <p className="text-gray-600 mt-2">Create and manage all student information</p>
             </div>
             <button
               onClick={() => handleOpenDialog()}
-              className="w-full sm:w-auto px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition"
+              className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:shadow-lg hover:scale-105 transition-all duration-300 font-medium whitespace-nowrap"
             >
-              + Add Student
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              Add Student
             </button>
           </div>
-        </div>
-
-        {/* Desktop Table View */}
-        <div className="hidden lg:block bg-white rounded-lg shadow-md overflow-hidden">
-          {isLoading ? (
-            <LoadingSkeleton rows={rowsPerPage} type="table" />
-          ) : studentsData?.items.length === 0 ? (
-            <EmptyState
-              icon={<NoDataIcon />}
-              title="No students found"
-              description={searchTerm ? "Try adjusting your search criteria" : "Get started by adding your first student to the system"}
-              action={!searchTerm ? {
-                label: "Add Student",
-                onClick: () => handleOpenDialog()
-              } : undefined}
-            />
-          ) : (
-            <>
-              <table className="w-full">
-                <thead className="bg-gray-50 border-b border-gray-200">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Student ID</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Phone</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Section</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
-                  {studentsData?.items.map((student, index) => (
-                    <tr key={student.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 text-sm">
-                        <span className="font-mono font-semibold text-blue-600">{student.enrollmentNumber}</span>
-                      </td>
-                      <td className="px-6 py-4 text-sm font-medium text-gray-900">
-                        <div className="flex items-center gap-3">
-                          <div className={`w-10 h-10 ${getAvatarColor(index)} rounded-full flex items-center justify-center text-white font-semibold`}>
-                            {getInitials(student.firstName, student.lastName)}
-                          </div>
-                          {student.firstName} {student.lastName}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-600">{student.email}</td>
-                      <td className="px-6 py-4 text-sm text-gray-600">{student.phone || '-'}</td>
-                      <td className="px-6 py-4 text-sm">
-                        <button
-                          onClick={() => handleOpenSectionDialog(student)}
-                          className="px-3 py-1 bg-purple-100 hover:bg-purple-200 text-purple-700 rounded transition text-xs font-medium"
-                        >
-                          📚 Assign
-                        </button>
-                      </td>
-                      <td className="px-6 py-4 text-sm">
-                        <button
-                          onClick={() => handleToggleActive(student)}
-                          className={`px-3 py-1 rounded-full text-xs font-semibold ${student.isActive
-                            ? 'bg-green-100 text-green-800'
-                            : 'bg-gray-100 text-gray-800'
-                            }`}
-                        >
-                          {student.isActive ? '✓ Active' : '○ Inactive'}
-                        </button>
-                      </td>
-                      <td className="px-6 py-4 text-sm">
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => handleOpenDialog(student)}
-                            className="px-3 py-1 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded transition text-xs font-medium"
-                          >
-                            Edit
-                          </button>
-                          <button
-                            onClick={() => handleDelete(student.id)}
-                            className="px-3 py-1 bg-red-100 hover:bg-red-200 text-red-700 rounded transition text-xs font-medium"
-                          >
-                            Delete
-                          </button>
-                        </div>
-                      </td>
+          {/* Table */}
+          {!isLoading && studentsData?.items && studentsData.items.length > 0 ? (
+            <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden hover:shadow-xl transition-shadow duration-300">
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b-2 border-blue-100">
+                    <tr>
+                      <th className="px-6 py-4 text-left text-sm font-bold text-gray-900">Student</th>
+                      <th className="px-6 py-4 text-left text-sm font-bold text-gray-900">Contact</th>
+                      <th className="px-6 py-4 text-left text-sm font-bold text-gray-900">Enrollment Date</th>
+                      <th className="px-6 py-4 text-left text-sm font-bold text-gray-900">Status</th>
+                      <th className="px-6 py-4 text-right text-sm font-bold text-gray-900">Actions</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-              {/* Pagination */}
-              <div className="bg-gray-50 border-t border-gray-200 px-6 py-4 flex items-center justify-between">
-                <div className="text-sm text-gray-600">
-                  Page {page + 1} of {totalPages} (Total: {studentsData?.totalCount} students)
-                </div>
-                <div className="flex gap-2 items-center">
-                  <button
-                    onClick={() => handleChangePage(page - 1)}
-                    disabled={page === 0}
-                    className="px-4 py-2 border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    Previous
-                  </button>
-                  <select
-                    value={rowsPerPage}
-                    onChange={handleChangeRowsPerPage}
-                    className="px-3 py-2 border border-gray-300 rounded"
-                  >
-                    <option value={5}>5</option>
-                    <option value={10}>10</option>
-                    <option value={25}>25</option>
-                    <option value={50}>50</option>
-                  </select>
-                  <button
-                    onClick={() => handleChangePage(page + 1)}
-                    disabled={page >= totalPages - 1}
-                    className="px-4 py-2 border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    Next
-                  </button>
-                </div>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {studentsData.items.map((student, index) => (
+                      <tr key={student.id} className="hover:bg-blue-50 transition-colors duration-200">
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center gap-3">
+                            <div className={`flex-shrink-0 h-10 w-10 ${getAvatarColor(index)} rounded-full flex items-center justify-center text-white font-bold text-sm shadow-md`}>
+                              {getInitials(student.firstName, student.lastName)}
+                            </div>
+                            <div>
+                              <div className="text-sm font-bold text-gray-900">{student.firstName} {student.lastName}</div>
+                              <div className="text-xs text-gray-600">{student.enrollmentNumber}</div>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm font-medium text-gray-900">{student.email}</div>
+                          <div className="text-xs text-gray-600">{student.phone || 'No phone'}</div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-700">
+                          {new Date(student.enrollmentDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <button
+                            onClick={() => handleToggleActive(student)}
+                            className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${
+                              student.isActive
+                                ? 'bg-green-100 text-green-700 hover:bg-green-200'
+                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                            }`}
+                          >
+                            {student.isActive ? '✓ Active' : '○ Inactive'}
+                          </button>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-right">
+                          <div className="flex items-center justify-end gap-1">
+                            <button
+                              onClick={() => handleOpenSectionDialog(student)}
+                              className="p-2 text-blue-600 hover:bg-blue-100 rounded-lg transition-all duration-200"
+                              title="Assign section"
+                            >
+                              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                              </svg>
+                            </button>
+                            <button
+                              onClick={() => handleOpenDialog(student)}
+                              className="p-2 text-blue-600 hover:bg-blue-100 rounded-lg transition-all duration-200"
+                              title="Edit"
+                            >
+                              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                              </svg>
+                            </button>
+                            <button
+                              onClick={() => handleDelete(student.id)}
+                              className="p-2 text-red-600 hover:bg-red-100 rounded-lg transition-all duration-200"
+                              title="Delete"
+                            >
+                              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                              </svg>
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
-            </>
-          )}
-        </div>
 
-        {/* Mobile Card View */}
-        <div className="lg:hidden space-y-4">
-          {isLoading ? (
-            <div className="p-8 text-center text-gray-500">Loading students...</div>
-          ) : studentsData?.items.length === 0 ? (
-            <div className="p-8 text-center text-gray-500">No students found</div>
-          ) : (
-            <>
-              {studentsData?.items.map((student, index) => (
-                <div key={student.id} className="bg-white rounded-lg shadow-md p-4">
-                  <div className="flex items-start gap-3 mb-3">
-                    <div className={`w-12 h-12 ${getAvatarColor(index)} rounded-full flex items-center justify-center text-white font-semibold flex-shrink-0`}>
-                      {getInitials(student.firstName, student.lastName)}
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="font-mono text-xs font-semibold text-blue-600 bg-blue-50 px-2 py-1 rounded">{student.enrollmentNumber}</span>
-                      </div>
-                      <h3 className="font-semibold text-gray-900">{student.firstName} {student.lastName}</h3>
-                      <p className="text-sm text-gray-600">{student.email}</p>
-                    </div>
-                    <button
-                      onClick={() => handleToggleActive(student)}
-                      className={`px-2 py-1 rounded text-xs font-semibold ${student.isActive
-                        ? 'bg-green-100 text-green-800'
-                        : 'bg-gray-100 text-gray-800'
-                        }`}
-                    >
-                      {student.isActive ? '✓' : '○'}
-                    </button>
+              {studentsData && studentsData.totalCount > 0 && (
+                <div className="bg-gray-50 px-6 py-4 border-t border-gray-200 flex items-center justify-between">
+                  <div className="text-sm text-gray-700">
+                    Showing <span className="font-medium">{page * rowsPerPage + 1}</span> to{' '}
+                    <span className="font-medium">{Math.min((page + 1) * rowsPerPage, studentsData.totalCount)}</span> of{' '}
+                    <span className="font-medium">{studentsData.totalCount}</span> students
                   </div>
-                  <div className="text-sm text-gray-600 space-y-1 mb-3">
-                    {student.phone && <p>Phone: {student.phone}</p>}
-                    <p>DOB: {new Date(student.dateOfBirth).toLocaleDateString()}</p>
-                    {student.parentName && <p>Parent: {student.parentName}</p>}
-                  </div>
-                  <div className="flex gap-2">
+                  <div className="flex items-center gap-2">
                     <button
-                      onClick={() => handleOpenSectionDialog(student)}
-                      className="flex-1 px-3 py-2 bg-purple-100 hover:bg-purple-200 text-purple-700 rounded transition text-sm font-medium"
+                      onClick={() => handleChangePage(page - 1)}
+                      disabled={page === 0}
+                      className="px-3 py-1 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                     >
-                      📚 Section
+                      Previous
                     </button>
+                    <span className="text-sm text-gray-700">Page {page + 1} of {totalPages}</span>
                     <button
-                      onClick={() => handleOpenDialog(student)}
-                      className="flex-1 px-3 py-2 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded transition text-sm font-medium"
+                      onClick={() => handleChangePage(page + 1)}
+                      disabled={page >= totalPages - 1}
+                      className="px-3 py-1 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                     >
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => handleDelete(student.id)}
-                      className="flex-1 px-3 py-2 bg-red-100 hover:bg-red-200 text-red-700 rounded transition text-sm font-medium"
-                    >
-                      Delete
+                      Next
                     </button>
                   </div>
                 </div>
-              ))}
-              {/* Mobile Pagination */}
-              <div className="flex gap-2 justify-between mt-4">
-                <button
-                  onClick={() => handleChangePage(page - 1)}
-                  disabled={page === 0}
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
-                >
-                  Previous
-                </button>
-                <button
-                  onClick={() => handleChangePage(page + 1)}
-                  disabled={page >= totalPages - 1}
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
-                >
-                  Next
-                </button>
+              )}
+            </div>
+          ) : isLoading ? (
+            <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+              <LoadingSkeleton rows={rowsPerPage} type="table" />
+            </div>
+          ) : (
+            <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+              <div className="flex flex-col items-center justify-center py-12">
+                <div className="w-16 h-16 bg-gradient-to-br from-blue-100 to-blue-50 rounded-full flex items-center justify-center mb-4">
+                  <svg className="w-8 h-8 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+                  </svg>
+                </div>
+                <h3 className="text-gray-900 font-medium">No students yet</h3>
+                <p className="text-gray-600 mt-1">Get started by adding a student</p>
               </div>
-            </>
+            </div>
           )}
         </div>
       </div>

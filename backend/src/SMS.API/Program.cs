@@ -88,7 +88,25 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
-builder.Services.AddAuthorization();
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("AdminOnly", policy =>
+        policy.RequireRole("Admin"));
+    options.AddPolicy("AcademicAccess", policy =>
+        policy.RequireRole("Admin", "Clerk"));
+    options.AddPolicy("FeesAccess", policy =>
+        policy.RequireRole("Admin", "Accountant"));
+    options.AddPolicy("SalaryAccess", policy =>
+        policy.RequireRole("Admin", "Accountant", "Teacher"));
+    options.AddPolicy("PayrollAccess", policy =>
+        policy.RequireRole("Admin", "Accountant"));
+    options.AddPolicy("SalaryManageAccess", policy =>
+        policy.RequireRole("Admin", "Accountant"));
+    options.AddPolicy("AttendanceAccess", policy =>
+        policy.RequireRole("Admin", "Clerk", "Teacher"));
+    options.AddPolicy("DashboardAccess", policy =>
+        policy.RequireRole("Admin", "Accountant", "Clerk"));
+});
 
 // Configure CORS
 var corsOrigins = builder.Configuration.GetSection("CorsOrigins").Get<string[]>() ?? new[] { "http://localhost:3000", "http://localhost:5173" };
@@ -181,7 +199,10 @@ app.MapHealthChecks("/health");
 app.MapHealthChecks("/health/ready");
 app.MapHealthChecks("/health/live");
 
+// Run database migrations for all environments
 // Seed database with initial data (development only)
+await app.MigrateDatabaseAsync();
+
 if (app.Environment.IsDevelopment())
 {
     await app.SeedDatabaseAsync();

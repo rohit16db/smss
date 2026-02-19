@@ -10,7 +10,7 @@ namespace SMS.API.Controllers;
 /// Teacher Payroll Management API
 /// Handles payroll reports, bonus eligibility, and attendance summaries
 /// </summary>
-[Authorize]
+[Authorize(Policy = "PayrollAccess")]
 [ApiController]
 [Route("api/v1/[controller]")]
 public class PayrollController : ControllerBase

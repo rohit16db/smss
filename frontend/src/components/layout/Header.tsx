@@ -1,9 +1,33 @@
 import { useNavigate } from 'react-router-dom';
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
+import { authService } from '../../services/authService';
 
 interface HeaderProps {
   onMenuClick?: () => void;
 }
+
+interface StoredUser {
+  username?: string;
+  email?: string;
+  firstName?: string;
+  lastName?: string;
+  role?: string | number;
+}
+
+const roleMap: Record<number, string> = {
+  1: 'Admin',
+  2: 'Accountant',
+  3: 'Clerk',
+  4: 'Teacher',
+};
+
+const normalizeRole = (role?: string | number) => {
+  if (typeof role === 'number') {
+    return roleMap[role] || '';
+  }
+
+  return role || '';
+};
 
 export const Header = ({ onMenuClick }: HeaderProps) => {
   const navigate = useNavigate();
@@ -12,9 +36,51 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
   const [financeMenuOpen, setFinanceMenuOpen] = useState(false);
   const [mobileAcademicOpen, setMobileAcademicOpen] = useState(false);
   const [mobileFinanceOpen, setMobileFinanceOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [currentUser, setCurrentUser] = useState<StoredUser | null>(null);
   
   const academicTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const financeTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const userMenuTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+  useEffect(() => {
+    const readUser = () => {
+      const raw = localStorage.getItem('user');
+      if (!raw) {
+        setCurrentUser(null);
+        return;
+      }
+
+      try {
+        setCurrentUser(JSON.parse(raw) as StoredUser);
+      } catch (error) {
+        console.error('Failed to parse stored user:', error);
+        setCurrentUser(null);
+      }
+    };
+
+    readUser();
+    window.addEventListener('storage', readUser);
+    return () => window.removeEventListener('storage', readUser);
+  }, []);
+
+  const displayName =
+    currentUser?.firstName || currentUser?.lastName
+      ? `${currentUser.firstName || ''} ${currentUser.lastName || ''}`.trim()
+      : currentUser?.username || currentUser?.email || 'User';
+  const roleName = normalizeRole(currentUser?.role);
+  const role = roleName.toLowerCase();
+  const isAdmin = role === 'admin' || role === '';
+  const isAccountant = role === 'accountant';
+  const isClerk = role === 'clerk';
+  const isTeacher = role === 'teacher';
+  const canViewAcademic = isAdmin || isClerk;
+  const canViewFinance = isAdmin || isAccountant || isTeacher;
+  const canViewFees = isAdmin || isAccountant;
+  const canViewSalary = isAdmin || isAccountant || isTeacher;
+  const canViewPayroll = isAdmin || isAccountant;
+  const canManageSalary = isAdmin || isAccountant;
+  const canViewAttendance = isAdmin || isClerk || isTeacher;
 
   const handleAcademicMouseLeave = () => {
     academicTimeoutRef.current = setTimeout(() => {
@@ -36,6 +102,31 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
   const handleFinanceMouseEnter = () => {
     if (financeTimeoutRef.current) clearTimeout(financeTimeoutRef.current);
     setFinanceMenuOpen(true);
+  };
+
+  const handleUserMenuMouseLeave = () => {
+    userMenuTimeoutRef.current = setTimeout(() => {
+      setUserMenuOpen(false);
+    }, 150);
+  };
+
+  const handleUserMenuMouseEnter = () => {
+    if (userMenuTimeoutRef.current) clearTimeout(userMenuTimeoutRef.current);
+    setUserMenuOpen(true);
+  };
+
+  const handleLogout = async () => {
+    try {
+      await authService.logout();
+      navigate('/login');
+    } catch (error) {
+      console.error('Logout error:', error);
+      // Clear local storage even if API call fails
+      localStorage.removeItem('authToken');
+      localStorage.removeItem('refreshToken');
+      localStorage.removeItem('user');
+      navigate('/login');
+    }
   };
   
   return (
@@ -71,125 +162,192 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
           {/* Desktop Navigation */}
           <div className="hidden lg:flex items-center space-x-1">
             {/* Academic Dropdown */}
-            <div
-              className="relative"
-              onMouseEnter={handleAcademicMouseEnter}
-              onMouseLeave={handleAcademicMouseLeave}
-            >
-              <button className="px-4 py-2 rounded-lg text-white hover:bg-blue-700 transition-colors duration-200 font-medium flex items-center gap-1">
-                🎓 Academic
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </button>
-              {academicMenuOpen && (
-                <div className="absolute top-full left-0 mt-1 w-48 bg-white rounded-lg shadow-xl border border-gray-200 py-2 animate-fadeIn">
-                  <button
-                    onClick={() => navigate('/students')}
-                    className="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-colors flex items-center gap-2"
-                  >
-                    👨‍🎓 Students
-                  </button>
-                  <button
-                    onClick={() => navigate('/teachers')}
-                    className="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-colors flex items-center gap-2"
-                  >
-                    👨‍🏫 Teachers
-                  </button>
-                  <button
-                    onClick={() => navigate('/classes')}
-                    className="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-colors flex items-center gap-2"
-                  >
-                    📚 Classes
-                  </button>
-                  <button
-                    onClick={() => navigate('/subjects')}
-                    className="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-colors flex items-center gap-2"
-                  >
-                    📖 Subjects
-                  </button>
-                </div>
-              )}
-            </div>
+            {canViewAcademic && (
+              <div
+                className="relative"
+                onMouseEnter={handleAcademicMouseEnter}
+                onMouseLeave={handleAcademicMouseLeave}
+              >
+                <button className="px-4 py-2 rounded-lg text-white hover:bg-blue-700 transition-colors duration-200 font-medium flex items-center gap-1">
+                  🎓 Academic
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                {academicMenuOpen && (
+                  <div className="absolute top-full left-0 mt-1 w-48 bg-white rounded-lg shadow-xl border border-gray-200 py-2 animate-fadeIn">
+                    <button
+                      onClick={() => navigate('/students')}
+                      className="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-colors flex items-center gap-2"
+                    >
+                      👨‍🎓 Students
+                    </button>
+                    <button
+                      onClick={() => navigate('/teachers')}
+                      className="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-colors flex items-center gap-2"
+                    >
+                      👨‍🏫 Teachers
+                    </button>
+                    <button
+                      onClick={() => navigate('/classes')}
+                      className="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-colors flex items-center gap-2"
+                    >
+                      📚 Classes
+                    </button>
+                    <button
+                      onClick={() => navigate('/subjects')}
+                      className="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-colors flex items-center gap-2"
+                    >
+                      📖 Subjects
+                    </button>
+                    {isAdmin && (
+                      <button
+                        onClick={() => navigate('/holidays')}
+                        className="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-colors flex items-center gap-2"
+                      >
+                        🏖️ Holidays
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Finance Dropdown */}
-            <div
-              className="relative"
-              onMouseEnter={handleFinanceMouseEnter}
-              onMouseLeave={handleFinanceMouseLeave}
-            >
-              <button className="px-4 py-2 rounded-lg text-white hover:bg-blue-700 transition-colors duration-200 font-medium flex items-center gap-1">
-                💰 Finance
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </button>
-              {financeMenuOpen && (
-                <div className="absolute top-full left-0 mt-1 w-56 bg-white rounded-lg shadow-xl border border-gray-200 py-2 animate-fadeIn">
-                  <button
-                    onClick={() => navigate('/fees')}
-                    className="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-colors flex items-center gap-2"
-                  >
-                    💰 Fees
-                  </button>
-                  <button
-                    onClick={() => navigate('/salary')}
-                    className="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-colors flex items-center gap-2"
-                  >
-                    🧾 Salary
-                  </button>
-                  <button
-                    onClick={() => navigate('/payroll')}
-                    className="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-colors flex items-center gap-2"
-                  >
-                    💼 Payroll
-                  </button>
-                  <hr className="my-1 border-gray-200" />
-                  <button
-                    onClick={() => navigate('/salary-structures')}
-                    className="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-colors flex items-center gap-2"
-                  >
-                    📊 Salary Structures
-                  </button>
-                  <button
-                    onClick={() => navigate('/teacher-salary-assignment')}
-                    className="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-colors flex items-center gap-2"
-                  >
-                    👥 Teacher Assignments
-                  </button>
-                  <button
-                    onClick={() => navigate('/bulk-salary-processing')}
-                    className="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-colors flex items-center gap-2"
-                  >
-                    🔄 Bulk Processing
-                  </button>
-                  <hr className="my-1 border-gray-200" />
-                  <button
-                    onClick={() => navigate('/salary-payments')}
-                    className="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-colors flex items-center gap-2"
-                  >
-                    💰 Payment Management
-                  </button>
-                </div>
-              )}
-            </div>
+            {canViewFinance && (
+              <div
+                className="relative"
+                onMouseEnter={handleFinanceMouseEnter}
+                onMouseLeave={handleFinanceMouseLeave}
+              >
+                <button className="px-4 py-2 rounded-lg text-white hover:bg-blue-700 transition-colors duration-200 font-medium flex items-center gap-1">
+                  💰 Finance
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                {financeMenuOpen && (
+                  <div className="absolute top-full left-0 mt-1 w-56 bg-white rounded-lg shadow-xl border border-gray-200 py-2 animate-fadeIn">
+                    {canViewFees && (
+                      <button
+                        onClick={() => navigate('/fees')}
+                        className="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-colors flex items-center gap-2"
+                      >
+                        💰 Fees
+                      </button>
+                    )}
+                    {canViewSalary && (
+                      <button
+                        onClick={() => navigate('/salary')}
+                        className="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-colors flex items-center gap-2"
+                      >
+                        🧾 Salary
+                      </button>
+                    )}
+                    {canViewPayroll && (
+                      <button
+                        onClick={() => navigate('/payroll')}
+                        className="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-colors flex items-center gap-2"
+                      >
+                        💼 Payroll
+                      </button>
+                    )}
+                    {canManageSalary && (canViewFees || canViewSalary || canViewPayroll) && (
+                      <hr className="my-1 border-gray-200" />
+                    )}
+                    {canManageSalary && (
+                      <>
+                        <button
+                          onClick={() => navigate('/salary-structures')}
+                          className="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-colors flex items-center gap-2"
+                        >
+                          📊 Salary Structures
+                        </button>
+                        <button
+                          onClick={() => navigate('/teacher-salary-assignment')}
+                          className="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-colors flex items-center gap-2"
+                        >
+                          👥 Teacher Assignments
+                        </button>
+                        <button
+                          onClick={() => navigate('/bulk-salary-processing')}
+                          className="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-colors flex items-center gap-2"
+                        >
+                          🔄 Bulk Processing
+                        </button>
+                        <hr className="my-1 border-gray-200" />
+                        <button
+                          onClick={() => navigate('/salary-payments')}
+                          className="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-colors flex items-center gap-2"
+                        >
+                          💰 Payment Management
+                        </button>
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Attendance Direct Link */}
-            <button
-              onClick={() => navigate('/attendance')}
-              className="px-4 py-2 rounded-lg text-white hover:bg-blue-700 transition-colors duration-200 font-medium"
-            >
-              📊 Attendance
-            </button>
+            {canViewAttendance && (
+              <button
+                onClick={() => navigate('/attendance')}
+                className="px-4 py-2 rounded-lg text-white hover:bg-blue-700 transition-colors duration-200 font-medium"
+              >
+                📊 Attendance
+              </button>
+            )}
           </div>
 
-          {/* User Menu */}
-          <div className="flex items-center">
-            <button className="p-2 rounded-full text-white hover:bg-blue-700 transition-colors">
+          {/* User Profile Dropdown */}
+          <div 
+            className="hidden lg:block relative"
+            onMouseEnter={handleUserMenuMouseEnter}
+            onMouseLeave={handleUserMenuMouseLeave}
+          >
+            <button className="px-3 py-2 rounded-full text-white hover:bg-blue-700 transition-colors flex items-center gap-2">
               <svg className="h-8 w-8" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
               </svg>
+              <span className="hidden md:block text-sm font-semibold text-white">
+                {displayName}
+              </span>
             </button>
+            {userMenuOpen && (
+              <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-xl py-2 z-50">
+                <div className="px-4 py-2">
+                  <div className="text-sm font-semibold text-gray-900">
+                    {displayName}
+                  </div>
+                  {currentUser?.email && (
+                    <div className="text-xs text-gray-500 truncate">
+                      {currentUser.email}
+                    </div>
+                  )}
+                </div>
+                <hr className="my-1 border-gray-200" />
+                <button
+                  onClick={() => {
+                    navigate('/change-password');
+                    setUserMenuOpen(false);
+                  }}
+                  className="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-colors flex items-center gap-2"
+                >
+                  🔒 Change Password
+                </button>
+                <hr className="my-1 border-gray-200" />
+                <button
+                  onClick={() => {
+                    setUserMenuOpen(false);
+                    handleLogout();
+                  }}
+                  className="w-full text-left px-4 py-2 hover:bg-red-50 text-gray-700 hover:text-red-600 transition-colors flex items-center gap-2"
+                >
+                  🚪 Logout
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Mobile menu button */}
@@ -212,160 +370,211 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
           <div className="lg:hidden pb-4 animate-fade-in">
             <div className="flex flex-col space-y-2">
               {/* Academic Section */}
-              <div className="border-b border-blue-700 pb-2">
-                <button
-                  onClick={() => setMobileAcademicOpen(!mobileAcademicOpen)}
-                  className="w-full px-4 py-2 rounded-lg text-white hover:bg-blue-700 transition-colors duration-200 font-medium text-left flex items-center justify-between"
-                >
-                  <span>🎓 Academic</span>
-                  <svg
-                    className={`w-5 h-5 transition-transform ${mobileAcademicOpen ? 'rotate-180' : ''}`}
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
+              {canViewAcademic && (
+                <div className="border-b border-blue-700 pb-2">
+                  <button
+                    onClick={() => setMobileAcademicOpen(!mobileAcademicOpen)}
+                    className="w-full px-4 py-2 rounded-lg text-white hover:bg-blue-700 transition-colors duration-200 font-medium text-left flex items-center justify-between"
                   >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </button>
-                {mobileAcademicOpen && (
-                  <div className="mt-2 ml-4 space-y-1 animate-fade-in">
-                    <button
-                      onClick={() => {
-                        navigate('/students');
-                        setMobileMenuOpen(false);
-                      }}
-                      className="w-full px-4 py-2 rounded-lg text-white hover:bg-blue-700 transition-colors duration-200 text-left"
+                    <span>🎓 Academic</span>
+                    <svg
+                      className={`w-5 h-5 transition-transform ${mobileAcademicOpen ? 'rotate-180' : ''}`}
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
                     >
-                      👨‍🎓 Students
-                    </button>
-                    <button
-                      onClick={() => {
-                        navigate('/teachers');
-                        setMobileMenuOpen(false);
-                      }}
-                      className="w-full px-4 py-2 rounded-lg text-white hover:bg-blue-700 transition-colors duration-200 text-left"
-                    >
-                      👨‍🏫 Teachers
-                    </button>
-                    <button
-                      onClick={() => {
-                        navigate('/classes');
-                        setMobileMenuOpen(false);
-                      }}
-                      className="w-full px-4 py-2 rounded-lg text-white hover:bg-blue-700 transition-colors duration-200 text-left"
-                    >
-                      📚 Classes
-                    </button>
-                    <button
-                      onClick={() => {
-                        navigate('/subjects');
-                        setMobileMenuOpen(false);
-                      }}
-                      className="w-full px-4 py-2 rounded-lg text-white hover:bg-blue-700 transition-colors duration-200 text-left"
-                    >
-                      📖 Subjects
-                    </button>
-                  </div>
-                )}
-              </div>
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+                  {mobileAcademicOpen && (
+                    <div className="mt-2 ml-4 space-y-1 animate-fade-in">
+                      <button
+                        onClick={() => {
+                          navigate('/students');
+                          setMobileMenuOpen(false);
+                        }}
+                        className="w-full px-4 py-2 rounded-lg text-white hover:bg-blue-700 transition-colors duration-200 text-left"
+                      >
+                        👨‍🎓 Students
+                      </button>
+                      <button
+                        onClick={() => {
+                          navigate('/teachers');
+                          setMobileMenuOpen(false);
+                        }}
+                        className="w-full px-4 py-2 rounded-lg text-white hover:bg-blue-700 transition-colors duration-200 text-left"
+                      >
+                        👨‍🏫 Teachers
+                      </button>
+                      <button
+                        onClick={() => {
+                          navigate('/classes');
+                          setMobileMenuOpen(false);
+                        }}
+                        className="w-full px-4 py-2 rounded-lg text-white hover:bg-blue-700 transition-colors duration-200 text-left"
+                      >
+                        📚 Classes
+                      </button>
+                      <button
+                        onClick={() => {
+                          navigate('/subjects');
+                          setMobileMenuOpen(false);
+                        }}
+                        className="w-full px-4 py-2 rounded-lg text-white hover:bg-blue-700 transition-colors duration-200 text-left"
+                      >
+                        📖 Subjects
+                      </button>
+                      {isAdmin && (
+                        <button
+                          onClick={() => {
+                            navigate('/holidays');
+                            setMobileMenuOpen(false);
+                          }}
+                          className="w-full px-4 py-2 rounded-lg text-white hover:bg-blue-700 transition-colors duration-200 text-left"
+                        >
+                          🏖️ Holidays
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Finance Section */}
-              <div className="border-b border-blue-700 pb-2">
-                <button
-                  onClick={() => setMobileFinanceOpen(!mobileFinanceOpen)}
-                  className="w-full px-4 py-2 rounded-lg text-white hover:bg-blue-700 transition-colors duration-200 font-medium text-left flex items-center justify-between"
-                >
-                  <span>💰 Finance</span>
-                  <svg
-                    className={`w-5 h-5 transition-transform ${mobileFinanceOpen ? 'rotate-180' : ''}`}
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
+              {canViewFinance && (
+                <div className="border-b border-blue-700 pb-2">
+                  <button
+                    onClick={() => setMobileFinanceOpen(!mobileFinanceOpen)}
+                    className="w-full px-4 py-2 rounded-lg text-white hover:bg-blue-700 transition-colors duration-200 font-medium text-left flex items-center justify-between"
                   >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </button>
-                {mobileFinanceOpen && (
-                  <div className="mt-2 ml-4 space-y-1 animate-fade-in">
-                    <button
-                      onClick={() => {
-                        navigate('/fees');
-                        setMobileMenuOpen(false);
-                      }}
-                      className="w-full px-4 py-2 rounded-lg text-white hover:bg-blue-700 transition-colors duration-200 text-left"
+                    <span>💰 Finance</span>
+                    <svg
+                      className={`w-5 h-5 transition-transform ${mobileFinanceOpen ? 'rotate-180' : ''}`}
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
                     >
-                      💰 Fees
-                    </button>
-                    <button
-                      onClick={() => {
-                        navigate('/salary');
-                        setMobileMenuOpen(false);
-                      }}
-                      className="w-full px-4 py-2 rounded-lg text-white hover:bg-blue-700 transition-colors duration-200 text-left"
-                    >
-                      🧾 Salary
-                    </button>
-                    <button
-                      onClick={() => {
-                        navigate('/payroll');
-                        setMobileMenuOpen(false);
-                      }}
-                      className="w-full px-4 py-2 rounded-lg text-white hover:bg-blue-700 transition-colors duration-200 text-left"
-                    >
-                      💼 Payroll
-                    </button>
-                    <div className="my-1 border-t border-blue-700"></div>
-                    <button
-                      onClick={() => {
-                        navigate('/salary-structures');
-                        setMobileMenuOpen(false);
-                      }}
-                      className="w-full px-4 py-2 rounded-lg text-white hover:bg-blue-700 transition-colors duration-200 text-left"
-                    >
-                      📊 Salary Structures
-                    </button>
-                    <button
-                      onClick={() => {
-                        navigate('/teacher-salary-assignment');
-                        setMobileMenuOpen(false);
-                      }}
-                      className="w-full px-4 py-2 rounded-lg text-white hover:bg-blue-700 transition-colors duration-200 text-left"
-                    >
-                      👥 Teacher Assignments
-                    </button>
-                    <button
-                      onClick={() => {
-                        navigate('/bulk-salary-processing');
-                        setMobileMenuOpen(false);
-                      }}
-                      className="w-full px-4 py-2 rounded-lg text-white hover:bg-blue-700 transition-colors duration-200 text-left"
-                    >
-                      🔄 Bulk Processing
-                    </button>
-                    <div className="my-1 border-t border-blue-700"></div>
-                    <button
-                      onClick={() => {
-                        navigate('/salary-payments');
-                        setMobileMenuOpen(false);
-                      }}
-                      className="w-full px-4 py-2 rounded-lg text-white hover:bg-blue-700 transition-colors duration-200 text-left"
-                    >
-                      💰 Payment Management
-                    </button>
-                  </div>
-                )}
-              </div>
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+                  {mobileFinanceOpen && (
+                    <div className="mt-2 ml-4 space-y-1 animate-fade-in">
+                      {canViewFees && (
+                        <button
+                          onClick={() => {
+                            navigate('/fees');
+                            setMobileMenuOpen(false);
+                          }}
+                          className="w-full px-4 py-2 rounded-lg text-white hover:bg-blue-700 transition-colors duration-200 text-left"
+                        >
+                          💰 Fees
+                        </button>
+                      )}
+                      {canViewSalary && (
+                        <button
+                          onClick={() => {
+                            navigate('/salary');
+                            setMobileMenuOpen(false);
+                          }}
+                          className="w-full px-4 py-2 rounded-lg text-white hover:bg-blue-700 transition-colors duration-200 text-left"
+                        >
+                          🧾 Salary
+                        </button>
+                      )}
+                      {canViewPayroll && (
+                        <button
+                          onClick={() => {
+                            navigate('/payroll');
+                            setMobileMenuOpen(false);
+                          }}
+                          className="w-full px-4 py-2 rounded-lg text-white hover:bg-blue-700 transition-colors duration-200 text-left"
+                        >
+                          💼 Payroll
+                        </button>
+                      )}
+                      {canManageSalary && (canViewFees || canViewSalary || canViewPayroll) && (
+                        <div className="my-1 border-t border-blue-700"></div>
+                      )}
+                      {canManageSalary && (
+                        <>
+                          <button
+                            onClick={() => {
+                              navigate('/salary-structures');
+                              setMobileMenuOpen(false);
+                            }}
+                            className="w-full px-4 py-2 rounded-lg text-white hover:bg-blue-700 transition-colors duration-200 text-left"
+                          >
+                            📊 Salary Structures
+                          </button>
+                          <button
+                            onClick={() => {
+                              navigate('/teacher-salary-assignment');
+                              setMobileMenuOpen(false);
+                            }}
+                            className="w-full px-4 py-2 rounded-lg text-white hover:bg-blue-700 transition-colors duration-200 text-left"
+                          >
+                            👥 Teacher Assignments
+                          </button>
+                          <button
+                            onClick={() => {
+                              navigate('/bulk-salary-processing');
+                              setMobileMenuOpen(false);
+                            }}
+                            className="w-full px-4 py-2 rounded-lg text-white hover:bg-blue-700 transition-colors duration-200 text-left"
+                          >
+                            🔄 Bulk Processing
+                          </button>
+                          <div className="my-1 border-t border-blue-700"></div>
+                          <button
+                            onClick={() => {
+                              navigate('/salary-payments');
+                              setMobileMenuOpen(false);
+                            }}
+                            className="w-full px-4 py-2 rounded-lg text-white hover:bg-blue-700 transition-colors duration-200 text-left"
+                          >
+                            💰 Payment Management
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Attendance Direct Link */}
-              <button
-                onClick={() => {
-                  navigate('/attendance');
-                  setMobileMenuOpen(false);
-                }}
-                className="px-4 py-2 rounded-lg text-white hover:bg-blue-700 transition-colors duration-200 font-medium text-left"
-              >
-                📊 Attendance
-              </button>
+              {canViewAttendance && (
+                <button
+                  onClick={() => {
+                    navigate('/attendance');
+                    setMobileMenuOpen(false);
+                  }}
+                  className="px-4 py-2 rounded-lg text-white hover:bg-blue-700 transition-colors duration-200 font-medium text-left"
+                >
+                  📊 Attendance
+                </button>
+              )}
+
+              {/* Account Section */}
+              <div className="border-t border-blue-700 pt-2 space-y-1">
+                <button
+                  onClick={() => {
+                    navigate('/change-password');
+                    setMobileMenuOpen(false);
+                  }}
+                  className="w-full px-4 py-2 rounded-lg text-white hover:bg-blue-700 transition-colors duration-200 text-left"
+                >
+                  🔒 Change Password
+                </button>
+                <button
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    handleLogout();
+                  }}
+                  className="w-full px-4 py-2 rounded-lg text-white hover:bg-red-600 transition-colors duration-200 text-left"
+                >
+                  🚪 Logout
+                </button>
+              </div>
             </div>
           </div>
         )}

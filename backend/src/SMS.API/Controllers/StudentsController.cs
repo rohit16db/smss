@@ -9,7 +9,7 @@ namespace SMS.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize]
+[Authorize(Policy = "AcademicAccess")]
 public class StudentsController : ControllerBase
 {
     private readonly IMediator _mediator;

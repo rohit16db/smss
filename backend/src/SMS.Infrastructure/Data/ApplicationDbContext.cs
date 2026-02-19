@@ -36,6 +36,9 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     // Phase 3: Attendance Management
     public DbSet<StudentAttendance> StudentAttendances => Set<StudentAttendance>();
     public DbSet<TeacherAttendance> TeacherAttendances => Set<TeacherAttendance>();
+    
+    // Holiday Management
+    public DbSet<Holiday> Holidays => Set<Holiday>();
 
     // Phase 8: Salary Management
     public DbSet<SalaryStructure> SalaryStructures => Set<SalaryStructure>();

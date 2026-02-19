@@ -1,4 +1,5 @@
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SMS.Application.Features.Fees.Commands;
 using SMS.Application.Features.Fees.DTOs;
@@ -11,6 +12,7 @@ namespace SMS.API.Controllers;
 /// </summary>
 [ApiController]
 [Route("api/[controller]")]
+[Authorize(Policy = "FeesAccess")]
 public class FeesController : ControllerBase
 {
     private readonly IMediator _mediator;

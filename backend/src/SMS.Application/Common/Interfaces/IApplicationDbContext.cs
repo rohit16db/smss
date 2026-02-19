@@ -31,6 +31,9 @@ public interface IApplicationDbContext
     // Phase 3: Attendance Management
     DbSet<StudentAttendance> StudentAttendances { get; }
     DbSet<TeacherAttendance> TeacherAttendances { get; }
+    
+    // Holiday Management
+    DbSet<Holiday> Holidays { get; }
 
     // Phase 8: Salary Management
     DbSet<SalaryStructure> SalaryStructures { get; }

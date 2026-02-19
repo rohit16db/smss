@@ -8,7 +8,7 @@ using SMS.Domain.Exceptions;
 
 namespace SMS.API.Controllers;
 
-[Authorize]
+[Authorize(Policy = "AcademicAccess")]
 [ApiController]
 [Route("api/subjects")]
 public class SubjectsController : ControllerBase

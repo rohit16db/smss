@@ -87,45 +87,124 @@ public class AuthController : ControllerBase
     [Authorize]
     [ProducesResponseType(typeof(UserDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public ActionResult<UserDto> GetCurrentUser()
+    public async Task<ActionResult<UserDto>> GetCurrentUser()
+    {
+        try
+        {
+            var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            
+            if (string.IsNullOrEmpty(userId) || !Guid.TryParse(userId, out var parsedUserId))
+            {
+                return Unauthorized(new { message = "Invalid user ID in token" });
+            }
+
+            var user = await _mediator.Send(new Application.Features.Users.Queries.GetUserByIdQuery { UserId = parsedUserId });
+            
+            if (user == null)
+            {
+                return Unauthorized(new { message = "User not found" });
+            }
+
+            return Ok(user);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting current user");
+            return StatusCode(500, new { message = "An error occurred while retrieving user information" });
+        }
+    }
+
+    /// <summary>
+    /// Change password (requires authentication)
+    /// </summary>
+    [HttpPost("change-password")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request)
     {
         var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-        var username = User.Identity?.Name;
-        var email = User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value;
-        var roleString = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value;
-        var firstName = User.FindFirst("FirstName")?.Value;
-        var lastName = User.FindFirst("LastName")?.Value;
-
+        
         if (string.IsNullOrEmpty(userId) || !Guid.TryParse(userId, out var parsedUserId))
         {
             return Unauthorized();
         }
 
-        // Parse role safely
-        Domain.Enums.UserRole role = Domain.Enums.UserRole.Clerk;
-        if (!string.IsNullOrEmpty(roleString))
+        var command = new ChangePasswordCommand
         {
-            if (int.TryParse(roleString, out var roleValue))
-            {
-                role = (Domain.Enums.UserRole)roleValue;
-            }
-            else if (Enum.TryParse<Domain.Enums.UserRole>(roleString, true, out var parsedRole))
-            {
-                role = parsedRole;
-            }
-        }
-
-        var userDto = new UserDto
-        {
-            Id = parsedUserId,
-            Username = username ?? "",
-            Email = email ?? "",
-            FirstName = firstName ?? "",
-            LastName = lastName ?? "",
-            Role = role,
-            IsActive = true
+            UserId = parsedUserId,
+            CurrentPassword = request.CurrentPassword,
+            NewPassword = request.NewPassword
         };
 
-        return Ok(userDto);
+        await _mediator.Send(command);
+        _logger.LogInformation("User {UserId} changed password successfully", parsedUserId);
+        return Ok(new { message = "Password changed successfully" });
+    }
+
+    /// <summary>
+    /// Request password reset (public endpoint)
+    /// </summary>
+    [HttpPost("forgot-password")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request)
+    {
+        var command = new ForgotPasswordCommand
+        {
+            Email = request.Email
+        };
+
+        await _mediator.Send(command);
+        _logger.LogInformation("Password reset requested for email {Email}", request.Email);
+        
+        // Always return success to prevent email enumeration
+        return Ok(new { message = "If the email exists, a password reset link has been sent" });
+    }
+
+    /// <summary>
+    /// Reset password using reset token (public endpoint)
+    /// </summary>
+    [HttpPost("reset-password")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request)
+    {
+        var command = new ResetPasswordCommand
+        {
+            Email = request.Email,
+            ResetToken = request.ResetToken,
+            NewPassword = request.NewPassword
+        };
+
+        await _mediator.Send(command);
+        _logger.LogInformation("Password reset successfully for email {Email}", request.Email);
+        return Ok(new { message = "Password reset successfully" });
+    }
+
+    /// <summary>
+    /// Logout and revoke refresh token (requires authentication)
+    /// </summary>
+    [HttpPost("logout")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> Logout()
+    {
+        var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        
+        if (string.IsNullOrEmpty(userId) || !Guid.TryParse(userId, out var parsedUserId))
+        {
+            return Unauthorized();
+        }
+
+        var command = new LogoutCommand
+        {
+            UserId = parsedUserId
+        };
+
+        await _mediator.Send(command);
+        _logger.LogInformation("User {UserId} logged out successfully", parsedUserId);
+        return Ok(new { message = "Logged out successfully" });
     }
 }
