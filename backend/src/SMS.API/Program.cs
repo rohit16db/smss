@@ -88,7 +88,25 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
-builder.Services.AddAuthorization();
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("AdminOnly", policy =>
+        policy.RequireRole("Admin"));
+    options.AddPolicy("AcademicAccess", policy =>
+        policy.RequireRole("Admin", "Clerk"));
+    options.AddPolicy("FeesAccess", policy =>
+        policy.RequireRole("Admin", "Accountant"));
+    options.AddPolicy("SalaryAccess", policy =>
+        policy.RequireRole("Admin", "Accountant", "Teacher"));
+    options.AddPolicy("PayrollAccess", policy =>
+        policy.RequireRole("Admin", "Accountant"));
+    options.AddPolicy("SalaryManageAccess", policy =>
+        policy.RequireRole("Admin", "Accountant"));
+    options.AddPolicy("AttendanceAccess", policy =>
+        policy.RequireRole("Admin", "Clerk", "Teacher"));
+    options.AddPolicy("DashboardAccess", policy =>
+        policy.RequireRole("Admin", "Accountant", "Clerk"));
+});
 
 // Configure CORS
 var corsOrigins = builder.Configuration.GetSection("CorsOrigins").Get<string[]>() ?? new[] { "http://localhost:3000", "http://localhost:5173" };

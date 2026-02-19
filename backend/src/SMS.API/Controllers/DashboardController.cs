@@ -11,7 +11,7 @@ namespace SMS.API.Controllers;
 /// </summary>
 [ApiController]
 [Route("api/[controller]")]
-[Authorize]
+[Authorize(Policy = "DashboardAccess")]
 public class DashboardController : ControllerBase
 {
     private readonly IMediator _mediator;

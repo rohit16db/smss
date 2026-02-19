@@ -11,7 +11,7 @@ namespace SMS.API.Controllers;
 
 [ApiController]
 [Route("api/v1/salary-management")]
-[Authorize]
+[Authorize(Policy = "SalaryManageAccess")]
 public class SalaryPaymentController : ControllerBase
 {
     private readonly IMediator _mediator;

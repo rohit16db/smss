@@ -11,7 +11,7 @@ namespace SMS.API.Controllers;
 /// Salary Structure Management API
 /// Handles salary structure definitions and teacher assignments
 /// </summary>
-[Authorize]
+[Authorize(Policy = "SalaryManageAccess")]
 [ApiController]
 [Route("api/v1/[controller]")]
 public class SalaryStructureController : ControllerBase
