@@ -1,9 +1,17 @@
 import { useNavigate } from 'react-router-dom';
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { authService } from '../../services/authService';
 
 interface HeaderProps {
   onMenuClick?: () => void;
+}
+
+interface StoredUser {
+  username?: string;
+  email?: string;
+  firstName?: string;
+  lastName?: string;
+  role?: string | number;
 }
 
 export const Header = ({ onMenuClick }: HeaderProps) => {
@@ -14,10 +22,37 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
   const [mobileAcademicOpen, setMobileAcademicOpen] = useState(false);
   const [mobileFinanceOpen, setMobileFinanceOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [currentUser, setCurrentUser] = useState<StoredUser | null>(null);
   
   const academicTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const financeTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const userMenuTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+  useEffect(() => {
+    const readUser = () => {
+      const raw = localStorage.getItem('user');
+      if (!raw) {
+        setCurrentUser(null);
+        return;
+      }
+
+      try {
+        setCurrentUser(JSON.parse(raw) as StoredUser);
+      } catch (error) {
+        console.error('Failed to parse stored user:', error);
+        setCurrentUser(null);
+      }
+    };
+
+    readUser();
+    window.addEventListener('storage', readUser);
+    return () => window.removeEventListener('storage', readUser);
+  }, []);
+
+  const displayName =
+    currentUser?.firstName || currentUser?.lastName
+      ? `${currentUser.firstName || ''} ${currentUser.lastName || ''}`.trim()
+      : currentUser?.username || currentUser?.email || 'User';
 
   const handleAcademicMouseLeave = () => {
     academicTimeoutRef.current = setTimeout(() => {
@@ -217,13 +252,27 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
             onMouseEnter={handleUserMenuMouseEnter}
             onMouseLeave={handleUserMenuMouseLeave}
           >
-            <button className="p-2 rounded-full text-white hover:bg-blue-700 transition-colors flex items-center gap-2">
+            <button className="px-3 py-2 rounded-full text-white hover:bg-blue-700 transition-colors flex items-center gap-2">
               <svg className="h-8 w-8" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
               </svg>
+              <span className="hidden md:block text-sm font-semibold text-white">
+                {displayName}
+              </span>
             </button>
             {userMenuOpen && (
               <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-xl py-2 z-50">
+                <div className="px-4 py-2">
+                  <div className="text-sm font-semibold text-gray-900">
+                    {displayName}
+                  </div>
+                  {currentUser?.email && (
+                    <div className="text-xs text-gray-500 truncate">
+                      {currentUser.email}
+                    </div>
+                  )}
+                </div>
+                <hr className="my-1 border-gray-200" />
                 <button
                   onClick={() => {
                     navigate('/change-password');

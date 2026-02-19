@@ -11,9 +11,6 @@ namespace SMS.Infrastructure.Seeders
         {
             try
             {
-                // Apply pending migrations
-                await context.Database.MigrateAsync();
-
                 // Only seed if database is empty
                 if (await context.Users.AnyAsync())
                 {

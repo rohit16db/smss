@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using SMS.Infrastructure.Data;
 using SMS.Infrastructure.Seeders;
 
@@ -6,7 +7,34 @@ namespace SMS.API.Extensions
     public static class SeedingExtensions
     {
         /// <summary>
-        /// Seed the database with initial data if running in development environment
+        /// Apply pending database migrations (runs on all environments)
+        /// </summary>
+        public static async Task MigrateDatabaseAsync(this WebApplication app)
+        {
+            try
+            {
+                using (var scope = app.Services.CreateScope())
+                {
+                    var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+                    Console.WriteLine("[Database] Applying pending migrations...");
+                    await context.Database.MigrateAsync();
+                    Console.WriteLine("[Database] ✓ Migrations applied successfully");
+                }
+            }
+            catch (Exception ex)
+            {
+                var logger = app.Services.GetRequiredService<ILogger<Program>>();
+                logger.LogError(ex, "[Database] ✗ Error applying migrations: {Message}", ex.Message);
+                if (ex.InnerException != null)
+                {
+                    logger.LogError(ex.InnerException, "[Database] ✗ Inner exception: {Message}", ex.InnerException.Message);
+                }
+                throw; // Rethrow in production - migration failure is critical
+            }
+        }
+
+        /// <summary>
+        /// Seed the database with initial data (development only)
         /// </summary>
         public static async Task SeedDatabaseAsync(this WebApplication app)
         {
@@ -26,13 +54,13 @@ namespace SMS.API.Extensions
             catch (Exception ex)
             {
                 var logger = app.Services.GetRequiredService<ILogger<Program>>();
-                logger.LogError(ex, "Error seeding database: {Message}", ex.Message);
+                logger.LogError(ex, "[Database] ✗ Error seeding database: {Message}", ex.Message);
                 if (ex.InnerException != null)
                 {
-                    logger.LogError(ex.InnerException, "Inner exception: {Message}", ex.InnerException.Message);
+                    logger.LogError(ex.InnerException, "[Database] ✗ Inner exception: {Message}", ex.InnerException.Message);
                 }
-                // Don't rethrow - let the app continue
-                Console.WriteLine($"Seeding Error: {ex}");
+                // Don't rethrow for seeding - app can continue, but log the error
+                Console.WriteLine($"[Database] Seeding Error: {ex}");
             }
         }
     }

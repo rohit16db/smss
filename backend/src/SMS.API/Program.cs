@@ -181,7 +181,10 @@ app.MapHealthChecks("/health");
 app.MapHealthChecks("/health/ready");
 app.MapHealthChecks("/health/live");
 
+// Run database migrations for all environments
 // Seed database with initial data (development only)
+await app.MigrateDatabaseAsync();
+
 if (app.Environment.IsDevelopment())
 {
     await app.SeedDatabaseAsync();
