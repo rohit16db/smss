@@ -113,6 +113,7 @@ public class StudentSectionDto
     public DateTime JoinedDate { get; set; }
     public DateTime? LeftDate { get; set; }
     public bool IsCurrent { get; set; }
+    public int? RollNumber { get; set; }
 }
 
 /// <summary>

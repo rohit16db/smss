@@ -49,6 +49,10 @@ public class StudentSectionConfiguration : IEntityTypeConfiguration<StudentSecti
         builder.Property(ss => ss.UpdatedBy)
             .HasColumnName("updated_by");
 
+        builder.Property(ss => ss.RollNumber)
+            .HasColumnName("roll_number")
+            .IsRequired(false);
+
         // Relationships
         builder.HasOne(ss => ss.Section)
             .WithMany(s => s.StudentSections)

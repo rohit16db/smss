@@ -14,6 +14,7 @@ import { PayrollPage } from './pages/PayrollPage';
 import { SalaryPage } from './pages/SalaryPage';
 import { ClassManagementPage } from './pages/ClassManagementPage';
 import { SubjectManagementPage } from './pages/SubjectManagementPage';
+import { RollNumberManagementPage } from './pages/RollNumberManagementPage';
 import { HolidaysPage } from './pages/HolidaysPage';
 import { SalaryStructurePage } from './pages/SalaryStructurePage';
 import { TeacherSalaryAssignmentPage } from './pages/TeacherSalaryAssignmentPage';
@@ -167,6 +168,14 @@ function App() {
                   element={
                     <ProtectedRoute allowedRoles={["Admin", "Clerk"]}>
                       <SubjectManagementPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="roll-numbers"
+                  element={
+                    <ProtectedRoute allowedRoles={["Admin", "Clerk"]}>
+                      <RollNumberManagementPage />
                     </ProtectedRoute>
                   }
                 />

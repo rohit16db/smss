@@ -669,6 +669,7 @@ export type StudentSection = {
   joinedDate: Date;
   leftDate?: Date;
   isCurrent: boolean;
+  rollNumber?: number;
 };
 
 export type StudentSectionHistoryDto = {
@@ -739,6 +740,31 @@ export const classApi = {
   moveStudentToSection: async (studentId: string, newSectionId: string) => {
     const response = await api.post<StudentSection>(`/classes/students/${studentId}/move-section`, {
       newSectionId,
+    });
+    return response.data;
+  },
+  
+  // Roll Number Management
+  getRollNumbers: async (sectionId: string) => {
+    const response = await api.get<StudentSection[]>(`/classes/sections/${sectionId}/roll-numbers`);
+    return response.data;
+  },
+  
+  autoAssignRollNumbers: async (sectionId: string) => {
+    const response = await api.post<{ message: string }>(`/classes/sections/${sectionId}/auto-assign-roll-numbers`);
+    return response.data;
+  },
+  
+  updateRollNumber: async (studentSectionId: string, rollNumber: number) => {
+    const response = await api.put<{ message: string }>(`/classes/student-sections/${studentSectionId}/roll-number`, {
+      rollNumber,
+    });
+    return response.data;
+  },
+  
+  bulkUpdateRollNumbers: async (sectionId: string, rollNumberUpdates: Record<string, number>) => {
+    const response = await api.put<{ message: string }>(`/classes/sections/${sectionId}/bulk-update-roll-numbers`, {
+      rollNumberUpdates,
     });
     return response.data;
   },

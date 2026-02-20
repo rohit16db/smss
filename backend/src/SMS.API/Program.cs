@@ -63,6 +63,7 @@ builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
 builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();
 builder.Services.AddScoped<IStudentIdGenerator, StudentIdGenerator>();
 builder.Services.AddScoped<IImageUploadService, ImageUploadService>();
+builder.Services.AddScoped<IRollNumberService, RollNumberService>();
 
 // Configure JWT Authentication
 var jwtSecret = builder.Configuration["JWT_SECRET"]

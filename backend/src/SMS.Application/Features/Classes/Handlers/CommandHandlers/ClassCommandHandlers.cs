@@ -301,7 +301,84 @@ public class MoveStudentSectionCommandHandler : IRequestHandler<MoveStudentSecti
             ClassName = section.Class?.Name ?? "",
             JoinedDate = newStudentSection.JoinedDate,
             LeftDate = newStudentSection.LeftDate,
-            IsCurrent = newStudentSection.IsCurrent
+            IsCurrent = newStudentSection.IsCurrent,
+            RollNumber = newStudentSection.RollNumber
         };
+    }
+}
+
+/// <summary>
+/// Handler for auto-assigning sequential roll numbers
+/// </summary>
+public class AutoAssignRollNumbersCommandHandler : IRequestHandler<AutoAssignRollNumbersCommand, bool>
+{
+    private readonly IApplicationDbContext _context;
+    private readonly IRollNumberService _rollNumberService;
+
+    public AutoAssignRollNumbersCommandHandler(IApplicationDbContext context, IRollNumberService rollNumberService)
+    {
+        _context = context;
+        _rollNumberService = rollNumberService;
+    }
+
+    public async Task<bool> Handle(AutoAssignRollNumbersCommand request, CancellationToken cancellationToken)
+    {
+        if (!Guid.TryParse(request.SectionId, out var sectionId))
+            throw new ArgumentException("Invalid section ID");
+
+        await _rollNumberService.AssignSequentialRollNumbersAsync(sectionId, cancellationToken);
+        return true;
+    }
+}
+
+/// <summary>
+/// Handler for updating a student's roll number
+/// </summary>
+public class UpdateStudentRollNumberCommandHandler : IRequestHandler<UpdateStudentRollNumberCommand, bool>
+{
+    private readonly IApplicationDbContext _context;
+    private readonly IRollNumberService _rollNumberService;
+
+    public UpdateStudentRollNumberCommandHandler(IApplicationDbContext context, IRollNumberService rollNumberService)
+    {
+        _context = context;
+        _rollNumberService = rollNumberService;
+    }
+
+    public async Task<bool> Handle(UpdateStudentRollNumberCommand request, CancellationToken cancellationToken)
+    {
+        if (!Guid.TryParse(request.StudentSectionId, out var studentSectionId))
+            throw new ArgumentException("Invalid student section ID");
+
+        await _rollNumberService.UpdateRollNumberAsync(studentSectionId, request.RollNumber, cancellationToken);
+        return true;
+    }
+}
+
+/// <summary>
+/// Handler for bulk updating roll numbers
+/// </summary>
+public class BulkUpdateRollNumbersCommandHandler : IRequestHandler<BulkUpdateRollNumbersCommand, bool>
+{
+    private readonly IRollNumberService _rollNumberService;
+
+    public BulkUpdateRollNumbersCommandHandler(IRollNumberService rollNumberService)
+    {
+        _rollNumberService = rollNumberService;
+    }
+
+    public async Task<bool> Handle(BulkUpdateRollNumbersCommand request, CancellationToken cancellationToken)
+    {
+        if (!Guid.TryParse(request.SectionId, out var sectionId))
+            throw new ArgumentException("Invalid section ID");
+
+        var rollNumberUpdates = request.RollNumberUpdates
+            .ToDictionary(
+                kvp => Guid.Parse(kvp.Key),
+                kvp => kvp.Value
+            );
+
+        await _rollNumberService.BulkUpdateRollNumbersAsync(sectionId, rollNumberUpdates, cancellationToken);
+        return true;
     }
 }
