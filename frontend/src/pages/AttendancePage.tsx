@@ -792,36 +792,7 @@ export function AttendancePage() {
               </div>
             </div>
 
-        {viewMode === 'calendar' && (
-          <div className="bg-gradient-to-br from-blue-50 via-white to-indigo-50 rounded-xl shadow-lg p-6 mb-6 border border-blue-100">
-            {/* Calendar Header */}
-            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6 pb-4 border-b border-blue-200">
-              <div className="flex items-center gap-3">
-                <div className="p-3 bg-blue-600 rounded-lg shadow-md">
-                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                  </svg>
-                </div>
-                <div>
-                  <h2 className="text-2xl font-bold text-gray-900">Monthly Attendance</h2>
-                  <p className="text-sm text-gray-600 mt-0.5">
-                    {activeTab === 'student'
-                      ? (selectedStudent ? `${selectedStudent.firstName} ${selectedStudent.lastName}` : 'Select a student to view the calendar')
-                      : (selectedTeacher ? `${selectedTeacher.firstName} ${selectedTeacher.lastName}` : 'Select a teacher to view the calendar')}
-                  </p>
-                </div>
-              </div>
-              
-              {/* Legend */}
-              <div className="flex flex-wrap items-center gap-2">
-                {calendarLegend.map((item) => (
-                  <div key={item.label} className={`px-3 py-1.5 rounded-lg text-xs font-semibold shadow-sm transition-transform hover:scale-105 ${item.className}`}>
-                    {item.label}
-                  </div>
-                ))}
-              </div>
-            </div>
-
+            {/* Calendar Content */}
             {(!selectedStudent && activeTab === 'student') || (!selectedTeacher && activeTab === 'teacher') ? (
               <div className="text-center py-16">
                 <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-full mb-4">
