@@ -14,6 +14,7 @@ public class CreateTeacherDto
     public required string Qualification { get; set; }
     public required int ExperienceYears { get; set; }
     public required DateTime JoiningDate { get; set; }
+    public string? ImagePath { get; set; }
 }
 
 /// <summary>
@@ -29,6 +30,7 @@ public class UpdateTeacherDto
     public required string Qualification { get; set; }
     public required int ExperienceYears { get; set; }
     public required bool IsActive { get; set; }
+    public string? ImagePath { get; set; }
 }
 
 /// <summary>
@@ -49,6 +51,7 @@ public class TeacherDto
     public bool IsActive { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }
+    public string? ImagePath { get; set; }
 }
 
 /// <summary>
@@ -66,6 +69,7 @@ public class TeacherListDto
     public int ExperienceYears { get; set; }
     public DateTime JoiningDate { get; set; }
     public bool IsActive { get; set; }
+    public string? ImagePath { get; set; }
 }
 
 /// <summary>

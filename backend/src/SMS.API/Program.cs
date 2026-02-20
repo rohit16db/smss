@@ -9,6 +9,7 @@ using Microsoft.IdentityModel.Tokens;
 using SMS.API.Extensions;
 using SMS.API.Filters;
 using SMS.API.Middleware;
+using SMS.API.Services;
 using SMS.Application.Common.Behaviors;
 using SMS.Application.Common.Interfaces;
 using SMS.Domain.Interfaces;
@@ -61,6 +62,7 @@ builder.Services.AddScoped<IApplicationDbContext>(provider =>
 builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
 builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();
 builder.Services.AddScoped<IStudentIdGenerator, StudentIdGenerator>();
+builder.Services.AddScoped<IImageUploadService, ImageUploadService>();
 
 // Configure JWT Authentication
 var jwtSecret = builder.Configuration["JWT_SECRET"]
@@ -188,6 +190,9 @@ else
 }
 
 app.UseHttpsRedirection();
+
+// Enable static files for image uploads
+app.UseStaticFiles();
 
 app.UseAuthentication();
 app.UseAuthorization();

@@ -33,6 +33,11 @@ public class Teacher : BaseEntity
     /// <summary>Date when salary structure was assigned</summary>
     public DateOnly? SalaryStructureEffectiveDate { get; set; }
     
+    /// <summary>
+    /// Path to teacher's profile image (stored in /uploads/teachers/)
+    /// </summary>
+    public string? ImagePath { get; set; }
+    
     // Navigation properties
     public SalaryStructure? SalaryStructure { get; set; }
     public ICollection<TeacherAssignment> Assignments { get; set; } = new List<TeacherAssignment>();

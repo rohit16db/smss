@@ -52,24 +52,35 @@ export type Student = {
   email: string;
   phone?: string;
   dateOfBirth: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  postalCode?: string;
   parentName?: string;
   parentPhone?: string;
+  parentEmail?: string;
   enrollmentDate: string;
   enrollmentNumber: string;
   isActive: boolean;
   currentSectionId?: string;
   currentSectionName?: string;
   currentClassName?: string;
+  imagePath?: string;
 };
 
 export type CreateStudentDto = {
   firstName: string;
   lastName: string;
   email: string;
-  phone?: string;
+  phoneNumber?: string;
   dateOfBirth: string;
-  parentName?: string;
-  parentPhone?: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  postalCode?: string;
+  guardianName?: string;
+  guardianPhone?: string;
+  guardianEmail?: string;
   enrollmentDate: string;
 };
 
@@ -78,11 +89,15 @@ export type UpdateStudentDto = {
   firstName: string;
   lastName: string;
   email: string;
-  phone?: string;
+  phoneNumber?: string;
   dateOfBirth: string;
-  parentName?: string;
-  parentPhone?: string;
-  enrollmentDate: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  postalCode?: string;
+  guardianName?: string;
+  guardianPhone?: string;
+  guardianEmail?: string;
   isActive: boolean;
 };
 
@@ -127,6 +142,17 @@ export const studentApi = {
     const response = await api.patch<Student>(`/students/${id}/deactivate`);
     return response.data;
   },
+
+  uploadImage: async (id: string, file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await api.post<{ message: string; imagePath: string }>(`/students/${id}/upload-image`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  },
 };
 
 // Teacher Types
@@ -141,6 +167,7 @@ export type Teacher = {
   experienceYears: number;
   joiningDate: string;
   isActive: boolean;
+  imagePath?: string;
 };
 
 export type CreateTeacherDto = {
@@ -152,6 +179,7 @@ export type CreateTeacherDto = {
   qualification?: string;
   experienceYears: number;
   joiningDate: string;
+  imagePath?: string;
 };
 
 export type UpdateTeacherDto = {
@@ -165,6 +193,7 @@ export type UpdateTeacherDto = {
   experienceYears: number;
   joiningDate: string;
   isActive: boolean;
+  imagePath?: string;
 };
 
 export type PaginatedTeacherList = {
@@ -225,6 +254,17 @@ export const teacherApi = {
 
   deactivate: async (id: string) => {
     const response = await api.patch<Teacher>(`/teachers/${id}/deactivate`);
+    return response.data;
+  },
+
+  uploadImage: async (id: string, file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await api.post<{ message: string; imagePath: string }>(`/teachers/${id}/upload-image`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
     return response.data;
   },
 

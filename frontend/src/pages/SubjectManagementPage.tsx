@@ -8,7 +8,6 @@ export function SubjectManagementPage() {
   const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
   const [pageSize] = useState(10);
-  const [searchTerm, setSearchTerm] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedSubject, setSelectedSubject] = useState<Subject | null>(null);
   const [formData, setFormData] = useState<CreateSubjectDto>({
@@ -21,8 +20,8 @@ export function SubjectManagementPage() {
 
   // Queries
   const { data: subjectsData, isLoading } = useQuery({
-    queryKey: ['subjects', page, pageSize, searchTerm],
-    queryFn: () => subjectApi.getAll({ pageNumber: page, pageSize, searchTerm: searchTerm || undefined, isActive: undefined }),
+    queryKey: ['subjects', page, pageSize],
+    queryFn: () => subjectApi.getAll({ pageNumber: page, pageSize, searchTerm: undefined, isActive: undefined }),
   });
 
   // Mutations
@@ -176,7 +175,7 @@ export function SubjectManagementPage() {
                           <div className="text-sm font-bold text-gray-900">{subject.name}</div>
                         </td>
                         <td className="px-6 py-4">
-                          <div className="text-sm text-gray-600 line-clamp-1">{subject.description || '-'}</div>
+                          <div className="text-sm text-gray-600 line-clamp-1">{subject.code || '-'}</div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="text-sm font-medium text-gray-700">

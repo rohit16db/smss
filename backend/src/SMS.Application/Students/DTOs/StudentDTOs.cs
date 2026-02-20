@@ -7,7 +7,7 @@ public class StudentDto
     public string LastName { get; set; } = string.Empty;
     public string FullName => $"{FirstName} {LastName}";
     public string Email { get; set; } = string.Empty;
-    public string? PhoneNumber { get; set; }
+    public string? Phone { get; set; }
     public DateTime DateOfBirth { get; set; }
     public int Age => DateTime.UtcNow.Year - DateOfBirth.Year;
     public string? Address { get; set; }
@@ -17,9 +17,9 @@ public class StudentDto
     public string EnrollmentNumber { get; set; } = string.Empty;
     public DateTime EnrollmentDate { get; set; }
     public bool IsActive { get; set; }
-    public string? GuardianName { get; set; }
-    public string? GuardianPhone { get; set; }
-    public string? GuardianEmail { get; set; }
+    public string? ParentName { get; set; }
+    public string? ParentPhone { get; set; }
+    public string? ParentEmail { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
     
@@ -27,6 +27,9 @@ public class StudentDto
     public Guid? CurrentSectionId { get; set; }
     public string? CurrentSectionName { get; set; }
     public string? CurrentClassName { get; set; }
+    
+    // Image Information
+    public string? ImagePath { get; set; }
 }
 
 public class CreateStudentRequest

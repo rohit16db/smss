@@ -3,6 +3,7 @@ import toast from 'react-hot-toast';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { studentApi, classApi, type CreateStudentDto, type UpdateStudentDto, type Student } from '../services/api';
 import { LoadingSkeleton } from '../components/common/LoadingSkeleton';
+import { ImageCropModal } from '../components/common/ImageCropModal';
 
 export function StudentsPage() {
   const queryClient = useQueryClient();
@@ -14,14 +15,23 @@ export function StudentsPage() {
   const [studentForSection, setStudentForSection] = useState<Student | null>(null);
   const [selectedClassId, setSelectedClassId] = useState('');
   const [selectedSectionId, setSelectedSectionId] = useState('');
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [cropModalOpen, setCropModalOpen] = useState(false);
+  const [tempImageFile, setTempImageFile] = useState<File | null>(null);
   const [formData, setFormData] = useState<CreateStudentDto>({
     firstName: '',
     lastName: '',
     email: '',
-    phone: '',
+    phoneNumber: '',
     dateOfBirth: '',
-    parentName: '',
-    parentPhone: '',
+    address: '',
+    city: '',
+    state: '',
+    postalCode: '',
+    guardianName: '',
+    guardianPhone: '',
+    guardianEmail: '',
     enrollmentDate: new Date().toISOString().split('T')[0],
   });
 
@@ -117,31 +127,69 @@ export function StudentsPage() {
     },
   });
 
+  const uploadImageMutation = useMutation({
+    mutationFn: ({ id, file }: { id: string; file: File }) =>
+      studentApi.uploadImage(id, file),
+    onSuccess: () => {
+      toast.success('Image uploaded successfully!');
+      queryClient.invalidateQueries({ queryKey: ['students'] });
+      setImageFile(null);
+    },
+    onError: (error: any) => {
+      toast.error(error?.response?.data?.message || 'Failed to upload image');
+    },
+  });
+
   const handleOpenDialog = (student?: Student) => {
     if (student) {
       setSelectedStudent(student);
-      setFormData({
+      
+      const newFormData = {
         firstName: student.firstName,
         lastName: student.lastName,
         email: student.email,
-        phone: student.phone || '',
+        phoneNumber: student.phone || '',
         dateOfBirth: student.dateOfBirth.split('T')[0],
-        parentName: student.parentName || '',
-        parentPhone: student.parentPhone || '',
+        address: student.address || '',
+        city: student.city || '',
+        state: student.state || '',
+        postalCode: student.postalCode || '',
+        guardianName: student.parentName || '',
+        guardianPhone: student.parentPhone || '',
+        guardianEmail: student.parentEmail || '',
         enrollmentDate: student.enrollmentDate.split('T')[0],
-      });
+      };
+      
+      setFormData(newFormData);
+      
+      // Set image preview if image exists
+      if (student.imagePath) {
+        const baseUrl = (import.meta.env.VITE_API_URL || 'http://localhost:5208/api').replace('/api', '');
+        const imageUrl = `${baseUrl}${student.imagePath}`;
+        setImagePreview(imageUrl);
+      } else {
+        setImagePreview(null);
+      }
+      setImageFile(null);
     } else {
       setSelectedStudent(null);
       setFormData({
         firstName: '',
         lastName: '',
         email: '',
-        phone: '',
+        phoneNumber: '',
         dateOfBirth: '',
-        parentName: '',
-        parentPhone: '',
+        address: '',
+        city: '',
+        state: '',
+        postalCode: '',
+        guardianName: '',
+        guardianPhone: '',
+        guardianEmail: '',
         enrollmentDate: new Date().toISOString().split('T')[0],
       });
+      setImagePreview(null);
+      setImageFile(null);
     }
     setOpenDialog(true);
   };
@@ -149,10 +197,21 @@ export function StudentsPage() {
   const handleCloseDialog = () => {
     setOpenDialog(false);
     setSelectedStudent(null);
+    setImageFile(null);
+    setImagePreview(null);
+    setTempImageFile(null);
+    setCropModalOpen(false);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    const submitForm = (studentId: string) => {
+      if (imageFile) {
+        uploadImageMutation.mutate({ id: studentId, file: imageFile });
+      }
+    };
+
     if (selectedStudent) {
       updateMutation.mutate({
         id: selectedStudent.id,
@@ -161,16 +220,24 @@ export function StudentsPage() {
           firstName: formData.firstName,
           lastName: formData.lastName,
           email: formData.email,
-          phone: formData.phone || '',
+          phoneNumber: formData.phoneNumber || '',
           dateOfBirth: formData.dateOfBirth,
-          parentName: formData.parentName || '',
-          parentPhone: formData.parentPhone || '',
-          enrollmentDate: formData.enrollmentDate,
+          address: formData.address || '',
+          city: formData.city || '',
+          state: formData.state || '',
+          postalCode: formData.postalCode || '',
+          guardianName: formData.guardianName || '',
+          guardianPhone: formData.guardianPhone || '',
+          guardianEmail: formData.guardianEmail || '',
           isActive: selectedStudent.isActive,
         },
+      }, {
+        onSuccess: () => submitForm(selectedStudent.id)
       });
     } else {
-      createMutation.mutate(formData);
+      createMutation.mutate(formData, {
+        onSuccess: (newStudent) => submitForm(newStudent.id)
+      });
     }
   };
 
@@ -205,6 +272,28 @@ export function StudentsPage() {
         sectionId: selectedSectionId,
       });
     }
+  };
+
+  const handleImageSelect = (file: File) => {
+    setTempImageFile(file);
+    setCropModalOpen(true);
+  };
+
+  const handleImageCropDone = (croppedFile: File) => {
+    setImageFile(croppedFile);
+    // Create preview
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setImagePreview(reader.result as string);
+    };
+    reader.readAsDataURL(croppedFile);
+    setCropModalOpen(false);
+    setTempImageFile(null);
+  };
+
+  const handleCropCancel = () => {
+    setCropModalOpen(false);
+    setTempImageFile(null);
   };
 
   const handleChangePage = (newPage: number) => {
@@ -263,9 +352,19 @@ export function StudentsPage() {
                       <tr key={student.id} className="hover:bg-blue-50 transition-colors duration-200">
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center gap-3">
-                            <div className={`flex-shrink-0 h-10 w-10 ${getAvatarColor(index)} rounded-full flex items-center justify-center text-white font-bold text-sm shadow-md`}>
-                              {getInitials(student.firstName, student.lastName)}
-                            </div>
+                            {student.imagePath ? (
+                              <div className="flex-shrink-0 h-10 w-10 rounded-full overflow-hidden shadow-md bg-gray-100">
+                                <img
+                                  src={`${(import.meta.env.VITE_API_URL || 'http://localhost:5208/api').replace('/api', '')}${student.imagePath}`}
+                                  alt={`${student.firstName} ${student.lastName}`}
+                                  className="w-full h-full object-cover"
+                                />
+                              </div>
+                            ) : (
+                              <div className={`flex-shrink-0 h-10 w-10 ${getAvatarColor(index)} rounded-full flex items-center justify-center text-white font-bold text-sm shadow-md`}>
+                                {getInitials(student.firstName, student.lastName)}
+                              </div>
+                            )}
                             <div>
                               <div className="text-sm font-bold text-gray-900">{student.firstName} {student.lastName}</div>
                               <div className="text-xs text-gray-600">{student.enrollmentNumber}</div>
@@ -389,114 +488,314 @@ export function StudentsPage() {
       {/* Add/Edit Dialog */}
       {openDialog && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg shadow-lg max-w-md w-full">
-            <div className="p-6 border-b border-gray-200">
-              <h2 className="text-2xl font-bold text-gray-900">
+          <div key={selectedStudent?.id || 'new'} className="bg-white rounded-2xl shadow-2xl w-full max-w-7xl max-h-[95vh] overflow-y-auto">
+            <div className="px-8 py-6 border-b-2 border-gray-200 sticky top-0 bg-gradient-to-r from-blue-600 to-blue-700 rounded-t-2xl">
+              <h2 className="text-3xl font-bold text-white flex items-center gap-3">
+                <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={selectedStudent ? "M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" : "M12 4v16m8-8H4"} />
+                </svg>
                 {selectedStudent ? 'Edit Student' : 'Add New Student'}
               </h2>
+              <p className="text-blue-100 mt-2 text-sm">
+                {selectedStudent ? 'Update student information below' : 'Fill in all the details to create a new student record'}
+              </p>
             </div>
-            <form onSubmit={handleSubmit} className="p-6 space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">First Name</label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.firstName}
-                    onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
+            <form onSubmit={handleSubmit} className="p-8 space-y-6 bg-gray-50">{/* Personal Information Section */}
+              <div className="bg-white rounded-xl shadow-md border border-gray-200 p-6 hover:shadow-lg transition-shadow">
+                <h3 className="text-xl font-bold text-gray-800 mb-5 flex items-center gap-2">
+                  <svg className="w-6 h-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
+                  Personal Information
+                </h3>
+                <div className="grid grid-cols-3 gap-5">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">First Name</label>
+                    <input
+                      type="text"
+                      required
+                      value={formData.firstName}
+                      onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                      placeholder="John"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Last Name</label>
+                    <input
+                      type="text"
+                      required
+                      value={formData.lastName}
+                      onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                      placeholder="Doe"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                    <input
+                      type="email"
+                      required
+                      value={formData.email}
+                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                      placeholder="john.doe@example.com"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Phone</label>
+                    <input
+                      type="tel"
+                      value={formData.phoneNumber}
+                      onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
+                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                      placeholder="+1 234 567 8900"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Date of Birth</label>
+                    <input
+                      type="date"
+                      required
+                      value={formData.dateOfBirth}
+                      onChange={(e) => setFormData({ ...formData, dateOfBirth: e.target.value })}
+                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                    />
+                  </div>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.lastName}
-                    onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
+              </div>
+
+              {/* Parent/Guardian Information Section */}
+              <div className="bg-white rounded-xl shadow-md border border-gray-200 p-6 hover:shadow-lg transition-shadow">
+                <h3 className="text-xl font-bold text-gray-800 mb-5 flex items-center gap-2">
+                  <svg className="w-6 h-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                  </svg>
+                  Guardian Information
+                </h3>
+                <div className="grid grid-cols-3 gap-5">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Guardian Name</label>
+                    <input
+                      type="text"
+                      value={formData.guardianName}
+                      onChange={(e) => setFormData({ ...formData, guardianName: e.target.value })}
+                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                      placeholder="Jane Doe"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Guardian Phone</label>
+                    <input
+                      type="tel"
+                      value={formData.guardianPhone}
+                      onChange={(e) => setFormData({ ...formData, guardianPhone: e.target.value })}
+                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                      placeholder="+1 234 567 8900"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Guardian Email</label>
+                    <input
+                      type="email"
+                      value={formData.guardianEmail}
+                      onChange={(e) => setFormData({ ...formData, guardianEmail: e.target.value })}
+                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                      placeholder="jane.doe@example.com"
+                    />
+                  </div>
                 </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                <input
-                  type="email"
-                  required
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
-                  <input
-                    type="tel"
-                    value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
+              {/* Address Information Section */}
+              <div className="bg-white rounded-xl shadow-md border border-gray-200 p-6 hover:shadow-lg transition-shadow">
+                <h3 className="text-xl font-bold text-gray-800 mb-5 flex items-center gap-2">
+                  <svg className="w-6 h-6 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                  Address Information
+                </h3>
+                <div className="grid grid-cols-2 gap-5">
+                  <div className="col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Street Address</label>
+                    <input
+                      type="text"
+                      value={formData.address}
+                      onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                      placeholder="123 Main Street, Apt 4B"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">City</label>
+                    <input
+                      type="text"
+                      value={formData.city}
+                      onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                      placeholder="New York"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">State</label>
+                    <input
+                      type="text"
+                      value={formData.state}
+                      onChange={(e) => setFormData({ ...formData, state: e.target.value })}
+                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                      placeholder="NY"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Postal Code</label>
+                    <input
+                      type="text"
+                      value={formData.postalCode}
+                      onChange={(e) => setFormData({ ...formData, postalCode: e.target.value })}
+                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                      placeholder="10001"
+                    />
+                  </div>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Date of Birth</label>
-                  <input
-                    type="date"
-                    required
-                    value={formData.dateOfBirth}
-                    onChange={(e) => setFormData({ ...formData, dateOfBirth: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
+              </div>
+
+              {/* Enrollment Information Section */}
+              <div className="bg-white rounded-xl shadow-md border border-gray-200 p-6 hover:shadow-lg transition-shadow">
+                <h3 className="text-xl font-bold text-gray-800 mb-5 flex items-center gap-2">
+                  <svg className="w-6 h-6 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  Enrollment Information
+                </h3>
+                <div className="grid grid-cols-3 gap-5">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Enrollment Date</label>
+                    <input
+                      type="date"
+                      required
+                      value={formData.enrollmentDate}
+                      onChange={(e) => setFormData({ ...formData, enrollmentDate: e.target.value })}
+                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                    />
+                  </div>
+                  <div />
                 </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Parent Name</label>
-                <input
-                  type="text"
-                  value={formData.parentName}
-                  onChange={(e) => setFormData({ ...formData, parentName: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
+              {/* Image Upload Section */}
+              <div className="bg-white rounded-xl shadow-md border border-gray-200 p-6 hover:shadow-lg transition-shadow">
+                <h3 className="text-xl font-bold text-gray-800 mb-5 flex items-center gap-2">
+                  <svg className="w-6 h-6 text-pink-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  Profile Image
+                </h3>
+                <div className="grid grid-cols-2 gap-6">
+                  <div>
+                    <label htmlFor="image" className="block text-sm font-medium text-gray-700 mb-3">Upload Image</label>
+                    <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:border-blue-400 hover:bg-blue-50 transition-all cursor-pointer group">
+                      <input
+                        id="image"
+                        type="file"
+                        accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            // Check file size (5MB)
+                            if (file.size > 5 * 1024 * 1024) {
+                              toast.error('Image size must be less than 5MB');
+                              return;
+                            }
+                            handleImageSelect(file);
+                          }
+                        }}
+                        className="hidden"
+                      />
+                      <label htmlFor="image" className="cursor-pointer block">
+                        <svg className="w-12 h-12 mx-auto text-blue-500 group-hover:text-blue-600 mb-3 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                        </svg>
+                        <p className="text-base font-semibold text-gray-700 group-hover:text-blue-600 transition-colors">Click to upload</p>
+                        <p className="text-xs text-gray-500 mt-1">PNG, JPG, GIF, WebP (Max 5MB)</p>
+                      </label>
+                    </div>
+                  </div>
+                  <div>
+                    {imagePreview ? (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-3">Preview</label>
+                        <div className="rounded-xl overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center h-56 shadow-inner border-2 border-gray-300">
+                          <img
+                            src={imagePreview}
+                            alt="Preview"
+                            className="max-w-full max-h-full object-contain"
+                          />
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setImageFile(null);
+                            setImagePreview(null);
+                          }}
+                          className="mt-3 w-full text-sm font-medium px-4 py-2.5 border-2 border-red-300 text-red-700 rounded-lg hover:bg-red-50 hover:border-red-400 transition-all flex items-center justify-center gap-2"
+                        >
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                          Remove Image
+                        </button>
+                      </div>
+                    ) : (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-3">Preview</label>
+                        <div className="h-56 rounded-xl bg-gradient-to-br from-gray-100 to-gray-200 border-2 border-dashed border-gray-300 flex items-center justify-center">
+                          <div className="text-center">
+                            <svg className="w-16 h-16 mx-auto text-gray-400 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                            <p className="text-sm font-medium text-gray-500">Image preview</p>
+                            <p className="text-xs text-gray-400 mt-1">Upload an image to see preview</p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Parent Phone</label>
-                <input
-                  type="tel"
-                  value={formData.parentPhone}
-                  onChange={(e) => setFormData({ ...formData, parentPhone: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Enrollment Date</label>
-                <input
-                  type="date"
-                  required
-                  value={formData.enrollmentDate}
-                  onChange={(e) => setFormData({ ...formData, enrollmentDate: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div>
-
-              <div className="flex gap-3 pt-4">
+              <div className="flex gap-4 pt-6 border-t-2 border-gray-200 bg-white sticky bottom-0 -mx-8 px-8 -mb-8 pb-8 rounded-b-2xl">
                 <button
                   type="button"
                   onClick={handleCloseDialog}
-                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition"
+                  className="flex-1 px-6 py-3 border-2 border-gray-300 text-gray-700 font-semibold rounded-xl hover:bg-gray-50 hover:border-gray-400 transition-all flex items-center justify-center gap-2"
                 >
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={createMutation.isPending || updateMutation.isPending}
-                  className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
                 >
-                  {createMutation.isPending || updateMutation.isPending ? 'Saving...' : 'Save'}
+                  {createMutation.isPending || updateMutation.isPending ? (
+                    <>
+                      <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                      {selectedStudent ? 'Update Student' : 'Create Student'}
+                    </>
+                  )}
                 </button>
               </div>
             </form>
@@ -580,6 +879,14 @@ export function StudentsPage() {
           </div>
         </div>
       )}
+
+      {/* Image Crop Modal */}
+      <ImageCropModal
+        isOpen={cropModalOpen}
+        imageFile={tempImageFile}
+        onCropDone={handleImageCropDone}
+        onCancel={handleCropCancel}
+      />
     </div>
   );
 }

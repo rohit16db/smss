@@ -76,7 +76,7 @@ public class CreateStudentCommandHandler : IRequestHandler<CreateStudentCommand,
         FirstName = student.FirstName,
         LastName = student.LastName,
         Email = student.Email,
-        PhoneNumber = student.PhoneNumber,
+        Phone = student.PhoneNumber,
         DateOfBirth = student.DateOfBirth,
         Address = student.Address,
         City = student.City,
@@ -85,11 +85,12 @@ public class CreateStudentCommandHandler : IRequestHandler<CreateStudentCommand,
         EnrollmentNumber = student.EnrollmentNumber,
         EnrollmentDate = student.EnrollmentDate,
         IsActive = student.IsActive,
-        GuardianName = student.GuardianName,
-        GuardianPhone = student.GuardianPhone,
-        GuardianEmail = student.GuardianEmail,
+        ParentName = student.GuardianName,
+        ParentPhone = student.GuardianPhone,
+        ParentEmail = student.GuardianEmail,
         CreatedAt = student.CreatedAt,
-        UpdatedAt = student.UpdatedAt
+        UpdatedAt = student.UpdatedAt,
+        ImagePath = student.ImagePath
     };
 }
 
@@ -155,7 +156,7 @@ public class UpdateStudentCommandHandler : IRequestHandler<UpdateStudentCommand,
         FirstName = student.FirstName,
         LastName = student.LastName,
         Email = student.Email,
-        PhoneNumber = student.PhoneNumber,
+        Phone = student.PhoneNumber,
         DateOfBirth = student.DateOfBirth,
         Address = student.Address,
         City = student.City,
@@ -164,11 +165,12 @@ public class UpdateStudentCommandHandler : IRequestHandler<UpdateStudentCommand,
         EnrollmentNumber = student.EnrollmentNumber,
         EnrollmentDate = student.EnrollmentDate,
         IsActive = student.IsActive,
-        GuardianName = student.GuardianName,
-        GuardianPhone = student.GuardianPhone,
-        GuardianEmail = student.GuardianEmail,
+        ParentName = student.GuardianName,
+        ParentPhone = student.GuardianPhone,
+        ParentEmail = student.GuardianEmail,
         CreatedAt = student.CreatedAt,
-        UpdatedAt = student.UpdatedAt
+        UpdatedAt = student.UpdatedAt,
+        ImagePath = student.ImagePath
     };
 }
 
@@ -283,7 +285,7 @@ public class GetStudentByIdQueryHandler : IRequestHandler<GetStudentByIdQuery, S
         FirstName = student.FirstName,
         LastName = student.LastName,
         Email = student.Email,
-        PhoneNumber = student.PhoneNumber,
+        Phone = student.PhoneNumber,
         DateOfBirth = student.DateOfBirth,
         Address = student.Address,
         City = student.City,
@@ -292,11 +294,12 @@ public class GetStudentByIdQueryHandler : IRequestHandler<GetStudentByIdQuery, S
         EnrollmentNumber = student.EnrollmentNumber,
         EnrollmentDate = student.EnrollmentDate,
         IsActive = student.IsActive,
-        GuardianName = student.GuardianName,
-        GuardianPhone = student.GuardianPhone,
-        GuardianEmail = student.GuardianEmail,
+        ParentName = student.GuardianName,
+        ParentPhone = student.GuardianPhone,
+        ParentEmail = student.GuardianEmail,
         CreatedAt = student.CreatedAt,
-        UpdatedAt = student.UpdatedAt
+        UpdatedAt = student.UpdatedAt,
+        ImagePath = student.ImagePath
     };
 }
 
@@ -368,7 +371,7 @@ public class GetAllStudentsQueryHandler : IRequestHandler<GetAllStudentsQuery, P
             FirstName = student.FirstName,
             LastName = student.LastName,
             Email = student.Email,
-            PhoneNumber = student.PhoneNumber,
+            Phone = student.PhoneNumber,
             DateOfBirth = student.DateOfBirth,
             Address = student.Address,
             City = student.City,
@@ -377,14 +380,15 @@ public class GetAllStudentsQueryHandler : IRequestHandler<GetAllStudentsQuery, P
             EnrollmentNumber = student.EnrollmentNumber,
             EnrollmentDate = student.EnrollmentDate,
             IsActive = student.IsActive,
-            GuardianName = student.GuardianName,
-            GuardianPhone = student.GuardianPhone,
-            GuardianEmail = student.GuardianEmail,
+            ParentName = student.GuardianName,
+            ParentPhone = student.GuardianPhone,
+            ParentEmail = student.GuardianEmail,
             CreatedAt = student.CreatedAt,
             UpdatedAt = student.UpdatedAt,
             CurrentSectionId = currentSection?.SectionId,
             CurrentSectionName = currentSection?.Section?.SectionName,
-            CurrentClassName = currentSection?.Section?.Class?.ClassName
+            CurrentClassName = currentSection?.Section?.Class?.Name,
+            ImagePath = student.ImagePath
         };
     }
 }

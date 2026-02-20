@@ -17,6 +17,11 @@ public class Student : BaseEntity
     public string? GuardianName { get; set; }
     public string? GuardianPhone { get; set; }
     public string? GuardianEmail { get; set; }
+    
+    /// <summary>
+    /// Path to student's profile image (stored in /uploads/students/)
+    /// </summary>
+    public string? ImagePath { get; set; }
 
     /// <summary>
     /// Student's enrollment in sections (tracks current and historical sections)

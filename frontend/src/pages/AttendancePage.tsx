@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { attendanceApi, studentApi, teacherApi, holidayApi, type CreateStudentAttendanceDto, type CreateTeacherAttendanceDto, type StudentAttendance, type TeacherAttendance, type Student, type Teacher, type Holiday } from '../services/api';
+import { attendanceApi, studentApi, teacherApi, holidayApi, type CreateStudentAttendanceDto, type CreateTeacherAttendanceDto, type StudentAttendance, type TeacherAttendance, type Student, type Teacher } from '../services/api';
 
 export function AttendancePage() {
   const queryClient = useQueryClient();
