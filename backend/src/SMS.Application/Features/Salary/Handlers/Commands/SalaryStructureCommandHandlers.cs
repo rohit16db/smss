@@ -189,6 +189,7 @@ public class AssignSalaryStructureToTeacherCommandHandler : IRequestHandler<Assi
             TeacherId = teacher.Id,
             TeacherName = teacher.FullName,
             TeacherEmail = teacher.Email,
+            TeacherImagePath = teacher.ImagePath,
             SalaryStructureId = structure.Id,
             SalaryStructureName = structure.Name,
             GrossSalary = structure.GrossSalary,

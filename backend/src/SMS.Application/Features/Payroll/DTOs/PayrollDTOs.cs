@@ -20,6 +20,7 @@ public class TeacherPayrollReportDto
 {
     public Guid TeacherId { get; set; }
     public string TeacherName { get; set; }
+    public string? TeacherImagePath { get; set; }
     public decimal BaseSalary { get; set; }
     public DateOnly PeriodStartDate { get; set; }
     public DateOnly PeriodEndDate { get; set; }

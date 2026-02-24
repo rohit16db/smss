@@ -44,6 +44,7 @@ export interface TeacherSalaryAssignmentDto {
   teacherId: string;
   teacherName: string;
   teacherEmail: string;
+  teacherImagePath?: string;
   salaryStructureId: string;
   salaryStructureName: string;
   grossSalary: number;

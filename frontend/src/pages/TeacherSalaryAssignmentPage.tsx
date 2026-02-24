@@ -199,7 +199,22 @@ export const TeacherSalaryAssignmentPage: React.FC = () => {
                     {teachersWithAssignments.map((assignment) => (
                       <tr key={assignment.teacherId} className="hover:bg-blue-50 transition-colors duration-200">
                         <td className="px-6 py-4">
-                          <p className="font-semibold text-gray-900">{assignment.teacherName}</p>
+                          <div className="flex items-center gap-3">
+                            {assignment.teacherImagePath ? (
+                              <div className="flex-shrink-0 h-10 w-10 rounded-full overflow-hidden shadow-md bg-gray-100">
+                                <img
+                                  src={`${(import.meta.env.VITE_API_URL || 'http://localhost:5208/api').replace('/api', '')}${assignment.teacherImagePath}`}
+                                  alt={assignment.teacherName}
+                                  className="w-full h-full object-cover"
+                                />
+                              </div>
+                            ) : (
+                              <div className="flex-shrink-0 h-10 w-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-md">
+                                {assignment.teacherName.split(' ')[0][0]}{assignment.teacherName.split(' ')[1]?.[0] || ''}
+                              </div>
+                            )}
+                            <p className="font-semibold text-gray-900">{assignment.teacherName}</p>
+                          </div>
                         </td>
                         <td className="px-6 py-4 text-sm text-gray-600">{assignment.teacherEmail}</td>
                         <td className="px-6 py-4">

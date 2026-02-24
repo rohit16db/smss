@@ -698,10 +698,25 @@ export function AttendancePage() {
                           setShowTeacherDropdown(false);
                           setPage(0);
                         }}
-                        className="w-full text-left px-4 py-2 hover:bg-blue-50 flex justify-between items-center border-b border-gray-100 last:border-b-0"
+                        className="w-full text-left px-3 py-2 hover:bg-blue-50 flex items-center gap-3 border-b border-gray-100 last:border-b-0"
                       >
-                        <span className="font-medium">{teacher.firstName} {teacher.lastName}</span>
-                        <span className="text-sm text-gray-500">{teacher.email}</span>
+                        {teacher.imagePath ? (
+                          <div className="flex-shrink-0 h-8 w-8 rounded-full overflow-hidden bg-gray-100">
+                            <img
+                              src={`${(import.meta.env.VITE_API_URL || 'http://localhost:5208/api').replace('/api', '')}${teacher.imagePath}`}
+                              alt={`${teacher.firstName} ${teacher.lastName}`}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                        ) : (
+                          <div className="flex-shrink-0 h-8 w-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white font-bold text-xs">
+                            {teacher.firstName[0]}{teacher.lastName[0]}
+                          </div>
+                        )}
+                        <div className="flex-1">
+                          <p className="font-medium text-gray-900 text-sm">{teacher.firstName} {teacher.lastName}</p>
+                          <p className="text-xs text-gray-500">{teacher.email}</p>
+                        </div>
                       </button>
                     ))}
                   </div>
@@ -1226,10 +1241,25 @@ export function AttendancePage() {
                                     setDialogTeacherSearchTerm('');
                                     setShowDialogTeacherDropdown(false);
                                   }}
-                                  className="px-3 py-2 cursor-pointer hover:bg-blue-50 border-b border-gray-100 last:border-b-0"
+                                  className="px-3 py-2 cursor-pointer hover:bg-blue-50 border-b border-gray-100 last:border-b-0 flex items-center gap-3"
                                 >
-                                  <p className="font-medium text-gray-900">{teacher.firstName} {teacher.lastName}</p>
-                                  <p className="text-sm text-gray-500">{teacher.email}</p>
+                                  {teacher.imagePath ? (
+                                    <div className="flex-shrink-0 h-8 w-8 rounded-full overflow-hidden bg-gray-100">
+                                      <img
+                                        src={`${(import.meta.env.VITE_API_URL || 'http://localhost:5208/api').replace('/api', '')}${teacher.imagePath}`}
+                                        alt={`${teacher.firstName} ${teacher.lastName}`}
+                                        className="w-full h-full object-cover"
+                                      />
+                                    </div>
+                                  ) : (
+                                    <div className="flex-shrink-0 h-8 w-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white font-bold text-xs">
+                                      {teacher.firstName[0]}{teacher.lastName[0]}
+                                    </div>
+                                  )}
+                                  <div className="flex-1">
+                                    <p className="font-medium text-gray-900 text-sm">{teacher.firstName} {teacher.lastName}</p>
+                                    <p className="text-xs text-gray-500">{teacher.email}</p>
+                                  </div>
                                 </div>
                               ))
                             ) : (

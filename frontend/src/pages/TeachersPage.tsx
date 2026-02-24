@@ -114,7 +114,7 @@ export function TeachersPage() {
       });
       // Set image preview if image exists
       if (teacher.imagePath) {
-        setImagePreview(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}${teacher.imagePath}`);
+        setImagePreview(`${(import.meta.env.VITE_API_URL || 'http://localhost:5208/api').replace('/api', '')}${teacher.imagePath}`);
       } else {
         setImagePreview(null);
       }

@@ -18,7 +18,10 @@ public class GetTeacherPayrollReportQueryHandler : IRequestHandler<GetTeacherPay
 
     public async Task<PayrollPeriodReportDto> Handle(GetTeacherPayrollReportQuery request, CancellationToken cancellationToken)
     {
-        var teachers = await _context.Teachers.Where(t => t.IsActive).ToListAsync(cancellationToken);
+        var teachers = await _context.Teachers
+            .Include(t => t.SalaryStructure)
+            .Where(t => t.IsActive)
+            .ToListAsync(cancellationToken);
         var attendanceRecords = await _context.TeacherAttendances
             .Where(a => a.AttendanceDate >= request.StartDate && a.AttendanceDate <= request.EndDate)
             .ToListAsync(cancellationToken);
@@ -43,7 +46,7 @@ public class GetTeacherPayrollReportQueryHandler : IRequestHandler<GetTeacherPay
             // Bonus calculation (90% threshold)
             var bonusEligible = attendancePercentage >= 90;
             var bonusPercentage = bonusEligible ? 10m : 0m; // 10% bonus if eligible
-            var baseSalary = 50000m; // Default base salary (can be fetched from Teacher entity if stored)
+            var baseSalary = teacher.SalaryStructure?.BaseSalary ?? 50000m; // Get from assigned salary structure, fallback to 50k if not assigned
             var bonusAmount = baseSalary * (bonusPercentage / 100);
 
             // Deductions
@@ -55,6 +58,7 @@ public class GetTeacherPayrollReportQueryHandler : IRequestHandler<GetTeacherPay
             {
                 TeacherId = teacher.Id,
                 TeacherName = $"{teacher.FirstName} {teacher.LastName}",
+                TeacherImagePath = teacher.ImagePath,
                 BaseSalary = baseSalary,
                 PeriodStartDate = request.StartDate,
                 PeriodEndDate = request.EndDate,
@@ -121,7 +125,10 @@ public class GetBonusEligibilityQueryHandler : IRequestHandler<GetBonusEligibili
 
     public async Task<List<BonusEligibilityDto>> Handle(GetBonusEligibilityQuery request, CancellationToken cancellationToken)
     {
-        var teachers = await _context.Teachers.Where(t => t.IsActive).ToListAsync(cancellationToken);
+        var teachers = await _context.Teachers
+            .Include(t => t.SalaryStructure)
+            .Where(t => t.IsActive)
+            .ToListAsync(cancellationToken);
         var attendanceRecords = await _context.TeacherAttendances
             .Where(a => a.AttendanceDate >= request.StartDate && a.AttendanceDate <= request.EndDate)
             .ToListAsync(cancellationToken);
@@ -136,7 +143,7 @@ public class GetBonusEligibilityQueryHandler : IRequestHandler<GetBonusEligibili
 
             var attendancePercentage = totalWorkingDays > 0 ? ((decimal)presentDays / totalWorkingDays) * 100 : 0;
             var isEligible = attendancePercentage >= request.BonusThresholdPercentage;
-            var baseSalary = 50000m;
+            var baseSalary = teacher.SalaryStructure?.BaseSalary ?? 50000m; // Get from assigned salary structure, fallback to 50k
             var bonusPercentage = isEligible ? 10m : 0m;
             var bonusAmount = baseSalary * (bonusPercentage / 100);
 

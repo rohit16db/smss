@@ -105,6 +105,7 @@ public class TeacherSalaryAssignmentDto
     public Guid TeacherId { get; set; }
     public string TeacherName { get; set; } = string.Empty;
     public string TeacherEmail { get; set; } = string.Empty;
+    public string? TeacherImagePath { get; set; }
     public Guid SalaryStructureId { get; set; }
     public string SalaryStructureName { get; set; } = string.Empty;
     public decimal GrossSalary { get; set; }
