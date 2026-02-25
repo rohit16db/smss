@@ -66,3 +66,29 @@ public class MoveStudentSectionCommand : IRequest<StudentSectionDto>
     public string StudentId { get; set; } = string.Empty;
     public string NewSectionId { get; set; } = string.Empty;
 }
+
+/// <summary>
+/// Auto-assign sequential roll numbers to all students in a section
+/// </summary>
+public class AutoAssignRollNumbersCommand : IRequest<bool>
+{
+    public string SectionId { get; set; } = string.Empty;
+}
+
+/// <summary>
+/// Update a student's roll number in a section
+/// </summary>
+public class UpdateStudentRollNumberCommand : IRequest<bool>
+{
+    public string StudentSectionId { get; set; } = string.Empty;
+    public int RollNumber { get; set; }
+}
+
+/// <summary>
+/// Bulk update roll numbers for multiple students
+/// </summary>
+public class BulkUpdateRollNumbersCommand : IRequest<bool>
+{
+    public string SectionId { get; set; } = string.Empty;
+    public Dictionary<string, int> RollNumberUpdates { get; set; } = new();
+}

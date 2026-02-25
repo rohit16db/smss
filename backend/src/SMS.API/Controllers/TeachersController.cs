@@ -1,9 +1,12 @@
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using SMS.API.Services;
+using SMS.Application.Common.Interfaces;
 using SMS.Application.Features.Teachers.Commands;
 using SMS.Application.Features.Teachers.DTOs;
 using SMS.Application.Features.Teachers.Queries;
+using System.ComponentModel.DataAnnotations;
 
 namespace SMS.API.Controllers;
 
@@ -16,10 +19,16 @@ namespace SMS.API.Controllers;
 public class TeachersController : ControllerBase
 {
     private readonly IMediator _mediator;
+    private readonly IImageUploadService _imageUploadService;
+    private readonly IApplicationDbContext _context;
+    private readonly ILogger<TeachersController> _logger;
 
-    public TeachersController(IMediator mediator)
+    public TeachersController(IMediator mediator, IImageUploadService imageUploadService, IApplicationDbContext context, ILogger<TeachersController> logger)
     {
         _mediator = mediator;
+        _imageUploadService = imageUploadService;
+        _context = context;
+        _logger = logger;
     }
 
     /// <summary>
@@ -367,5 +376,52 @@ public class TeachersController : ControllerBase
     {
         var userIdClaim = User.FindFirst("sub") ?? User.FindFirst("nameid");
         return userIdClaim?.Value ?? Guid.Empty.ToString();
+    }
+
+    /// <summary>
+    /// Upload teacher profile image
+    /// </summary>
+    [HttpPost("{id:guid}/upload-image")]
+    [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> UploadImage(Guid id, IFormFile file, CancellationToken cancellationToken)
+    {
+        try
+        {
+            // Verify teacher exists
+            var teacher = await _context.Teachers.FindAsync(new object[] { id }, cancellationToken: cancellationToken);
+            if (teacher == null)
+            {
+                return NotFound(new { message = "Teacher not found" });
+            }
+
+            // Validate and upload image
+            var imagePath = await _imageUploadService.UploadImageAsync(file, "teachers", id, cancellationToken);
+
+            // Delete old image if it exists
+            if (!string.IsNullOrEmpty(teacher.ImagePath))
+            {
+                await _imageUploadService.DeleteImageAsync(teacher.ImagePath, cancellationToken);
+            }
+
+            // Update teacher with new image path
+            teacher.ImagePath = imagePath;
+            _context.Teachers.Update(teacher);
+            await _context.SaveChangesAsync(cancellationToken);
+
+            _logger.LogInformation("Image uploaded for teacher {TeacherId}: {ImagePath}", id, imagePath);
+            return Ok(new { message = "Image uploaded successfully", imagePath });
+        }
+        catch (ValidationException ex)
+        {
+            _logger.LogWarning(ex, "Invalid image file for teacher {TeacherId}", id);
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error uploading image for teacher {TeacherId}", id);
+            return BadRequest(new { message = "Error uploading image" });
+        }
     }
 }

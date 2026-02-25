@@ -10,6 +10,7 @@ export interface TeacherAttendancePayrollDto {
 export interface TeacherPayrollReportDto {
   teacherId: string;
   teacherName: string;
+  teacherImagePath?: string;
   baseSalary: number;
   periodStartDate: string;
   periodEndDate: string;

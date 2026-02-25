@@ -18,12 +18,12 @@ export const HomePage = () => {
   // Fetch statistics
   const { data: studentsData } = useQuery({
     queryKey: ['students', 1, 1],
-    queryFn: () => studentApi.getAll({ pageNumber: 1, pageSize: 1 }),
+    queryFn: () => studentApi.getAll({ pageNumber: 1, pageSize: 1, isActive: true }),
   });
 
   const { data: teachersData } = useQuery({
     queryKey: ['teachers', 1, 1],
-    queryFn: () => teacherApi.getAll({ pageNumber: 1, pageSize: 1 }),
+    queryFn: () => teacherApi.getAll({ pageNumber: 1, pageSize: 1, isActive: true }),
   });
 
   const { data: feesData } = useQuery({

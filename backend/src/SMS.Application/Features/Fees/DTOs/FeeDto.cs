@@ -170,3 +170,46 @@ public class PaginatedFeePaymentListDto
     public int TotalCount { get; set; }
     public int TotalPages => (TotalCount + PageSize - 1) / PageSize;
 }
+
+/// <summary>
+/// DTO for fee report item with payment status
+/// </summary>
+public class FeeReportDto
+{
+    public string Id { get; set; } = string.Empty;
+    public string StudentId { get; set; } = string.Empty;
+    public string StudentName { get; set; } = string.Empty;
+    public string EnrollmentNumber { get; set; } = string.Empty;
+    public string? SectionId { get; set; }
+    public string? SectionName { get; set; }
+    public string FeeStructureId { get; set; } = string.Empty;
+    public string FeeStructureName { get; set; } = string.Empty;
+    public decimal TotalAmount { get; set; }
+    public decimal PaidAmount { get; set; }
+    public decimal BalanceAmount { get; set; }
+    public string Status { get; set; } = string.Empty; // "Paid", "Partial", "Due", "Overdue"
+    public DateTime? LastPaymentDate { get; set; }
+    public DateTime StartDate { get; set; }
+    public DateTime? DueDate { get; set; }
+}
+
+/// <summary>
+/// DTO for paginated fee report with summary statistics
+/// </summary>
+public class PaginatedFeeReportListDto
+{
+    public List<FeeReportDto> Items { get; set; } = new();
+    public int PageNumber { get; set; }
+    public int PageSize { get; set; }
+    public int TotalCount { get; set; }
+    public int TotalPages => (TotalCount + PageSize - 1) / PageSize;
+    
+    // Summary statistics
+    public decimal TotalDueAmount { get; set; }
+    public decimal TotalPaidAmount { get; set; }
+    public decimal TotalBalanceAmount { get; set; }
+    public int PaidCount { get; set; }
+    public int PartialCount { get; set; }
+    public int DueCount { get; set; }
+    public int OverdueCount { get; set; }
+}

@@ -35,14 +35,29 @@ export const TeacherPayrollCard: React.FC<TeacherPayrollCardProps> = ({
     <div className="border border-gray-200 rounded-lg p-6 hover:shadow-lg transition-shadow">
       {/* Header */}
       <div className="flex justify-between items-start mb-4">
-        <div>
-          <h3 className="text-lg font-semibold text-gray-900">
-            {payroll.teacherName}
-          </h3>
-          <p className="text-sm text-gray-500 mt-1">
-            {new Date(payroll.periodStartDate).toLocaleDateString()} -{' '}
-            {new Date(payroll.periodEndDate).toLocaleDateString()}
-          </p>
+        <div className="flex items-center gap-3 flex-1">
+          {payroll.teacherImagePath ? (
+            <div className="flex-shrink-0 h-10 w-10 rounded-full overflow-hidden shadow-md bg-gray-100">
+              <img
+                src={`${(import.meta.env.VITE_API_URL || 'http://localhost:5208/api').replace('/api', '')}${payroll.teacherImagePath}`}
+                alt={payroll.teacherName}
+                className="w-full h-full object-cover"
+              />
+            </div>
+          ) : (
+            <div className="flex-shrink-0 h-10 w-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-md">
+              {payroll.teacherName.split(' ')[0][0]}{payroll.teacherName.split(' ')[1]?.[0] || ''}
+            </div>
+          )}
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900">
+              {payroll.teacherName}
+            </h3>
+            <p className="text-sm text-gray-500 mt-1">
+              {new Date(payroll.periodStartDate).toLocaleDateString()} -{' '}
+              {new Date(payroll.periodEndDate).toLocaleDateString()}
+            </p>
+          </div>
         </div>
         {payroll.isBonusEligible && (
           <div className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-xs font-semibold">

@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { teacherApi, type CreateTeacherDto, type UpdateTeacherDto, type Teacher } from '../services/api';
 import { LoadingSkeleton } from '../components/common/LoadingSkeleton';
 import { TeacherAssignmentsDialog } from '../components/teachers/TeacherAssignmentsDialog';
+import { ImageCropModal } from '../components/common/ImageCropModal';
 
 export function TeachersPage() {
   const queryClient = useQueryClient();
@@ -13,6 +14,10 @@ export function TeachersPage() {
   const [selectedTeacher, setSelectedTeacher] = useState<Teacher | null>(null);
   const [openAssignmentsDialog, setOpenAssignmentsDialog] = useState(false);
   const [assignmentTeacher, setAssignmentTeacher] = useState<Teacher | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [cropModalOpen, setCropModalOpen] = useState(false);
+  const [tempImageFile, setTempImageFile] = useState<File | null>(null);
   const [formData, setFormData] = useState<CreateTeacherDto>({
     userId: '',
     firstName: '',
@@ -29,6 +34,7 @@ export function TeachersPage() {
     queryFn: () => teacherApi.getAll({
       pageNumber: page + 1,
       pageSize: rowsPerPage,
+      isActive: true, // Only show active teachers
     }),
   });
 
@@ -80,6 +86,19 @@ export function TeachersPage() {
     },
   });
 
+  const uploadImageMutation = useMutation({
+    mutationFn: ({ id, file }: { id: string; file: File }) =>
+      teacherApi.uploadImage(id, file),
+    onSuccess: () => {
+      toast.success('Image uploaded successfully!');
+      queryClient.invalidateQueries({ queryKey: ['teachers'] });
+      setImageFile(null);
+    },
+    onError: (error: any) => {
+      toast.error(error?.response?.data?.message || 'Failed to upload image');
+    },
+  });
+
   const handleOpenDialog = (teacher?: Teacher) => {
     if (teacher) {
       setSelectedTeacher(teacher);
@@ -93,6 +112,13 @@ export function TeachersPage() {
         experienceYears: teacher.experienceYears,
         joiningDate: teacher.joiningDate.split('T')[0],
       });
+      // Set image preview if image exists
+      if (teacher.imagePath) {
+        setImagePreview(`${(import.meta.env.VITE_API_URL || 'http://localhost:5208/api').replace('/api', '')}${teacher.imagePath}`);
+      } else {
+        setImagePreview(null);
+      }
+      setImageFile(null);
     } else {
       setSelectedTeacher(null);
       setFormData({
@@ -105,6 +131,8 @@ export function TeachersPage() {
         experienceYears: 0,
         joiningDate: new Date().toISOString().split('T')[0],
       });
+      setImagePreview(null);
+      setImageFile(null);
     }
     setOpenDialog(true);
   };
@@ -112,10 +140,43 @@ export function TeachersPage() {
   const handleCloseDialog = () => {
     setOpenDialog(false);
     setSelectedTeacher(null);
+    setImageFile(null);
+    setImagePreview(null);
+    setTempImageFile(null);
+    setCropModalOpen(false);
+  };
+
+  const handleImageSelect = (file: File) => {
+    setTempImageFile(file);
+    setCropModalOpen(true);
+  };
+
+  const handleImageCropDone = (croppedFile: File) => {
+    setImageFile(croppedFile);
+    // Create preview
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setImagePreview(reader.result as string);
+    };
+    reader.readAsDataURL(croppedFile);
+    setCropModalOpen(false);
+    setTempImageFile(null);
+  };
+
+  const handleCropCancel = () => {
+    setCropModalOpen(false);
+    setTempImageFile(null);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    const submitForm = (teacherId: string) => {
+      if (imageFile) {
+        uploadImageMutation.mutate({ id: teacherId, file: imageFile });
+      }
+    };
+
     if (selectedTeacher) {
       updateMutation.mutate({
         id: selectedTeacher.id,
@@ -131,9 +192,13 @@ export function TeachersPage() {
           joiningDate: formData.joiningDate,
           isActive: selectedTeacher.isActive,
         },
+      }, {
+        onSuccess: () => submitForm(selectedTeacher.id)
       });
     } else {
-      createMutation.mutate(formData);
+      createMutation.mutate(formData, {
+        onSuccess: (newTeacher) => submitForm(newTeacher.id)
+      });
     }
   };
 
@@ -192,9 +257,19 @@ export function TeachersPage() {
                       <tr key={teacher.id} className="hover:bg-blue-50 transition-colors duration-200">
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center gap-3">
-                            <div className="flex-shrink-0 h-10 w-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-md">
-                              {teacher.firstName[0]}{teacher.lastName[0]}
-                            </div>
+                            {teacher.imagePath ? (
+                              <div className="flex-shrink-0 h-10 w-10 rounded-full overflow-hidden shadow-md bg-gray-100">
+                                <img
+                                  src={`${(import.meta.env.VITE_API_URL || 'http://localhost:5208/api').replace('/api', '')}${teacher.imagePath}`}
+                                  alt={`${teacher.firstName} ${teacher.lastName}`}
+                                  className="w-full h-full object-cover"
+                                />
+                              </div>
+                            ) : (
+                              <div className="flex-shrink-0 h-10 w-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-md">
+                                {teacher.firstName[0]}{teacher.lastName[0]}
+                              </div>
+                            )}
                             <div>
                               <div className="text-sm font-bold text-gray-900">{teacher.firstName} {teacher.lastName}</div>
                               <div className="text-xs text-gray-600">{teacher.qualification || 'No qualification'}</div>
@@ -313,9 +388,12 @@ export function TeachersPage() {
 
       {openDialog && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 animate-fade-in" role="dialog" aria-modal="true" aria-labelledby="dialog-title">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto animate-slide-up">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto animate-slide-up">
             <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between rounded-t-2xl">
-              <h2 id="dialog-title" className="text-2xl font-bold text-gray-900">{selectedTeacher ? 'Edit Teacher' : 'Add New Teacher'}</h2>
+              <div>
+                <h2 id="dialog-title" className="text-2xl font-bold text-gray-900">{selectedTeacher ? 'Edit Teacher' : 'Add New Teacher'}</h2>
+                <p className="text-sm text-gray-600 mt-1">{selectedTeacher ? 'Update teacher information' : 'Fill in the details to create a new teacher'}</p>
+              </div>
               <button onClick={handleCloseDialog} className="text-gray-400 hover:text-gray-600 transition-colors" aria-label="Close dialog">
                 <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -324,53 +402,128 @@ export function TeachersPage() {
             </div>
 
             <form onSubmit={handleSubmit} className="p-6">
-              <div className="space-y-4">
+              <div className="space-y-6">
+                {/* Account Information Section */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">User ID <span className="text-red-500">*</span></label>
-                  <input type="text" value={formData.userId} onChange={(e) => setFormData({ ...formData, userId: e.target.value })} required disabled={!!selectedTeacher} className="input-field disabled:bg-gray-100 disabled:cursor-not-allowed" placeholder="Enter user ID" />
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">Account Information</h3>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">First Name <span className="text-red-500">*</span></label>
-                    <input type="text" value={formData.firstName} onChange={(e) => setFormData({ ...formData, firstName: e.target.value })} required className="input-field" placeholder="John" />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Last Name <span className="text-red-500">*</span></label>
-                    <input type="text" value={formData.lastName} onChange={(e) => setFormData({ ...formData, lastName: e.target.value })} required className="input-field" placeholder="Doe" />
+                    <label className="block text-sm font-medium text-gray-700 mb-1">User ID <span className="text-red-500">*</span></label>
+                    <input type="text" value={formData.userId} onChange={(e) => setFormData({ ...formData, userId: e.target.value })} required disabled={!!selectedTeacher} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed" placeholder="Enter user ID" />
                   </div>
                 </div>
 
+                {/* Personal Information Section */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Email <span className="text-red-500">*</span></label>
-                  <input type="email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} required className="input-field" placeholder="john.doe@school.com" />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
-                  <input type="tel" value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} className="input-field" placeholder="+1 (555) 000-0000" />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Qualification</label>
-                  <textarea value={formData.qualification} onChange={(e) => setFormData({ ...formData, qualification: e.target.value })} className="input-field resize-none" rows={3} placeholder="e.g., M.Ed in Mathematics, B.Sc in Physics" />
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Experience (years)</label>
-                    <input type="number" value={formData.experienceYears} onChange={(e) => setFormData({ ...formData, experienceYears: parseInt(e.target.value) || 0 })} className="input-field" min="0" placeholder="5" />
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">Personal Information</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">First Name <span className="text-red-500">*</span></label>
+                      <input type="text" value={formData.firstName} onChange={(e) => setFormData({ ...formData, firstName: e.target.value })} required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="John" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Last Name <span className="text-red-500">*</span></label>
+                      <input type="text" value={formData.lastName} onChange={(e) => setFormData({ ...formData, lastName: e.target.value })} required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Doe" />
+                    </div>
+                    <div className="col-span-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Email <span className="text-red-500">*</span></label>
+                      <input type="email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="john.doe@school.com" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+                      <input type="tel" value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="+1 (555) 000-0000" />
+                    </div>
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Joining Date</label>
-                    <input type="date" value={formData.joiningDate} onChange={(e) => setFormData({ ...formData, joiningDate: e.target.value })} className="input-field" />
+                </div>
+
+                {/* Professional Information Section */}
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">Professional Information</h3>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Qualification</label>
+                      <textarea value={formData.qualification} onChange={(e) => setFormData({ ...formData, qualification: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none" rows={3} placeholder="e.g., M.Ed in Mathematics, B.Sc in Physics" />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Experience (years)</label>
+                        <input type="number" value={formData.experienceYears} onChange={(e) => setFormData({ ...formData, experienceYears: parseInt(e.target.value) || 0 })} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" min="0" placeholder="5" />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Joining Date</label>
+                        <input type="date" value={formData.joiningDate} onChange={(e) => setFormData({ ...formData, joiningDate: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Image Upload Section */}
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">Profile Image</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label htmlFor="image" className="block text-sm font-medium text-gray-700 mb-2">Upload Image</label>
+                      <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-blue-400 transition cursor-pointer">
+                        <input
+                          id="image"
+                          type="file"
+                          accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              // Check file size (5MB)
+                              if (file.size > 5 * 1024 * 1024) {
+                                toast.error('Image size must be less than 5MB');
+                                return;
+                              }
+                              handleImageSelect(file);
+                            }
+                          }}
+                          className="hidden"
+                        />
+                        <label htmlFor="image" className="cursor-pointer">
+                          <svg className="w-8 h-8 mx-auto text-gray-400 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                          </svg>
+                          <p className="text-sm font-medium text-gray-700">Click to upload</p>
+                          <p className="text-xs text-gray-500">PNG, JPG, GIF, WebP (Max 5MB)</p>
+                        </label>
+                      </div>
+                    </div>
+                    <div>
+                      {imagePreview ? (
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Preview</label>
+                          <div className="rounded-lg overflow-hidden bg-gray-100 flex items-center justify-center h-40">
+                            <img
+                              src={imagePreview}
+                              alt="Preview"
+                              className="max-w-full max-h-full object-contain"
+                            />
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setImageFile(null);
+                              setImagePreview(null);
+                            }}
+                            className="mt-2 w-full text-sm px-3 py-2 border border-red-300 text-red-700 rounded-lg hover:bg-red-50 transition"
+                          >
+                            Remove Image
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="h-40 rounded-lg bg-gray-100 border-2 border-gray-200 flex items-center justify-center">
+                          <p className="text-sm text-gray-500 text-center">Image preview will appear here</p>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
 
-              <div className="mt-6 flex gap-3">
-                <button type="button" onClick={handleCloseDialog} className="flex-1 btn-secondary">Cancel</button>
-                <button type="submit" disabled={createMutation.isPending || updateMutation.isPending} className="flex-1 btn-primary disabled:opacity-50 disabled:cursor-not-allowed">
+              <div className="mt-6 flex gap-3 border-t border-gray-200 pt-6">
+                <button type="button" onClick={handleCloseDialog} className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition">Cancel</button>
+                <button type="submit" disabled={createMutation.isPending || updateMutation.isPending} className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed">
                   {createMutation.isPending || updateMutation.isPending ? (
                     <span className="flex items-center justify-center gap-2">
                       <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
@@ -385,6 +538,14 @@ export function TeachersPage() {
           </div>
         </div>
       )}
+
+      {/* Image Crop Modal */}
+      <ImageCropModal
+        isOpen={cropModalOpen}
+        imageFile={tempImageFile}
+        onCropDone={handleImageCropDone}
+        onCancel={handleCropCancel}
+      />
 
       {/* Teacher Assignments Dialog */}
       <TeacherAssignmentsDialog

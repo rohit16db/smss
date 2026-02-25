@@ -53,3 +53,11 @@ public class GetStudentCurrentSectionQuery : IRequest<StudentSectionDto?>
 {
     public string StudentId { get; set; } = string.Empty;
 }
+
+/// <summary>
+/// Get all students with roll numbers in a section
+/// </summary>
+public class GetStudentsWithRollNumbersQuery : IRequest<List<StudentSectionDto>>
+{
+    public string SectionId { get; set; } = string.Empty;
+}

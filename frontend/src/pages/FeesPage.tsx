@@ -10,55 +10,59 @@ export function FeesPage() {
   const [activeTab, setActiveTab] = useState<TabType>('structures');
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-8 animate-fade-in">
-          <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
-            💰 Fee Management
-          </h1>
-          <p className="text-gray-600 mt-1">Manage fee structures, student fees, and payments</p>
-        </div>
-
-        {/* Tabs */}
-        <div className="mb-6">
-          <div className="border-b border-gray-200">
-            <nav className="-mb-px flex space-x-8">
-              <button
-                onClick={() => setActiveTab('structures')}
-                className={`${activeTab === 'structures'
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors`}
-              >
-                📋 Fee Structures
-              </button>
-              <button
-                onClick={() => setActiveTab('assignments')}
-                className={`${activeTab === 'assignments'
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors`}
-              >
-                🎓 Student Fee Assignments
-              </button>
-              <button
-                onClick={() => setActiveTab('payments')}
-                className={`${activeTab === 'payments'
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors`}
-              >
-                💳 Payments
-              </button>
-            </nav>
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="space-y-6">
+          {/* Header */}
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div>
+              <h1 className="text-4xl font-bold bg-gradient-to-r from-emerald-600 to-emerald-800 bg-clip-text text-transparent">
+                💰 Fee Management
+              </h1>
+              <p className="text-gray-600 mt-2">Manage fee structures, student fees, and payments</p>
+            </div>
           </div>
-        </div>
 
-        {/* Tab Content */}
-        {activeTab === 'structures' && <FeeStructuresTab />}
-        {activeTab === 'assignments' && <StudentFeesTab />}
-        {activeTab === 'payments' && <PaymentsTab />}
+          {/* Tabs */}
+          <div className="mb-6">
+            <div className="border-b border-gray-200">
+              <nav className="-mb-px flex space-x-8">
+                <button
+                  onClick={() => setActiveTab('structures')}
+                  className={`${activeTab === 'structures'
+                      ? 'border-blue-500 text-blue-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors`}
+                >
+                  📋 Fee Structures
+                </button>
+                <button
+                  onClick={() => setActiveTab('assignments')}
+                  className={`${activeTab === 'assignments'
+                      ? 'border-blue-500 text-blue-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors`}
+                >
+                  🎓 Student Fee Assignments
+                </button>
+                <button
+                  onClick={() => setActiveTab('payments')}
+                  className={`${activeTab === 'payments'
+                      ? 'border-blue-500 text-blue-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors`}
+                >
+                  💳 Payments
+                </button>
+              </nav>
+            </div>
+          </div>
+
+          {/* Tab Content */}
+          {activeTab === 'structures' && <FeeStructuresTab />}
+          {activeTab === 'assignments' && <StudentFeesTab />}
+          {activeTab === 'payments' && <PaymentsTab />}
+        </div>
       </div>
     </div>
   );

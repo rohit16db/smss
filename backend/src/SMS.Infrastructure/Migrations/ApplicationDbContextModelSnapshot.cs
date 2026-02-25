@@ -613,6 +613,9 @@ namespace SMS.Infrastructure.Migrations
                         .HasColumnType("character varying(20)")
                         .HasColumnName("guardian_phone");
 
+                    b.Property<string>("ImagePath")
+                        .HasColumnType("text");
+
                     b.Property<bool>("IsActive")
                         .HasColumnType("boolean")
                         .HasColumnName("is_active");
@@ -838,6 +841,10 @@ namespace SMS.Infrastructure.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("left_date");
 
+                    b.Property<int?>("RollNumber")
+                        .HasColumnType("integer")
+                        .HasColumnName("roll_number");
+
                     b.Property<Guid>("SectionId")
                         .HasColumnType("uuid")
                         .HasColumnName("section_id");
@@ -970,6 +977,9 @@ namespace SMS.Infrastructure.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)")
                         .HasColumnName("first_name");
+
+                    b.Property<string>("ImagePath")
+                        .HasColumnType("text");
 
                     b.Property<bool>("IsActive")
                         .ValueGeneratedOnAdd()

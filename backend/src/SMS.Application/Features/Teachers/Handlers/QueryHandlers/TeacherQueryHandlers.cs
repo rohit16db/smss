@@ -44,7 +44,8 @@ public class GetTeacherByIdQueryHandler : IRequestHandler<GetTeacherByIdQuery, T
             JoiningDate = teacher.JoiningDate.ToDateTime(TimeOnly.MinValue),
             IsActive = teacher.IsActive,
             CreatedAt = teacher.CreatedAt,
-            UpdatedAt = teacher.UpdatedAt
+            UpdatedAt = teacher.UpdatedAt,
+            ImagePath = teacher.ImagePath
         };
     }
 }
@@ -114,7 +115,8 @@ public class GetAllTeachersQueryHandler : IRequestHandler<GetAllTeachersQuery, P
             Qualification = teacher.Qualification ?? string.Empty,
             ExperienceYears = teacher.ExperienceYears,
             JoiningDate = teacher.JoiningDate.ToDateTime(TimeOnly.MinValue),
-            IsActive = teacher.IsActive
+            IsActive = teacher.IsActive,
+            ImagePath = teacher.ImagePath
         };
     }
 }
@@ -154,7 +156,8 @@ public class GetTeacherByEmailQueryHandler : IRequestHandler<GetTeacherByEmailQu
             JoiningDate = teacher.JoiningDate.ToDateTime(TimeOnly.MinValue),
             IsActive = teacher.IsActive,
             CreatedAt = teacher.CreatedAt,
-            UpdatedAt = teacher.UpdatedAt
+            UpdatedAt = teacher.UpdatedAt,
+            ImagePath = teacher.ImagePath
         };
     }
 }
@@ -231,7 +234,8 @@ public class GetActiveTeachersQueryHandler : IRequestHandler<GetActiveTeachersQu
             Qualification = teacher.Qualification ?? string.Empty,
             ExperienceYears = teacher.ExperienceYears,
             JoiningDate = teacher.JoiningDate.ToDateTime(TimeOnly.MinValue),
-            IsActive = teacher.IsActive
+            IsActive = teacher.IsActive,
+            ImagePath = teacher.ImagePath
         };
     }
 }

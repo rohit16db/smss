@@ -278,6 +278,101 @@ public class ClassesController : ControllerBase
             return BadRequest(new { message = ex.Message });
         }
     }
+
+    /// <summary>
+    /// Get all students with roll numbers in a section
+    /// </summary>
+    [HttpGet("sections/{sectionId}/roll-numbers")]
+    [ProducesResponseType(typeof(List<StudentSectionDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetRollNumbers(string sectionId)
+    {
+        var query = new GetStudentsWithRollNumbersQuery
+        {
+            SectionId = sectionId
+        };
+
+        var result = await _mediator.Send(query);
+        
+        if (result == null || result.Count == 0)
+            return NotFound(new { message = "No students found in this section" });
+
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Auto-assign sequential roll numbers to all students in a section
+    /// </summary>
+    [HttpPost("sections/{sectionId}/auto-assign-roll-numbers")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> AutoAssignRollNumbers(string sectionId)
+    {
+        var command = new AutoAssignRollNumbersCommand
+        {
+            SectionId = sectionId
+        };
+
+        try
+        {
+            await _mediator.Send(command);
+            return Ok(new { message = "Roll numbers assigned successfully" });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Update a student's roll number in a section
+    /// </summary>
+    [HttpPut("student-sections/{studentSectionId}/roll-number")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> UpdateRollNumber(string studentSectionId, [FromBody] UpdateRollNumberDto dto)
+    {
+        var command = new UpdateStudentRollNumberCommand
+        {
+            StudentSectionId = studentSectionId,
+            RollNumber = dto.RollNumber
+        };
+
+        try
+        {
+            await _mediator.Send(command);
+            return Ok(new { message = "Roll number updated successfully" });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Bulk update roll numbers for multiple students in a section
+    /// </summary>
+    [HttpPut("sections/{sectionId}/bulk-update-roll-numbers")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> BulkUpdateRollNumbers(string sectionId, [FromBody] BulkUpdateRollNumbersDto dto)
+    {
+        var command = new BulkUpdateRollNumbersCommand
+        {
+            SectionId = sectionId,
+            RollNumberUpdates = dto.RollNumberUpdates
+        };
+
+        try
+        {
+            await _mediator.Send(command);
+            return Ok(new { message = "Roll numbers updated successfully" });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
 }
 
 /// <summary>
@@ -286,4 +381,20 @@ public class ClassesController : ControllerBase
 public class MoveStudentSectionDto
 {
     public string NewSectionId { get; set; } = string.Empty;
+}
+
+/// <summary>
+/// DTO for updating a student's roll number
+/// </summary>
+public class UpdateRollNumberDto
+{
+    public int RollNumber { get; set; }
+}
+
+/// <summary>
+/// DTO for bulk updating roll numbers
+/// </summary>
+public class BulkUpdateRollNumbersDto
+{
+    public Dictionary<string, int> RollNumberUpdates { get; set; } = new();
 }

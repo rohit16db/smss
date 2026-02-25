@@ -85,3 +85,17 @@ public class GetFeesBySectionQuery : IRequest<List<StudentFeeDto>>
     public required string SectionId { get; set; }
     public bool? IsActive { get; set; }
 }
+
+/// <summary>
+/// Query to get fee report with payment status and filters
+/// </summary>
+public class GetFeeReportQuery : IRequest<PaginatedFeeReportListDto>
+{
+    public int PageNumber { get; set; } = 1;
+    public int PageSize { get; set; } = 10;
+    public string? StudentId { get; set; }
+    public string? SectionId { get; set; }
+    public string? Status { get; set; } // "Paid", "Partial", "Due", "Overdue", null = all
+    public DateTime? StartDate { get; set; }
+    public DateTime? EndDate { get; set; }
+}

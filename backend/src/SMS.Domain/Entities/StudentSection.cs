@@ -32,6 +32,11 @@ public class StudentSection : BaseEntity
     public bool IsCurrent { get; set; } = true;
 
     /// <summary>
+    /// Roll number of the student in this section (sequential, scoped per section)
+    /// </summary>
+    public int? RollNumber { get; set; }
+
+    /// <summary>
     /// Navigation property to the section
     /// </summary>
     public Section? Section { get; set; }

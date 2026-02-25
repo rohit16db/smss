@@ -52,21 +52,35 @@ export type Student = {
   email: string;
   phone?: string;
   dateOfBirth: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  postalCode?: string;
   parentName?: string;
   parentPhone?: string;
+  parentEmail?: string;
   enrollmentDate: string;
   enrollmentNumber: string;
   isActive: boolean;
+  currentSectionId?: string;
+  currentSectionName?: string;
+  currentClassName?: string;
+  imagePath?: string;
 };
 
 export type CreateStudentDto = {
   firstName: string;
   lastName: string;
   email: string;
-  phone?: string;
+  phoneNumber?: string;
   dateOfBirth: string;
-  parentName?: string;
-  parentPhone?: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  postalCode?: string;
+  guardianName?: string;
+  guardianPhone?: string;
+  guardianEmail?: string;
   enrollmentDate: string;
 };
 
@@ -75,11 +89,15 @@ export type UpdateStudentDto = {
   firstName: string;
   lastName: string;
   email: string;
-  phone?: string;
+  phoneNumber?: string;
   dateOfBirth: string;
-  parentName?: string;
-  parentPhone?: string;
-  enrollmentDate: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  postalCode?: string;
+  guardianName?: string;
+  guardianPhone?: string;
+  guardianEmail?: string;
   isActive: boolean;
 };
 
@@ -124,6 +142,17 @@ export const studentApi = {
     const response = await api.patch<Student>(`/students/${id}/deactivate`);
     return response.data;
   },
+
+  uploadImage: async (id: string, file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await api.post<{ message: string; imagePath: string }>(`/students/${id}/upload-image`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  },
 };
 
 // Teacher Types
@@ -138,6 +167,7 @@ export type Teacher = {
   experienceYears: number;
   joiningDate: string;
   isActive: boolean;
+  imagePath?: string;
 };
 
 export type CreateTeacherDto = {
@@ -149,6 +179,7 @@ export type CreateTeacherDto = {
   qualification?: string;
   experienceYears: number;
   joiningDate: string;
+  imagePath?: string;
 };
 
 export type UpdateTeacherDto = {
@@ -162,6 +193,7 @@ export type UpdateTeacherDto = {
   experienceYears: number;
   joiningDate: string;
   isActive: boolean;
+  imagePath?: string;
 };
 
 export type PaginatedTeacherList = {
@@ -222,6 +254,17 @@ export const teacherApi = {
 
   deactivate: async (id: string) => {
     const response = await api.patch<Teacher>(`/teachers/${id}/deactivate`);
+    return response.data;
+  },
+
+  uploadImage: async (id: string, file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await api.post<{ message: string; imagePath: string }>(`/teachers/${id}/upload-image`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
     return response.data;
   },
 
@@ -335,6 +378,38 @@ export type PaginatedFeePaymentList = {
   pageSize: number;
 };
 
+export type FeeReport = {
+  id: string;
+  studentId: string;
+  studentName: string;
+  enrollmentNumber: string;
+  sectionId?: string;
+  sectionName?: string;
+  feeStructureId: string;
+  feeStructureName: string;
+  totalAmount: number;
+  paidAmount: number;
+  balanceAmount: number;
+  status: 'Paid' | 'Partial' | 'Due' | 'Overdue';
+  lastPaymentDate?: string;
+  startDate: string;
+  dueDate?: string;
+};
+
+export type PaginatedFeeReportList = {
+  items: FeeReport[];
+  totalCount: number;
+  pageNumber: number;
+  pageSize: number;
+  totalDueAmount: number;
+  totalPaidAmount: number;
+  totalBalanceAmount: number;
+  paidCount: number;
+  partialCount: number;
+  dueCount: number;
+  overdueCount: number;
+};
+
 export const feeApi = {
   // Fee Structures
   getAllStructures: async (params?: { pageNumber?: number; pageSize?: number; searchTerm?: string; isActive?: boolean }) => {
@@ -402,6 +477,20 @@ export const feeApi = {
 
   recordPayment: async (data: CreateFeePaymentDto) => {
     const response = await api.post<FeePayment>('/fees/payments', data);
+    return response.data;
+  },
+
+  // Fee Report
+  getReport: async (params?: { 
+    pageNumber?: number; 
+    pageSize?: number; 
+    studentId?: string; 
+    sectionId?: string; 
+    status?: string;
+    startDate?: string;
+    endDate?: string;
+  }) => {
+    const response = await api.get<PaginatedFeeReportList>('/fees/report', { params });
     return response.data;
   },
 };
@@ -580,6 +669,7 @@ export type StudentSection = {
   joinedDate: Date;
   leftDate?: Date;
   isCurrent: boolean;
+  rollNumber?: number;
 };
 
 export type StudentSectionHistoryDto = {
@@ -650,6 +740,31 @@ export const classApi = {
   moveStudentToSection: async (studentId: string, newSectionId: string) => {
     const response = await api.post<StudentSection>(`/classes/students/${studentId}/move-section`, {
       newSectionId,
+    });
+    return response.data;
+  },
+  
+  // Roll Number Management
+  getRollNumbers: async (sectionId: string) => {
+    const response = await api.get<StudentSection[]>(`/classes/sections/${sectionId}/roll-numbers`);
+    return response.data;
+  },
+  
+  autoAssignRollNumbers: async (sectionId: string) => {
+    const response = await api.post<{ message: string }>(`/classes/sections/${sectionId}/auto-assign-roll-numbers`);
+    return response.data;
+  },
+  
+  updateRollNumber: async (studentSectionId: string, rollNumber: number) => {
+    const response = await api.put<{ message: string }>(`/classes/student-sections/${studentSectionId}/roll-number`, {
+      rollNumber,
+    });
+    return response.data;
+  },
+  
+  bulkUpdateRollNumbers: async (sectionId: string, rollNumberUpdates: Record<string, number>) => {
+    const response = await api.put<{ message: string }>(`/classes/sections/${sectionId}/bulk-update-roll-numbers`, {
+      rollNumberUpdates,
     });
     return response.data;
   },
@@ -807,5 +922,249 @@ export const holidayApi = {
 
   delete: async (id: string) => {
     await api.delete(`/holidays/${id}`);
+  },
+};
+
+// Report Types
+export type OutstandingFeeDto = {
+  studentId: string;
+  studentName: string;
+  enrollmentNumber: string;
+  className: string;
+  dueAmount: number;
+  daysOverdue: number;
+  agingBucket: string;
+  lastPaymentDate?: string;
+};
+
+export type FeeCollectionSummaryDto = {
+  currentPeriod: {
+    totalCollected: number;
+    numberOfTransactions: number;
+    averagePerTransaction: number;
+    completionPercentage: number;
+  };
+  previousPeriod?: {
+    totalCollected: number;
+    numberOfTransactions: number;
+    averagePerTransaction: number;
+    completionPercentage: number;
+  };
+  growth?: {
+    percentageChange: number;
+    absoluteChange: number;
+  };
+};
+
+export type MonthlyTrendDto = {
+  month: string;
+  collected: number;
+  pending: number;
+  overdue: number;
+  trend: number;
+};
+
+export type FeeCollectionByCategoryDto = {
+  category: string;
+  amount: number;
+  collected: number;
+  pending: number;
+  percentageOfTotal: number;
+};
+
+export type StudentPaymentHistoryDto = {
+  paymentDate: string;
+  amountPaid: number;
+  receiptNumber: string;
+  paymentMethod: string;
+  notes?: string;
+  balanceAfterPayment: number;
+};
+
+export type SalaryExpenseSummaryDto = {
+  currentPeriod: {
+    totalExpense: number;
+    baseSalary: number;
+    bonuses: number;
+    deductions: number;
+    numberOfEmployees: number;
+  };
+  previousPeriod?: {
+    totalExpense: number;
+    baseSalary: number;
+    bonuses: number;
+    deductions: number;
+    numberOfEmployees: number;
+  };
+  growth?: {
+    percentageChange: number;
+    absoluteChange: number;
+  };
+};
+
+export type MonthlySalaryTrendDto = {
+  month: string;
+  baseSalary: number;
+  bonuses: number;
+  deductions: number;
+  totalExpense: number;
+  trend: number;
+};
+
+export type SalaryComponentBreakdownDto = {
+  baseSalary: {
+    amount: number;
+    percentage: number;
+    headCount: number;
+  };
+  bonuses: {
+    amount: number;
+    percentage: number;
+    headCount: number;
+  };
+  deductions: {
+    amount: number;
+    percentage: number;
+    description: string[];
+  };
+};
+
+export type TeacherSalaryComparisonDto = {
+  teacherId: string;
+  teacherName: string;
+  baseSalary: number;
+  bonus: number;
+  deductions: number;
+  netSalary: number;
+  attendancePercentage?: number;
+  bonusEligible: boolean;
+  status: string;
+};
+
+export type AttendanceToSalaryCorrelationDto = {
+  teacherId: string;
+  teacherName: string;
+  expectedDeduction: number;
+  actualDeduction: number;
+  discrepancy: number;
+  attendancePercentage: number;
+  workingDays: number;
+  presentDays: number;
+  absentDays: number;
+};
+
+export type BudgetVsActualDto = {
+  budgetedAmount: number;
+  actualAmount: number;
+  variance: number;
+  variancePercentage: number;
+  month: string;
+  category: string;
+};
+
+// Report API
+export const reportApi = {
+  // Fee Reports
+  getOutstandingFees: async (params?: {
+    asOfDate?: string;
+    agingBucket?: string;
+    minAmount?: number;
+    sortBy?: string;
+    descending?: boolean;
+  }) => {
+    const response = await api.get<OutstandingFeeDto[]>('/feereports/outstanding', { params });
+    return response.data;
+  },
+
+  getFeeCollectionSummary: async (params: {
+    startDate: string;
+    endDate: string;
+    category?: string;
+    prevStartDate?: string;
+    prevEndDate?: string;
+  }) => {
+    const response = await api.get<FeeCollectionSummaryDto>('/feereports/collection-summary', { params });
+    return response.data;
+  },
+
+  getMonthlyFeeTrend: async (params: {
+    startDate: string;
+    endDate: string;
+    category?: string;
+  }) => {
+    const response = await api.get<MonthlyTrendDto[]>('/feereports/monthly-trend', { params });
+    return response.data;
+  },
+
+  getFeeCollectionByCategory: async (params: {
+    startDate: string;
+    endDate: string;
+  }) => {
+    const response = await api.get<FeeCollectionByCategoryDto[]>('/feereports/by-category', { params });
+    return response.data;
+  },
+
+  getStudentPaymentHistory: async (studentId: string, params: {
+    startDate: string;
+    endDate: string;
+  }) => {
+    const response = await api.get<StudentPaymentHistoryDto[]>(`/feereports/student/${studentId}/payment-history`, { params });
+    return response.data;
+  },
+
+  // Salary Reports
+  getSalaryExpenseSummary: async (params: {
+    startDate: string;
+    endDate: string;
+    prevStartDate?: string;
+    prevEndDate?: string;
+  }) => {
+    const response = await api.get<SalaryExpenseSummaryDto>('/salaryreports/expense-summary', { params });
+    return response.data;
+  },
+
+  getMonthlySalaryTrend: async (params: {
+    startDate: string;
+    endDate: string;
+  }) => {
+    const response = await api.get<MonthlySalaryTrendDto[]>('/salaryreports/monthly-trend', { params });
+    return response.data;
+  },
+
+  getSalaryComponentBreakdown: async (params: {
+    startDate: string;
+    endDate: string;
+  }) => {
+    const response = await api.get<SalaryComponentBreakdownDto>('/salaryreports/component-breakdown', { params });
+    return response.data;
+  },
+
+  getTeacherSalaryComparison: async (params: {
+    startDate: string;
+    endDate: string;
+    status?: string;
+    sortBy?: string;
+    descending?: boolean;
+  }) => {
+    const response = await api.get<TeacherSalaryComparisonDto[]>('/salaryreports/teacher-comparison', { params });
+    return response.data;
+  },
+
+  getAttendanceToSalaryCorrelation: async (params: {
+    month: string;
+    onlyDiscrepancies?: boolean;
+  }) => {
+    const response = await api.get<AttendanceToSalaryCorrelationDto[]>('/salaryreports/attendance-correlation', { params });
+    return response.data;
+  },
+
+  getBudgetVsActual: async (params: {
+    reportType: string;
+    startDate: string;
+    endDate: string;
+    groupBy?: string;
+  }) => {
+    const response = await api.get<BudgetVsActualDto[]>('/salaryreports/budget-vs-actual', { params });
+    return response.data;
   },
 };

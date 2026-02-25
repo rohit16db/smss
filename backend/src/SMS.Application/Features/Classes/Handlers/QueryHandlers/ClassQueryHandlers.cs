@@ -215,7 +215,8 @@ public class GetStudentSectionHistoryQueryHandler : IRequestHandler<GetStudentSe
                 ClassName = ss.Section != null && ss.Section.Class != null ? ss.Section.Class.Name : "",
                 JoinedDate = ss.JoinedDate,
                 LeftDate = ss.LeftDate,
-                IsCurrent = ss.IsCurrent
+                IsCurrent = ss.IsCurrent,
+                RollNumber = ss.RollNumber
             })
             .ToListAsync(cancellationToken);
 
@@ -264,7 +265,51 @@ public class GetStudentCurrentSectionQueryHandler : IRequestHandler<GetStudentCu
             ClassName = studentSection.Section != null && studentSection.Section.Class != null ? studentSection.Section.Class.Name : "",
             JoinedDate = studentSection.JoinedDate,
             LeftDate = studentSection.LeftDate,
-            IsCurrent = studentSection.IsCurrent
+            IsCurrent = studentSection.IsCurrent,
+            RollNumber = studentSection.RollNumber
         };
+    }
+}
+
+/// <summary>
+/// Handler for getting all students with roll numbers in a section
+/// </summary>
+public class GetStudentsWithRollNumbersQueryHandler : IRequestHandler<GetStudentsWithRollNumbersQuery, List<StudentSectionDto>>
+{
+    private readonly IApplicationDbContext _context;
+
+    public GetStudentsWithRollNumbersQueryHandler(IApplicationDbContext context)
+    {
+        _context = context;
+    }
+
+    public async Task<List<StudentSectionDto>> Handle(GetStudentsWithRollNumbersQuery request, CancellationToken cancellationToken)
+    {
+        if (!Guid.TryParse(request.SectionId, out var sectionId))
+            return new();
+
+        var studentSections = await _context.StudentSections
+            .Where(ss => ss.SectionId == sectionId && ss.IsCurrent)
+            .Include(ss => ss.Section)
+            .ThenInclude(s => s.Class)
+            .Include(ss => ss.Student)
+            .OrderBy(ss => ss.RollNumber ?? int.MaxValue)
+            .ThenBy(ss => ss.JoinedDate)
+            .Select(ss => new StudentSectionDto
+            {
+                Id = ss.Id.ToString(),
+                StudentId = ss.StudentId.ToString(),
+                StudentName = ss.Student != null ? $"{ss.Student.FirstName} {ss.Student.LastName}" : "",
+                SectionId = ss.SectionId.ToString(),
+                SectionName = ss.Section != null ? ss.Section.SectionName : "",
+                ClassName = ss.Section != null && ss.Section.Class != null ? ss.Section.Class.Name : "",
+                JoinedDate = ss.JoinedDate,
+                LeftDate = ss.LeftDate,
+                IsCurrent = ss.IsCurrent,
+                RollNumber = ss.RollNumber
+            })
+            .ToListAsync(cancellationToken);
+
+        return studentSections;
     }
 }

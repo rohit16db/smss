@@ -34,13 +34,19 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [academicMenuOpen, setAcademicMenuOpen] = useState(false);
   const [financeMenuOpen, setFinanceMenuOpen] = useState(false);
+  const [payrollMenuOpen, setPayrollMenuOpen] = useState(false);
+  const [reportsMenuOpen, setReportsMenuOpen] = useState(false);
   const [mobileAcademicOpen, setMobileAcademicOpen] = useState(false);
   const [mobileFinanceOpen, setMobileFinanceOpen] = useState(false);
+  const [mobilePayrollOpen, setMobilePayrollOpen] = useState(false);
+  const [mobileReportsOpen, setMobileReportsOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState<StoredUser | null>(null);
   
   const academicTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const financeTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const payrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const reportsTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const userMenuTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   useEffect(() => {
@@ -102,6 +108,28 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
   const handleFinanceMouseEnter = () => {
     if (financeTimeoutRef.current) clearTimeout(financeTimeoutRef.current);
     setFinanceMenuOpen(true);
+  };
+
+  const handlePayrollMouseLeave = () => {
+    payrollTimeoutRef.current = setTimeout(() => {
+      setPayrollMenuOpen(false);
+    }, 150);
+  };
+
+  const handlePayrollMouseEnter = () => {
+    if (payrollTimeoutRef.current) clearTimeout(payrollTimeoutRef.current);
+    setPayrollMenuOpen(true);
+  };
+
+  const handleReportsMouseLeave = () => {
+    reportsTimeoutRef.current = setTimeout(() => {
+      setReportsMenuOpen(false);
+    }, 150);
+  };
+
+  const handleReportsMouseEnter = () => {
+    if (reportsTimeoutRef.current) clearTimeout(reportsTimeoutRef.current);
+    setReportsMenuOpen(true);
   };
 
   const handleUserMenuMouseLeave = () => {
@@ -200,6 +228,14 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
                     >
                       📖 Subjects
                     </button>
+                    {(isAdmin || isClerk) && (
+                      <button
+                        onClick={() => navigate('/roll-numbers')}
+                        className="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-colors flex items-center gap-2"
+                      >
+                        🔢 Roll Numbers
+                      </button>
+                    )}
                     {isAdmin && (
                       <button
                         onClick={() => navigate('/holidays')}
@@ -236,6 +272,14 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
                         💰 Fees
                       </button>
                     )}
+                    {canViewFees && (
+                      <button
+                        onClick={() => navigate('/fee-report')}
+                        className="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-colors flex items-center gap-2"
+                      >
+                        📊 Fee Report
+                      </button>
+                    )}
                     {canViewSalary && (
                       <button
                         onClick={() => navigate('/salary')}
@@ -252,38 +296,89 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
                         💼 Payroll
                       </button>
                     )}
-                    {canManageSalary && (canViewFees || canViewSalary || canViewPayroll) && (
-                      <hr className="my-1 border-gray-200" />
-                    )}
-                    {canManageSalary && (
-                      <>
-                        <button
-                          onClick={() => navigate('/salary-structures')}
-                          className="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-colors flex items-center gap-2"
-                        >
-                          📊 Salary Structures
-                        </button>
-                        <button
-                          onClick={() => navigate('/teacher-salary-assignment')}
-                          className="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-colors flex items-center gap-2"
-                        >
-                          👥 Teacher Assignments
-                        </button>
-                        <button
-                          onClick={() => navigate('/bulk-salary-processing')}
-                          className="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-colors flex items-center gap-2"
-                        >
-                          🔄 Bulk Processing
-                        </button>
-                        <hr className="my-1 border-gray-200" />
-                        <button
-                          onClick={() => navigate('/salary-payments')}
-                          className="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-colors flex items-center gap-2"
-                        >
-                          💰 Payment Management
-                        </button>
-                      </>
-                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Payroll Dropdown */}
+            {canManageSalary && (
+              <div
+                className="relative"
+                onMouseEnter={handlePayrollMouseEnter}
+                onMouseLeave={handlePayrollMouseLeave}
+              >
+                <button className="px-4 py-2 rounded-lg text-white hover:bg-blue-700 transition-colors duration-200 font-medium flex items-center gap-1">
+                  💼 Payroll
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                {payrollMenuOpen && (
+                  <div className="absolute top-full left-0 mt-1 w-56 bg-white rounded-lg shadow-xl border border-gray-200 py-2 animate-fadeIn">
+                    <button
+                      onClick={() => navigate('/salary-structures')}
+                      className="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-colors flex items-center gap-2"
+                    >
+                      📊 Salary Structures
+                    </button>
+                    <button
+                      onClick={() => navigate('/teacher-salary-assignment')}
+                      className="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-colors flex items-center gap-2"
+                    >
+                      👥 Teacher Assignments
+                    </button>
+                    <button
+                      onClick={() => navigate('/bulk-salary-processing')}
+                      className="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-colors flex items-center gap-2"
+                    >
+                      🔄 Bulk Processing
+                    </button>
+                    <hr className="my-1 border-gray-200" />
+                    <button
+                      onClick={() => navigate('/salary-payments')}
+                      className="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-colors flex items-center gap-2"
+                    >
+                      💰 Payment Management
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Reports Dropdown */}
+            {canViewFees && (
+              <div
+                className="relative"
+                onMouseEnter={handleReportsMouseEnter}
+                onMouseLeave={handleReportsMouseLeave}
+              >
+                <button className="px-4 py-2 rounded-lg text-white hover:bg-blue-700 transition-colors duration-200 font-medium flex items-center gap-1">
+                  📊 Reports
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                {reportsMenuOpen && (
+                  <div className="absolute top-full left-0 mt-1 w-56 bg-white rounded-lg shadow-xl border border-gray-200 py-2 animate-fadeIn">
+                    <button
+                      onClick={() => navigate('/outstanding-fees')}
+                      className="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-colors flex items-center gap-2"
+                    >
+                      ⚠️ Outstanding Fees
+                    </button>
+                    <button
+                      onClick={() => navigate('/teacher-salary-comparison')}
+                      className="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-colors flex items-center gap-2"
+                    >
+                      📈 Salary Comparison
+                    </button>
+                    <button
+                      onClick={() => navigate('/budget-vs-actual')}
+                      className="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-colors flex items-center gap-2"
+                    >
+                      📊 Budget vs Actual
+                    </button>
                   </div>
                 )}
               </div>
@@ -424,6 +519,17 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
                       >
                         📖 Subjects
                       </button>
+                      {(isAdmin || isClerk) && (
+                        <button
+                          onClick={() => {
+                            navigate('/roll-numbers');
+                            setMobileMenuOpen(false);
+                          }}
+                          className="w-full px-4 py-2 rounded-lg text-white hover:bg-blue-700 transition-colors duration-200 text-left"
+                        >
+                          🔢 Roll Numbers
+                        </button>
+                      )}
                       {isAdmin && (
                         <button
                           onClick={() => {
@@ -470,6 +576,17 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
                           💰 Fees
                         </button>
                       )}
+                      {canViewFees && (
+                        <button
+                          onClick={() => {
+                            navigate('/fee-report');
+                            setMobileMenuOpen(false);
+                          }}
+                          className="w-full px-4 py-2 rounded-lg text-white hover:bg-blue-700 transition-colors duration-200 text-left"
+                        >
+                          📊 Fee Report
+                        </button>
+                      )}
                       {canViewSalary && (
                         <button
                           onClick={() => {
@@ -492,50 +609,118 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
                           💼 Payroll
                         </button>
                       )}
-                      {canManageSalary && (canViewFees || canViewSalary || canViewPayroll) && (
-                        <div className="my-1 border-t border-blue-700"></div>
-                      )}
-                      {canManageSalary && (
-                        <>
-                          <button
-                            onClick={() => {
-                              navigate('/salary-structures');
-                              setMobileMenuOpen(false);
-                            }}
-                            className="w-full px-4 py-2 rounded-lg text-white hover:bg-blue-700 transition-colors duration-200 text-left"
-                          >
-                            📊 Salary Structures
-                          </button>
-                          <button
-                            onClick={() => {
-                              navigate('/teacher-salary-assignment');
-                              setMobileMenuOpen(false);
-                            }}
-                            className="w-full px-4 py-2 rounded-lg text-white hover:bg-blue-700 transition-colors duration-200 text-left"
-                          >
-                            👥 Teacher Assignments
-                          </button>
-                          <button
-                            onClick={() => {
-                              navigate('/bulk-salary-processing');
-                              setMobileMenuOpen(false);
-                            }}
-                            className="w-full px-4 py-2 rounded-lg text-white hover:bg-blue-700 transition-colors duration-200 text-left"
-                          >
-                            🔄 Bulk Processing
-                          </button>
-                          <div className="my-1 border-t border-blue-700"></div>
-                          <button
-                            onClick={() => {
-                              navigate('/salary-payments');
-                              setMobileMenuOpen(false);
-                            }}
-                            className="w-full px-4 py-2 rounded-lg text-white hover:bg-blue-700 transition-colors duration-200 text-left"
-                          >
-                            💰 Payment Management
-                          </button>
-                        </>
-                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Payroll Section */}
+              {canManageSalary && (
+                <div className="border-b border-blue-700 pb-2">
+                  <button
+                    onClick={() => setMobilePayrollOpen(!mobilePayrollOpen)}
+                    className="w-full px-4 py-2 rounded-lg text-white hover:bg-blue-700 transition-colors duration-200 font-medium text-left flex items-center justify-between"
+                  >
+                    <span>💼 Payroll</span>
+                    <svg
+                      className={`w-5 h-5 transition-transform ${mobilePayrollOpen ? 'rotate-180' : ''}`}
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+                  {mobilePayrollOpen && (
+                    <div className="mt-2 ml-4 space-y-1 animate-fade-in">
+                      <button
+                        onClick={() => {
+                          navigate('/salary-structures');
+                          setMobileMenuOpen(false);
+                        }}
+                        className="w-full px-4 py-2 rounded-lg text-white hover:bg-blue-700 transition-colors duration-200 text-left"
+                      >
+                        📊 Salary Structures
+                      </button>
+                      <button
+                        onClick={() => {
+                          navigate('/teacher-salary-assignment');
+                          setMobileMenuOpen(false);
+                        }}
+                        className="w-full px-4 py-2 rounded-lg text-white hover:bg-blue-700 transition-colors duration-200 text-left"
+                      >
+                        👥 Teacher Assignments
+                      </button>
+                      <button
+                        onClick={() => {
+                          navigate('/bulk-salary-processing');
+                          setMobileMenuOpen(false);
+                        }}
+                        className="w-full px-4 py-2 rounded-lg text-white hover:bg-blue-700 transition-colors duration-200 text-left"
+                      >
+                        🔄 Bulk Processing
+                      </button>
+                      <div className="my-1 border-t border-blue-700"></div>
+                      <button
+                        onClick={() => {
+                          navigate('/salary-payments');
+                          setMobileMenuOpen(false);
+                        }}
+                        className="w-full px-4 py-2 rounded-lg text-white hover:bg-blue-700 transition-colors duration-200 text-left"
+                      >
+                        💰 Payment Management
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Reports Section */}
+              {canViewFees && (
+                <div className="border-b border-blue-700 pb-2">
+                  <button
+                    onClick={() => setMobileReportsOpen(!mobileReportsOpen)}
+                    className="w-full px-4 py-2 rounded-lg text-white hover:bg-blue-700 transition-colors duration-200 font-medium text-left flex items-center justify-between"
+                  >
+                    <span>📊 Reports</span>
+                    <svg
+                      className={`w-5 h-5 transition-transform ${mobileReportsOpen ? 'rotate-180' : ''}`}
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+                  {mobileReportsOpen && (
+                    <div className="mt-2 ml-4 space-y-1 animate-fade-in">
+                      <button
+                        onClick={() => {
+                          navigate('/outstanding-fees');
+                          setMobileMenuOpen(false);
+                        }}
+                        className="w-full px-4 py-2 rounded-lg text-white hover:bg-blue-700 transition-colors duration-200 text-left"
+                      >
+                        ⚠️ Outstanding Fees
+                      </button>
+                      <button
+                        onClick={() => {
+                          navigate('/teacher-salary-comparison');
+                          setMobileMenuOpen(false);
+                        }}
+                        className="w-full px-4 py-2 rounded-lg text-white hover:bg-blue-700 transition-colors duration-200 text-left"
+                      >
+                        📈 Salary Comparison
+                      </button>
+                      <button
+                        onClick={() => {
+                          navigate('/budget-vs-actual');
+                          setMobileMenuOpen(false);
+                        }}
+                        className="w-full px-4 py-2 rounded-lg text-white hover:bg-blue-700 transition-colors duration-200 text-left"
+                      >
+                        📊 Budget vs Actual
+                      </button>
                     </div>
                   )}
                 </div>

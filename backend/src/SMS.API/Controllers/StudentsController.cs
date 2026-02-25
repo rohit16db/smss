@@ -1,9 +1,12 @@
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using SMS.API.Services;
+using SMS.Application.Common.Interfaces;
 using SMS.Application.Students.Commands;
 using SMS.Application.Students.DTOs;
 using SMS.Application.Students.Queries;
+using System.ComponentModel.DataAnnotations;
 
 namespace SMS.API.Controllers;
 
@@ -14,11 +17,15 @@ public class StudentsController : ControllerBase
 {
     private readonly IMediator _mediator;
     private readonly ILogger<StudentsController> _logger;
+    private readonly IImageUploadService _imageUploadService;
+    private readonly IApplicationDbContext _context;
 
-    public StudentsController(IMediator mediator, ILogger<StudentsController> logger)
+    public StudentsController(IMediator mediator, ILogger<StudentsController> logger, IImageUploadService imageUploadService, IApplicationDbContext context)
     {
         _mediator = mediator;
         _logger = logger;
+        _imageUploadService = imageUploadService;
+        _context = context;
     }
 
     /// <summary>
@@ -181,6 +188,54 @@ public class StudentsController : ControllerBase
         {
             _logger.LogWarning(ex, "Failed to deactivate student {StudentId}", id);
             return NotFound(new { message = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Upload student profile image
+    /// </summary>
+    [HttpPost("{id:guid}/upload-image")]
+    [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> UploadImage(Guid id, IFormFile file, CancellationToken cancellationToken)
+    {
+        try
+        {
+            // Verify student exists
+            var student = await _context.Students.FindAsync(new object[] { id }, cancellationToken: cancellationToken);
+            if (student == null)
+            {
+                return NotFound(new { message = "Student not found" });
+            }
+
+            // Validate and upload image
+            var imagePath = await _imageUploadService.UploadImageAsync(file, "students", id, cancellationToken);
+
+            // Delete old image if it exists
+            if (!string.IsNullOrEmpty(student.ImagePath))
+            {
+                await _imageUploadService.DeleteImageAsync(student.ImagePath, cancellationToken);
+            }
+
+            // Update student with new image path
+            student.ImagePath = imagePath;
+            student.UpdatedAt = DateTime.UtcNow;
+            _context.Students.Update(student);
+            await _context.SaveChangesAsync(cancellationToken);
+
+            _logger.LogInformation("Image uploaded for student {StudentId}: {ImagePath}", id, imagePath);
+            return Ok(new { message = "Image uploaded successfully", imagePath });
+        }
+        catch (ValidationException ex)
+        {
+            _logger.LogWarning(ex, "Invalid image file for student {StudentId}", id);
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error uploading image for student {StudentId}", id);
+            return BadRequest(new { message = "Error uploading image" });
         }
     }
 }

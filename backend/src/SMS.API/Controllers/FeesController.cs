@@ -509,6 +509,55 @@ public class FeesController : ControllerBase
 
     #endregion
 
+    #region Report Endpoints
+
+    /// <summary>
+    /// Get fee report with payment status and filters
+    /// </summary>
+    /// <param name="pageNumber">Page number (default: 1)</param>
+    /// <param name="pageSize">Page size (default: 10)</param>
+    /// <param name="studentId">Filter by student ID</param>
+    /// <param name="sectionId">Filter by section ID</param>
+    /// <param name="status">Filter by status: Paid, Partial, Due, Overdue</param>
+    /// <param name="startDate">Filter by start date (for month selection)</param>
+    /// <param name="endDate">Filter by end date (for month selection)</param>
+    /// <returns>Paginated fee report with summary statistics</returns>
+    [HttpGet("report")]
+    [ProducesResponseType(typeof(PaginatedFeeReportListDto), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetFeeReport(
+        [FromQuery] int pageNumber = 1,
+        [FromQuery] int pageSize = 10,
+        [FromQuery] string? studentId = null,
+        [FromQuery] string? sectionId = null,
+        [FromQuery] string? status = null,
+        [FromQuery] DateTime? startDate = null,
+        [FromQuery] DateTime? endDate = null)
+    {
+        try
+        {
+            var query = new GetFeeReportQuery
+            {
+                PageNumber = pageNumber,
+                PageSize = pageSize,
+                StudentId = studentId,
+                SectionId = sectionId,
+                Status = status,
+                StartDate = startDate,
+                EndDate = endDate
+            };
+
+            var result = await _mediator.Send(query);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving fee report");
+            return StatusCode(StatusCodes.Status500InternalServerError, "Error retrieving fee report");
+        }
+    }
+
+    #endregion
+
     /// <summary>
     /// Helper method to get current user ID from claims
     /// </summary>
