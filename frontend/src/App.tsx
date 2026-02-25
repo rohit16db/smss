@@ -8,6 +8,11 @@ import { HomePage } from './pages/HomePage';
 import { TeachersPage } from './pages/TeachersPage';
 import { FeesPage } from './pages/FeesPage';
 import { FeeReportPage } from './pages/FeeReportPage';
+import { FeeReportsPage } from './pages/FeeReportsPage';
+import { SalaryReportsPage } from './pages/SalaryReportsPage';
+import { OutstandingFeesPage } from './pages/OutstandingFeesPage';
+import { TeacherSalaryComparisonPage } from './pages/TeacherSalaryComparisonPage';
+import { BudgetVsActualPage } from './pages/BudgetVsActualPage';
 import { StudentsPage } from './pages/StudentsPage';
 import { AttendancePage } from './pages/AttendancePage';
 import { PayrollPage } from './pages/PayrollPage';
@@ -92,6 +97,22 @@ function App() {
                   }
                 />
                 <Route
+                  path="fee-reports"
+                  element={
+                    <ProtectedRoute allowedRoles={["Admin", "Accountant"]}>
+                      <FeeReportsPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="outstanding-fees"
+                  element={
+                    <ProtectedRoute allowedRoles={["Admin", "Accountant"]}>
+                      <OutstandingFeesPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
                   path="attendance"
                   element={
                     <ProtectedRoute allowedRoles={["Admin", "Clerk", "Teacher"]}>
@@ -112,6 +133,30 @@ function App() {
                   element={
                     <ProtectedRoute allowedRoles={["Admin", "Accountant", "Teacher"]}>
                       <SalaryPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="salary-reports"
+                  element={
+                    <ProtectedRoute allowedRoles={["Admin", "Accountant"]}>
+                      <SalaryReportsPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="teacher-salary-comparison"
+                  element={
+                    <ProtectedRoute allowedRoles={["Admin", "Accountant"]}>
+                      <TeacherSalaryComparisonPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="budget-vs-actual"
+                  element={
+                    <ProtectedRoute allowedRoles={["Admin", "Accountant"]}>
+                      <BudgetVsActualPage />
                     </ProtectedRoute>
                   }
                 />

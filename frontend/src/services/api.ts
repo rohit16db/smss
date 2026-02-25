@@ -924,3 +924,247 @@ export const holidayApi = {
     await api.delete(`/holidays/${id}`);
   },
 };
+
+// Report Types
+export type OutstandingFeeDto = {
+  studentId: string;
+  studentName: string;
+  enrollmentNumber: string;
+  className: string;
+  dueAmount: number;
+  daysOverdue: number;
+  agingBucket: string;
+  lastPaymentDate?: string;
+};
+
+export type FeeCollectionSummaryDto = {
+  currentPeriod: {
+    totalCollected: number;
+    numberOfTransactions: number;
+    averagePerTransaction: number;
+    completionPercentage: number;
+  };
+  previousPeriod?: {
+    totalCollected: number;
+    numberOfTransactions: number;
+    averagePerTransaction: number;
+    completionPercentage: number;
+  };
+  growth?: {
+    percentageChange: number;
+    absoluteChange: number;
+  };
+};
+
+export type MonthlyTrendDto = {
+  month: string;
+  collected: number;
+  pending: number;
+  overdue: number;
+  trend: number;
+};
+
+export type FeeCollectionByCategoryDto = {
+  category: string;
+  amount: number;
+  collected: number;
+  pending: number;
+  percentageOfTotal: number;
+};
+
+export type StudentPaymentHistoryDto = {
+  paymentDate: string;
+  amountPaid: number;
+  receiptNumber: string;
+  paymentMethod: string;
+  notes?: string;
+  balanceAfterPayment: number;
+};
+
+export type SalaryExpenseSummaryDto = {
+  currentPeriod: {
+    totalExpense: number;
+    baseSalary: number;
+    bonuses: number;
+    deductions: number;
+    numberOfEmployees: number;
+  };
+  previousPeriod?: {
+    totalExpense: number;
+    baseSalary: number;
+    bonuses: number;
+    deductions: number;
+    numberOfEmployees: number;
+  };
+  growth?: {
+    percentageChange: number;
+    absoluteChange: number;
+  };
+};
+
+export type MonthlySalaryTrendDto = {
+  month: string;
+  baseSalary: number;
+  bonuses: number;
+  deductions: number;
+  totalExpense: number;
+  trend: number;
+};
+
+export type SalaryComponentBreakdownDto = {
+  baseSalary: {
+    amount: number;
+    percentage: number;
+    headCount: number;
+  };
+  bonuses: {
+    amount: number;
+    percentage: number;
+    headCount: number;
+  };
+  deductions: {
+    amount: number;
+    percentage: number;
+    description: string[];
+  };
+};
+
+export type TeacherSalaryComparisonDto = {
+  teacherId: string;
+  teacherName: string;
+  baseSalary: number;
+  bonus: number;
+  deductions: number;
+  netSalary: number;
+  attendancePercentage?: number;
+  bonusEligible: boolean;
+  status: string;
+};
+
+export type AttendanceToSalaryCorrelationDto = {
+  teacherId: string;
+  teacherName: string;
+  expectedDeduction: number;
+  actualDeduction: number;
+  discrepancy: number;
+  attendancePercentage: number;
+  workingDays: number;
+  presentDays: number;
+  absentDays: number;
+};
+
+export type BudgetVsActualDto = {
+  budgetedAmount: number;
+  actualAmount: number;
+  variance: number;
+  variancePercentage: number;
+  month: string;
+  category: string;
+};
+
+// Report API
+export const reportApi = {
+  // Fee Reports
+  getOutstandingFees: async (params?: {
+    asOfDate?: string;
+    agingBucket?: string;
+    minAmount?: number;
+    sortBy?: string;
+    descending?: boolean;
+  }) => {
+    const response = await api.get<OutstandingFeeDto[]>('/feereports/outstanding', { params });
+    return response.data;
+  },
+
+  getFeeCollectionSummary: async (params: {
+    startDate: string;
+    endDate: string;
+    category?: string;
+    prevStartDate?: string;
+    prevEndDate?: string;
+  }) => {
+    const response = await api.get<FeeCollectionSummaryDto>('/feereports/collection-summary', { params });
+    return response.data;
+  },
+
+  getMonthlyFeeTrend: async (params: {
+    startDate: string;
+    endDate: string;
+    category?: string;
+  }) => {
+    const response = await api.get<MonthlyTrendDto[]>('/feereports/monthly-trend', { params });
+    return response.data;
+  },
+
+  getFeeCollectionByCategory: async (params: {
+    startDate: string;
+    endDate: string;
+  }) => {
+    const response = await api.get<FeeCollectionByCategoryDto[]>('/feereports/by-category', { params });
+    return response.data;
+  },
+
+  getStudentPaymentHistory: async (studentId: string, params: {
+    startDate: string;
+    endDate: string;
+  }) => {
+    const response = await api.get<StudentPaymentHistoryDto[]>(`/feereports/student/${studentId}/payment-history`, { params });
+    return response.data;
+  },
+
+  // Salary Reports
+  getSalaryExpenseSummary: async (params: {
+    startDate: string;
+    endDate: string;
+    prevStartDate?: string;
+    prevEndDate?: string;
+  }) => {
+    const response = await api.get<SalaryExpenseSummaryDto>('/salaryreports/expense-summary', { params });
+    return response.data;
+  },
+
+  getMonthlySalaryTrend: async (params: {
+    startDate: string;
+    endDate: string;
+  }) => {
+    const response = await api.get<MonthlySalaryTrendDto[]>('/salaryreports/monthly-trend', { params });
+    return response.data;
+  },
+
+  getSalaryComponentBreakdown: async (params: {
+    startDate: string;
+    endDate: string;
+  }) => {
+    const response = await api.get<SalaryComponentBreakdownDto>('/salaryreports/component-breakdown', { params });
+    return response.data;
+  },
+
+  getTeacherSalaryComparison: async (params: {
+    startDate: string;
+    endDate: string;
+    status?: string;
+    sortBy?: string;
+    descending?: boolean;
+  }) => {
+    const response = await api.get<TeacherSalaryComparisonDto[]>('/salaryreports/teacher-comparison', { params });
+    return response.data;
+  },
+
+  getAttendanceToSalaryCorrelation: async (params: {
+    month: string;
+    onlyDiscrepancies?: boolean;
+  }) => {
+    const response = await api.get<AttendanceToSalaryCorrelationDto[]>('/salaryreports/attendance-correlation', { params });
+    return response.data;
+  },
+
+  getBudgetVsActual: async (params: {
+    reportType: string;
+    startDate: string;
+    endDate: string;
+    groupBy?: string;
+  }) => {
+    const response = await api.get<BudgetVsActualDto[]>('/salaryreports/budget-vs-actual', { params });
+    return response.data;
+  },
+};

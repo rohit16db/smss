@@ -89,7 +89,7 @@ export const PayrollPage: React.FC = () => {
       if (typeof aVal === 'string') {
         return sortOrder === 'asc' ? aVal.localeCompare(bVal as string) : (bVal as string).localeCompare(aVal);
       }
-      return sortOrder === 'asc' ? (aVal - bVal) : (bVal - aVal);
+      return sortOrder === 'asc' ? ((aVal as number) - (bVal as number)) : ((bVal as number) - (aVal as number));
     });
   }, [attendanceQuery.data, searchQuery, sortBy, sortOrder]);
 
@@ -456,7 +456,7 @@ export const PayrollPage: React.FC = () => {
                     })}
                   </p>
                   <p className="text-xs text-gray-500 mt-2">
-                    {payrollQuery.data.bonusPayrollCount} teachers eligible
+                    {payrollQuery.data.eligibleTeachers} teachers eligible
                   </p>
                 </div>
                 <div className="p-4 bg-gradient-to-br from-green-500 to-emerald-500 rounded-xl shadow-lg group-hover:scale-110 transition-transform">
