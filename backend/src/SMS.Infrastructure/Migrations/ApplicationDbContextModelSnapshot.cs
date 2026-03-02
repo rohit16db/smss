@@ -70,6 +70,174 @@ namespace SMS.Infrastructure.Migrations
                     b.ToTable("classes", (string)null);
                 });
 
+            modelBuilder.Entity("SMS.Domain.Entities.Exam", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedById")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("description");
+
+                    b.Property<DateTime>("ExamDate")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("exam_date");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("name");
+
+                    b.Property<decimal>("PassMarks")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("numeric(5,2)")
+                        .HasColumnName("pass_marks");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("status");
+
+                    b.Property<decimal>("TotalMarks")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("numeric(5,2)")
+                        .HasColumnName("total_marks");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedById");
+
+                    b.HasIndex("ExamDate");
+
+                    b.HasIndex("Status");
+
+                    b.HasIndex("Name", "ExamDate")
+                        .IsUnique();
+
+                    b.ToTable("exams", (string)null);
+                });
+
+            modelBuilder.Entity("SMS.Domain.Entities.ExamClass", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("ClassId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("class_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("ExamId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("exam_id");
+
+                    b.Property<string>("MarksEntryStatus")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("marks_entry_status");
+
+                    b.Property<DateTime?>("SubmittedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("submitted_at");
+
+                    b.Property<Guid?>("SubmittedById")
+                        .HasColumnType("uuid")
+                        .HasColumnName("submitted_by");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ClassId");
+
+                    b.HasIndex("MarksEntryStatus");
+
+                    b.HasIndex("SubmittedById");
+
+                    b.HasIndex("ExamId", "ClassId")
+                        .IsUnique();
+
+                    b.ToTable("exam_classes", (string)null);
+                });
+
+            modelBuilder.Entity("SMS.Domain.Entities.ExamSubject", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("ExamId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("exam_id");
+
+                    b.Property<decimal>("MaxMarks")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("numeric(5,2)")
+                        .HasColumnName("max_marks");
+
+                    b.Property<decimal>("PassMarks")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("numeric(5,2)")
+                        .HasColumnName("pass_marks");
+
+                    b.Property<Guid>("SubjectId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("subject_id");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SubjectId");
+
+                    b.HasIndex("ExamId", "SubjectId")
+                        .IsUnique();
+
+                    b.ToTable("exam_subjects", (string)null);
+                });
+
             modelBuilder.Entity("SMS.Domain.Entities.FeePayment", b =>
                 {
                     b.Property<Guid>("Id")
@@ -254,6 +422,61 @@ namespace SMS.Infrastructure.Migrations
                     b.ToTable("fee_structure_categories", (string)null);
                 });
 
+            modelBuilder.Entity("SMS.Domain.Entities.GradeConfiguration", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("description");
+
+                    b.Property<string>("GradeName")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasColumnName("grade_name");
+
+                    b.Property<decimal>("MaxPercentage")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("numeric(5,2)")
+                        .HasColumnName("max_percentage");
+
+                    b.Property<decimal>("MinPercentage")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("numeric(5,2)")
+                        .HasColumnName("min_percentage");
+
+                    b.Property<Guid>("SchoolId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("school_id");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SchoolId");
+
+                    b.HasIndex("SchoolId", "GradeName")
+                        .IsUnique();
+
+                    b.ToTable("grade_configuration", (string)null);
+                });
+
             modelBuilder.Entity("SMS.Domain.Entities.Holiday", b =>
                 {
                     b.Property<Guid>("Id")
@@ -342,7 +565,7 @@ namespace SMS.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
-                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
+                        .HasDefaultValueSql("now() at time zone 'UTC'");
 
                     b.Property<decimal>("Deductions")
                         .ValueGeneratedOnAdd()
@@ -813,6 +1036,148 @@ namespace SMS.Infrastructure.Migrations
                         });
                 });
 
+            modelBuilder.Entity("SMS.Domain.Entities.StudentMarks", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("ExamId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("exam_id");
+
+                    b.Property<bool>("IsAbsent")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("is_absent");
+
+                    b.Property<decimal?>("MarksObtained")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("numeric(5,2)")
+                        .HasColumnName("marks_obtained");
+
+                    b.Property<string>("Remarks")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("remarks");
+
+                    b.Property<Guid>("StudentId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("student_id");
+
+                    b.Property<Guid>("SubjectId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("subject_id");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ExamId");
+
+                    b.HasIndex("StudentId");
+
+                    b.HasIndex("ExamId", "SubjectId");
+
+                    b.HasIndex("ExamId", "StudentId", "SubjectId")
+                        .IsUnique();
+
+                    b.ToTable("student_marks", (string)null);
+                });
+
+            modelBuilder.Entity("SMS.Domain.Entities.StudentReportCard", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<int>("ClassPosition")
+                        .HasColumnType("integer")
+                        .HasColumnName("class_position");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("ExamId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("exam_id");
+
+                    b.Property<DateTime?>("GeneratedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("generated_at");
+
+                    b.Property<string>("OverallGrade")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasColumnName("overall_grade");
+
+                    b.Property<bool>("Pass")
+                        .HasColumnType("boolean")
+                        .HasColumnName("pass");
+
+                    b.Property<decimal>("Percentage")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("numeric(5,2)")
+                        .HasColumnName("percentage");
+
+                    b.Property<string>("Remarks")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("remarks");
+
+                    b.Property<Guid>("StudentId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("student_id");
+
+                    b.Property<decimal>("TotalMarks")
+                        .HasPrecision(7, 2)
+                        .HasColumnType("numeric(7,2)")
+                        .HasColumnName("total_marks");
+
+                    b.Property<decimal>("TotalMarksObtained")
+                        .HasPrecision(7, 2)
+                        .HasColumnType("numeric(7,2)")
+                        .HasColumnName("total_marks_obtained");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ExamId");
+
+                    b.HasIndex("Pass");
+
+                    b.HasIndex("StudentId");
+
+                    b.HasIndex("ExamId", "StudentId")
+                        .IsUnique();
+
+                    b.ToTable("student_report_cards", (string)null);
+                });
+
             modelBuilder.Entity("SMS.Domain.Entities.StudentSection", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1265,6 +1630,62 @@ namespace SMS.Infrastructure.Migrations
                     b.ToTable("users", (string)null);
                 });
 
+            modelBuilder.Entity("SMS.Domain.Entities.Exam", b =>
+                {
+                    b.HasOne("SMS.Domain.Entities.User", "CreatedBy")
+                        .WithMany()
+                        .HasForeignKey("CreatedById")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("CreatedBy");
+                });
+
+            modelBuilder.Entity("SMS.Domain.Entities.ExamClass", b =>
+                {
+                    b.HasOne("SMS.Domain.Entities.Class", "Class")
+                        .WithMany()
+                        .HasForeignKey("ClassId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("SMS.Domain.Entities.Exam", "Exam")
+                        .WithMany("ExamClasses")
+                        .HasForeignKey("ExamId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SMS.Domain.Entities.User", "SubmittedBy")
+                        .WithMany()
+                        .HasForeignKey("SubmittedById")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Class");
+
+                    b.Navigation("Exam");
+
+                    b.Navigation("SubmittedBy");
+                });
+
+            modelBuilder.Entity("SMS.Domain.Entities.ExamSubject", b =>
+                {
+                    b.HasOne("SMS.Domain.Entities.Exam", "Exam")
+                        .WithMany("ExamSubjects")
+                        .HasForeignKey("ExamId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SMS.Domain.Entities.Subject", "Subject")
+                        .WithMany()
+                        .HasForeignKey("SubjectId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Exam");
+
+                    b.Navigation("Subject");
+                });
+
             modelBuilder.Entity("SMS.Domain.Entities.FeePayment", b =>
                 {
                     b.HasOne("SMS.Domain.Entities.StudentFee", "StudentFee")
@@ -1339,6 +1760,53 @@ namespace SMS.Infrastructure.Migrations
                     b.Navigation("Student");
                 });
 
+            modelBuilder.Entity("SMS.Domain.Entities.StudentMarks", b =>
+                {
+                    b.HasOne("SMS.Domain.Entities.Exam", "Exam")
+                        .WithMany("StudentMarks")
+                        .HasForeignKey("ExamId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SMS.Domain.Entities.Student", "Student")
+                        .WithMany()
+                        .HasForeignKey("StudentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SMS.Domain.Entities.ExamSubject", "ExamSubject")
+                        .WithMany("StudentMarks")
+                        .HasForeignKey("ExamId", "SubjectId")
+                        .HasPrincipalKey("ExamId", "SubjectId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Exam");
+
+                    b.Navigation("ExamSubject");
+
+                    b.Navigation("Student");
+                });
+
+            modelBuilder.Entity("SMS.Domain.Entities.StudentReportCard", b =>
+                {
+                    b.HasOne("SMS.Domain.Entities.Exam", "Exam")
+                        .WithMany("StudentReportCards")
+                        .HasForeignKey("ExamId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SMS.Domain.Entities.Student", "Student")
+                        .WithMany()
+                        .HasForeignKey("StudentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Exam");
+
+                    b.Navigation("Student");
+                });
+
             modelBuilder.Entity("SMS.Domain.Entities.StudentSection", b =>
                 {
                     b.HasOne("SMS.Domain.Entities.Section", "Section")
@@ -1399,6 +1867,22 @@ namespace SMS.Infrastructure.Migrations
             modelBuilder.Entity("SMS.Domain.Entities.Class", b =>
                 {
                     b.Navigation("Sections");
+                });
+
+            modelBuilder.Entity("SMS.Domain.Entities.Exam", b =>
+                {
+                    b.Navigation("ExamClasses");
+
+                    b.Navigation("ExamSubjects");
+
+                    b.Navigation("StudentMarks");
+
+                    b.Navigation("StudentReportCards");
+                });
+
+            modelBuilder.Entity("SMS.Domain.Entities.ExamSubject", b =>
+                {
+                    b.Navigation("StudentMarks");
                 });
 
             modelBuilder.Entity("SMS.Domain.Entities.FeeStructure", b =>

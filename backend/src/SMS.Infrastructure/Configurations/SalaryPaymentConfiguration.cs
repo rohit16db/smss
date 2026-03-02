@@ -58,7 +58,7 @@ public class SalaryPaymentConfiguration : IEntityTypeConfiguration<SalaryPayment
 
         builder.Property(s => s.CreatedAt)
             .IsRequired()
-            .HasDefaultValueSql("CURRENT_TIMESTAMP");
+            .HasDefaultValueSql("now() at time zone 'UTC'");
 
         builder.Property(s => s.UpdatedAt);
 

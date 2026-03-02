@@ -11,7 +11,7 @@ namespace SMS.API.Controllers;
 /// API endpoints for managing classes and sections
 /// </summary>
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/v1/[controller]")]
 [Authorize(Policy = "AcademicAccess")]
 public class ClassesController : ControllerBase
 {

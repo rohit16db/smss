@@ -6,17 +6,23 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using QuestPDF.Infrastructure;
 using SMS.API.Extensions;
 using SMS.API.Filters;
 using SMS.API.Middleware;
 using SMS.API.Services;
 using SMS.Application.Common.Behaviors;
 using SMS.Application.Common.Interfaces;
+using SMS.Application.Features.Exams.Services;
 using SMS.Domain.Interfaces;
 using SMS.Infrastructure.Data;
+using SMS.Infrastructure.Data.Interceptors;
 using SMS.Infrastructure.Services;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Configure QuestPDF License (Community License - free for open-source)
+QuestPDF.Settings.License = LicenseType.Community;
 
 // Add services to the container
 builder.Services.AddControllers(options =>
@@ -51,7 +57,10 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(connectionString, npgsqlOptions =>
     {
         npgsqlOptions.EnableRetryOnFailure(maxRetryCount: 3);
-    });
+    })
+    .AddInterceptors(new UtcDateTimeInterceptor())
+    .ConfigureWarnings(warnings => 
+        warnings.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning));
 });
 
 // Register DbContext interface
@@ -64,6 +73,11 @@ builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();
 builder.Services.AddScoped<IStudentIdGenerator, StudentIdGenerator>();
 builder.Services.AddScoped<IImageUploadService, ImageUploadService>();
 builder.Services.AddScoped<IRollNumberService, RollNumberService>();
+
+// Register Exam Module Domain Services (SRP: Single Responsibility Principle)
+builder.Services.AddScoped<IGradeCalculationService, GradeCalculationService>();
+builder.Services.AddScoped<IMarksCalculationService, MarksCalculationService>();
+builder.Services.AddScoped<IClassPositionService, ClassPositionService>();
 
 // Configure JWT Authentication
 var jwtSecret = builder.Configuration["JWT_SECRET"]
@@ -87,7 +101,8 @@ builder.Services.AddAuthentication(options =>
         ValidIssuer = jwtIssuer,
         ValidAudience = jwtAudience,
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret)),
-        ClockSkew = TimeSpan.Zero
+        ClockSkew = TimeSpan.Zero,
+        RoleClaimType = System.Security.Claims.ClaimTypes.Role // Explicitly map role claim type
     };
 });
 

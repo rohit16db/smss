@@ -21,6 +21,10 @@ import { ClassManagementPage } from './pages/ClassManagementPage';
 import { SubjectManagementPage } from './pages/SubjectManagementPage';
 import { RollNumberManagementPage } from './pages/RollNumberManagementPage';
 import { HolidaysPage } from './pages/HolidaysPage';
+import { ExamsPage } from './pages/ExamsPage';
+import { MarksPage } from './pages/MarksPage';
+import { ReportCardsPage } from './pages/ReportCardsPage';
+import { PerformanceAnalyticsPage } from './pages/PerformanceAnalyticsPage';
 import { SalaryStructurePage } from './pages/SalaryStructurePage';
 import { TeacherSalaryAssignmentPage } from './pages/TeacherSalaryAssignmentPage';
 import { BulkSalaryProcessingPage } from './pages/BulkSalaryProcessingPage';
@@ -216,6 +220,39 @@ function App() {
                     </ProtectedRoute>
                   }
                 />
+                <Route
+                  path="exams"
+                  element={
+                    <ProtectedRoute allowedRoles={["Admin", "Clerk", "Teacher"]}>
+                      <ExamsPage />
+                    </ProtectedRoute>
+                  }
+                >
+                  <Route
+                    path=":examId/marks"
+                    element={
+                      <ProtectedRoute allowedRoles={["Admin", "Clerk", "Teacher"]}>
+                        <MarksPage />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path=":examId/report-cards"
+                    element={
+                      <ProtectedRoute allowedRoles={["Admin", "Clerk", "Teacher"]}>
+                        <ReportCardsPage />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path=":examId/analytics"
+                    element={
+                      <ProtectedRoute allowedRoles={["Admin", "Clerk", "Teacher"]}>
+                        <PerformanceAnalyticsPage />
+                      </ProtectedRoute>
+                    }
+                  />
+                </Route>
                 <Route
                   path="roll-numbers"
                   element={

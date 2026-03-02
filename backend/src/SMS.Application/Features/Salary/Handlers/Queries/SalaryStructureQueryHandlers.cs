@@ -183,7 +183,7 @@ public class GetTeacherCurrentSalaryStructureQueryHandler : IRequestHandler<GetT
             SalaryStructureId = teacher.SalaryStructure.Id,
             SalaryStructureName = teacher.SalaryStructure.Name,
             GrossSalary = teacher.SalaryStructure.GrossSalary,
-            EffectiveDate = teacher.SalaryStructureEffectiveDate ?? DateOnly.FromDateTime(DateTime.Now),
+            EffectiveDate = teacher.SalaryStructureEffectiveDate ?? DateOnly.FromDateTime(DateTime.UtcNow),
             AssignedAt = teacher.SalaryStructure.CreatedAt
         };
     }
@@ -220,8 +220,8 @@ public class GetTeachersWithSalaryStructuresQueryHandler : IRequestHandler<GetTe
             SalaryStructureId = t.SalaryStructureId ?? Guid.Empty,
             SalaryStructureName = t.SalaryStructure?.Name ?? "N/A",
             GrossSalary = t.SalaryStructure?.GrossSalary ?? 0,
-            EffectiveDate = t.SalaryStructureEffectiveDate ?? DateOnly.FromDateTime(DateTime.Now),
-            AssignedAt = t.SalaryStructure?.CreatedAt ?? DateTime.Now
+            EffectiveDate = t.SalaryStructureEffectiveDate ?? DateOnly.FromDateTime(DateTime.UtcNow),
+            AssignedAt = t.SalaryStructure?.CreatedAt ?? DateTime.UtcNow
         }).ToList();
     }
 }

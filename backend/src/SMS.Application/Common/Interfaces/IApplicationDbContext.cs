@@ -39,6 +39,14 @@ public interface IApplicationDbContext
     DbSet<SalaryStructure> SalaryStructures { get; }
     DbSet<SalaryPayment> SalaryPayments { get; }
 
+    // Phase 4: Exam & Marks Management
+    DbSet<Exam> Exams { get; }
+    DbSet<ExamSubject> ExamSubjects { get; }
+    DbSet<ExamClass> ExamClasses { get; }
+    DbSet<StudentMarks> StudentMarks { get; }
+    DbSet<GradeConfiguration> GradeConfigurations { get; }
+    DbSet<StudentReportCard> StudentReportCards { get; }
+
     /// <summary>
     /// Save all changes to the database
     /// </summary>
