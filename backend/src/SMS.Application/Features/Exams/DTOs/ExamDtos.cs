@@ -8,11 +8,22 @@ public class CreateExamDto
 {
     public string Name { get; set; } = string.Empty;
     public string? Description { get; set; }
-    public DateTime ExamDate { get; set; }
+    public DateTime StartDate { get; set; }
+    public DateTime EndDate { get; set; }
     public decimal TotalMarks { get; set; } = 100;
     public decimal PassMarks { get; set; } = 40;
-    public List<Guid> SubjectIds { get; set; } = new();
+    public List<ExamSubjectInputDto> Subjects { get; set; } = new();
     public List<Guid> ClassIds { get; set; } = new();
+}
+
+/// <summary>
+/// DTO for exam subject with max marks
+/// </summary>
+public class ExamSubjectInputDto
+{
+    public Guid SubjectId { get; set; }
+    public decimal MaxMarks { get; set; }
+    public decimal PassMarks { get; set; } = 40;
 }
 
 /// <summary>
@@ -24,7 +35,8 @@ public class ExamDto
     public Guid Id { get; set; }
     public string Name { get; set; } = string.Empty;
     public string? Description { get; set; }
-    public DateTime ExamDate { get; set; }
+    public DateTime StartDate { get; set; }
+    public DateTime EndDate { get; set; }
     public decimal TotalMarks { get; set; }
     public decimal PassMarks { get; set; }
     public string Status { get; set; } = string.Empty;
@@ -41,7 +53,8 @@ public class ExamDetailDto
     public Guid Id { get; set; }
     public string Name { get; set; } = string.Empty;
     public string? Description { get; set; }
-    public DateTime ExamDate { get; set; }
+    public DateTime StartDate { get; set; }
+    public DateTime EndDate { get; set; }
     public decimal TotalMarks { get; set; }
     public decimal PassMarks { get; set; }
     public string Status { get; set; } = string.Empty;

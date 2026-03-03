@@ -101,7 +101,7 @@ export const ExamTrendChart: React.FC<{
             {data.map((exam) => (
               <tr key={exam.examId}>
                 <td>{exam.examName}</td>
-                <td>{new Date(exam.examDate).toLocaleDateString()}</td>
+                <td>{new Date(exam.startDate).toLocaleDateString()}</td>
                 <td className="average">
                   {exam.classAverage.toFixed(2)}%
                 </td>
@@ -139,10 +139,40 @@ export const PerformanceCard: React.FC<{
   value: string | number;
   color: string;
 }> = ({ label, value, color }) => {
+  const colorClasses: Record<string, { border: string; bg: string; textValue: string }> = {
+    primary: {
+      border: "border-l-blue-600",
+      bg: "bg-blue-50",
+      textValue: "text-blue-600"
+    },
+    success: {
+      border: "border-l-green-600",
+      bg: "bg-green-50",
+      textValue: "text-green-600"
+    },
+    danger: {
+      border: "border-l-red-600",
+      bg: "bg-red-50",
+      textValue: "text-red-600"
+    },
+    info: {
+      border: "border-l-cyan-600",
+      bg: "bg-cyan-50",
+      textValue: "text-cyan-600"
+    },
+    warning: {
+      border: "border-l-yellow-600",
+      bg: "bg-yellow-50",
+      textValue: "text-yellow-600"
+    }
+  };
+
+  const { border, bg, textValue } = colorClasses[color] || colorClasses.primary;
+
   return (
-    <div className={`performance-card card-${color}`}>
-      <div className="card-label">{label}</div>
-      <div className="card-value">{value}</div>
+    <div className={`${bg} border-l-4 ${border} rounded-lg p-6 shadow-sm border border-gray-200 hover:shadow-md transition-all`}>
+      <p className="text-sm font-medium text-gray-600 mb-2">{label}</p>
+      <p className={`text-3xl font-bold ${textValue}`}>{value}</p>
     </div>
   );
 };
@@ -154,33 +184,58 @@ export const TopPerformersTable: React.FC<{
   students: StudentPerformanceDto[];
   type: "top" | "bottom";
 }> = ({ students, type }) => {
+  const getRankBadgeColor = (index: number): string => {
+    if (index === 0) return 'bg-yellow-500';
+    if (index === 1) return 'bg-gray-400';
+    if (index === 2) return 'bg-orange-600';
+    return 'bg-blue-500';
+  };
+
+  const getGradeColor = (grade: string): string => {
+    switch (grade) {
+      case 'A': return 'bg-green-600';
+      case 'B': return 'bg-blue-600';
+      case 'C': return 'bg-yellow-600';
+      case 'D': return 'bg-orange-600';
+      default: return 'bg-red-600';
+    }
+  };
+
+  if (!students || students.length === 0) {
+    return (
+      <div className="text-center py-8">
+        <p className="text-gray-600">No performer data available</p>
+      </div>
+    );
+  }
+
   return (
-    <div className="performers-table">
+    <div className="overflow-x-auto">
       <table className="data-table">
         <thead>
           <tr>
-            <th className="rank-col">#</th>
-            <th className="name-col">Student Name</th>
-            <th className="roll-col">Roll #</th>
-            <th className="marks-col">Marks</th>
-            <th className="grade-col">Grade</th>
+            <th className="center">#</th>
+            <th>Student Name</th>
+            <th className="center">Roll #</th>
+            <th className="center">Marks</th>
+            <th className="center">Grade</th>
           </tr>
         </thead>
         <tbody>
           {students.map((student, index) => (
-            <tr key={student.studentId} className={`performer-row ${type}`}>
-              <td className="rank-col">
-                <span className={`rank-badge rank-${index + 1}`}>
+            <tr key={student.studentId} className={type === 'top' ? 'border-l-4 border-l-green-500' : 'border-l-4 border-l-red-500'}>
+              <td className="center">
+                <span className={`inline-flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold text-white ${getRankBadgeColor(index)}`}>
                   {index + 1}
                 </span>
               </td>
-              <td className="name-col">{student.studentName}</td>
-              <td className="roll-col">{student.rollNumber}</td>
-              <td className="marks-col">
-                {student.marksObtained} ({student.percentage.toFixed(2)}%)
+              <td className="font-medium">{student.studentName}</td>
+              <td className="center">{student.rollNumber}</td>
+              <td className="center font-semibold">
+                {student.marksObtained} <span className="text-xs font-normal">({student.percentage.toFixed(2)}%)</span>
               </td>
-              <td className="grade-col">
-                <span className={`grade-badge grade-${student.grade}`}>
+              <td className="center">
+                <span className={`px-3 py-1 rounded-full text-xs font-bold text-white ${getGradeColor(student.grade)}`}>
                   {student.grade}
                 </span>
               </td>
@@ -198,37 +253,55 @@ export const TopPerformersTable: React.FC<{
 export const SubjectAnalysisTable: React.FC<{
   subjects: SubjectAnalysisDto[];
 }> = ({ subjects }) => {
+  if (!subjects || subjects.length === 0) {
+    return (
+      <div className="text-center py-8">
+        <p className="text-gray-600">No subject analysis data available</p>
+      </div>
+    );
+  }
+
   return (
-    <div className="subject-analysis-table">
+    <div className="overflow-x-auto">
       <table className="data-table">
         <thead>
           <tr>
             <th>Subject Name</th>
-            <th>Max Marks</th>
-            <th>Avg Marks</th>
-            <th>Avg %</th>
-            <th>Highest</th>
-            <th>Lowest</th>
-            <th>Passed</th>
-            <th>Failed</th>
-            <th>Pass Rate</th>
+            <th className="center">Max</th>
+            <th className="center">Avg</th>
+            <th className="center">Avg %</th>
+            <th className="center">High</th>
+            <th className="center">Low</th>
+            <th className="center">Pass</th>
+            <th className="center">Fail</th>
+            <th className="center">Pass Rate</th>
           </tr>
         </thead>
         <tbody>
           {subjects.map((subject) => (
             <tr key={subject.subjectId}>
-              <td className="subject-name">{subject.subjectName}</td>
+              <td className="font-medium">{subject.subjectName}</td>
               <td className="center">{subject.maxMarks}</td>
-              <td className="center">{subject.averageMarks.toFixed(2)}</td>
-              <td className="center">{subject.averagePercentage.toFixed(2)}%</td>
-              <td className="center highest">{subject.highestMarks}</td>
-              <td className="center lowest">{subject.lowestMarks}</td>
-              <td className="center pass">{subject.passCount}</td>
-              <td className="center fail">{subject.failCount}</td>
+              <td className="center">{subject.averageMarks.toFixed(1)}</td>
+              <td className="center">{subject.averagePercentage.toFixed(1)}%</td>
+              <td className="center">
+                <span className="font-semibold text-green-600">{subject.highestMarks}</span>
+              </td>
+              <td className="center">
+                <span className="font-semibold text-red-600">{subject.lowestMarks}</span>
+              </td>
+              <td className="center">
+                <span className="font-medium text-green-600">{subject.passCount}</span>
+              </td>
+              <td className="center">
+                <span className="font-medium text-red-600">{subject.failCount}</span>
+              </td>
               <td className="center">
                 <span
-                  className={`pass-badge ${
-                    subject.passPercentage >= 70 ? "high" : "low"
+                  className={`px-3 py-1 rounded-full text-sm font-semibold ${
+                    subject.passPercentage >= 70
+                      ? "bg-green-100 text-green-800"
+                      : "bg-red-100 text-red-800"
                   }`}
                 >
                   {subject.passPercentage.toFixed(1)}%

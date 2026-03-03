@@ -29,8 +29,12 @@ public class ExamConfiguration : IEntityTypeConfiguration<Exam>
             .HasColumnName("description")
             .HasMaxLength(1000);
 
-        builder.Property(e => e.ExamDate)
-            .HasColumnName("exam_date")
+        builder.Property(e => e.StartDate)
+            .HasColumnName("start_date")
+            .IsRequired();
+
+        builder.Property(e => e.EndDate)
+            .HasColumnName("end_date")
             .IsRequired();
 
         builder.Property(e => e.TotalMarks)
@@ -86,12 +90,13 @@ public class ExamConfiguration : IEntityTypeConfiguration<Exam>
             .HasForeignKey(src => src.ExamId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        // Unique constraint: Name + Date combination
-        builder.HasIndex(e => new { e.Name, e.ExamDate })
+        // Unique constraint: Name + StartDate combination (allows same exam on different dates)
+        builder.HasIndex(e => new { e.Name, e.StartDate })
             .IsUnique();
 
         // Index for common queries
         builder.HasIndex(e => e.Status);
-        builder.HasIndex(e => e.ExamDate);
+        builder.HasIndex(e => e.StartDate);
+        builder.HasIndex(e => e.EndDate);
     }
 }

@@ -115,7 +115,7 @@ export const MarksPage: React.FC = () => {
     try {
       await submitMutation.mutateAsync({ examId, classId, sectionId });
       alert("Marks submitted successfully! Report cards have been generated.");
-      navigate("/report-cards/" + examId);
+      navigate(`/exams/${examId}/report-cards`);
     } catch (err) {
       console.error("Failed to submit marks:", err);
     }

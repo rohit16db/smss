@@ -18,6 +18,8 @@ import { getErrorMessage } from "../services/examApi";
 const REPORT_CARD_QUERY_KEYS = {
   all: ["reportCards"] as const,
   cards: () => [...REPORT_CARD_QUERY_KEYS.all, "cards"] as const,
+  cardById: (cardId: string) =>
+    [...REPORT_CARD_QUERY_KEYS.cards(), { cardId }] as const,
   card: (examId: string, studentId: string) =>
     [...REPORT_CARD_QUERY_KEYS.cards(), { examId, studentId }] as const,
   exam: () => [...REPORT_CARD_QUERY_KEYS.all, "exam"] as const,
@@ -42,6 +44,23 @@ const REPORT_CARD_QUERY_KEYS = {
 // ============================================================================
 // QUERY HOOKS
 // ============================================================================
+
+/**
+ * Fetch a specific report card by ID
+ * @param cardId - The report card ID
+ * @returns Query result with report card details
+ */
+export const useReportCardById = (
+  cardId: string | null
+): UseQueryResult<ReportCardDto, Error> => {
+  return useQuery({
+    queryKey: REPORT_CARD_QUERY_KEYS.cardById(cardId || ""),
+    queryFn: () => examApi.reportCard.getReportCardById(cardId!),
+    enabled: !!cardId, // Don't fetch if no ID
+    staleTime: 10 * 60 * 1000, // 10 minutes
+    gcTime: 20 * 60 * 1000, // 20 minutes
+  });
+};
 
 /**
  * Fetch a specific report card for a student and exam

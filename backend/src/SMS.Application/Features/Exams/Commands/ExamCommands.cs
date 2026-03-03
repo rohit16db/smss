@@ -11,12 +11,23 @@ public class CreateExamCommand : IRequest<ExamDto>
 {
     public string Name { get; set; } = string.Empty;
     public string? Description { get; set; }
-    public DateTime ExamDate { get; set; }
+    public DateTime StartDate { get; set; }
+    public DateTime EndDate { get; set; }
     public decimal TotalMarks { get; set; } = 100;
     public decimal PassMarks { get; set; } = 40;
-    public List<Guid> SubjectIds { get; set; } = new();
+    public List<ExamSubjectInput> Subjects { get; set; } = new();
     public List<Guid> ClassIds { get; set; } = new();
     public Guid CreatedById { get; set; }
+}
+
+/// <summary>
+/// Input for exam subject with max marks
+/// </summary>
+public class ExamSubjectInput
+{
+    public Guid SubjectId { get; set; }
+    public decimal MaxMarks { get; set; }
+    public decimal PassMarks { get; set; } = 40;
 }
 
 /// <summary>
@@ -28,9 +39,12 @@ public class UpdateExamCommand : IRequest<ExamDto>
     public Guid ExamId { get; set; }
     public string Name { get; set; } = string.Empty;
     public string? Description { get; set; }
-    public DateTime ExamDate { get; set; }
+    public DateTime StartDate { get; set; }
+    public DateTime EndDate { get; set; }
     public decimal TotalMarks { get; set; }
     public decimal PassMarks { get; set; }
+    public List<ExamSubjectInput> Subjects { get; set; } = new();
+    public List<Guid> ClassIds { get; set; } = new();
 }
 
 /// <summary>

@@ -41,7 +41,7 @@ public class ExamRepository : IExamRepository
     public async Task<List<Exam>> GetAllAsync(int skip = 0, int take = 20, CancellationToken cancellationToken = default)
     {
         return await _context.Exams
-            .OrderByDescending(e => e.ExamDate)
+            .OrderByDescending(e => e.StartDate)
             .Skip(skip)
             .Take(take)
             .ToListAsync(cancellationToken);
@@ -51,7 +51,7 @@ public class ExamRepository : IExamRepository
     {
         return await _context.Exams
             .Where(e => e.Status.ToString() == status)
-            .OrderByDescending(e => e.ExamDate)
+            .OrderByDescending(e => e.StartDate)
             .ToListAsync(cancellationToken);
     }
 

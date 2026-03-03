@@ -36,21 +36,47 @@ public class ReportCardQueryHandlers
                 : "Unknown";
 
             // Get subject-wise marks
-            var subjectWiseMarks = await _context.StudentMarks
+            var studentMarks = await _context.StudentMarks
                 .Where(m => m.ExamId == request.ExamId && m.StudentId == request.StudentId)
-                .Include(m => m.ExamSubject)
-                .Select(m => new SubjectReportCardDto
-                {
-                    SubjectId = m.SubjectId,
-                    SubjectName = m.ExamSubject!.Subject!.Name,
-                    MaxMarks = m.ExamSubject.MaxMarks,
-                    Obtained = m.MarksObtained ?? 0,
-                    Percentage = m.MarksObtained.HasValue && m.ExamSubject.MaxMarks > 0 
-                        ? (m.MarksObtained.Value / m.ExamSubject.MaxMarks) * 100 
-                        : 0,
-                    Grade = "" // Grade determined by percentage if needed
-                })
+                .AsNoTracking()
                 .ToListAsync(cancellationToken);
+
+            // Load all ExamSubjects for this exam with their Subject names
+            var examSubjects = await _context.ExamSubjects
+                .Where(es => es.ExamId == request.ExamId)
+                .Include(es => es.Subject)
+                .AsNoTracking()
+                .ToListAsync(cancellationToken);
+
+            // Create a lookup dictionary: (ExamId, SubjectId) -> (MaxMarks, SubjectName)
+            var subjectLookup = examSubjects.ToDictionary(
+                es => (es.ExamId, es.SubjectId),
+                es => (es.MaxMarks, es.Subject?.Name ?? "Unknown"));
+
+            // Map to DTO with MaxMarks from lookup
+            var subjectWiseMarks = studentMarks.Select(mark =>
+            {
+                var key = (mark.ExamId, mark.SubjectId);
+                var (maxMarks, subjectName) = subjectLookup.ContainsKey(key)
+                    ? subjectLookup[key]
+                    : (0m, "Unknown");
+
+                var percentage = mark.MarksObtained.HasValue && maxMarks > 0
+                    ? (mark.MarksObtained.Value / maxMarks) * 100
+                    : 0;
+
+                var grade = DetermineGrade((double)percentage);
+
+                return new SubjectReportCardDto
+                {
+                    SubjectId = mark.SubjectId,
+                    SubjectName = subjectName,
+                    MaxMarks = maxMarks,
+                    Obtained = mark.MarksObtained ?? 0,
+                    Percentage = percentage,
+                    Grade = grade
+                };
+            }).ToList();
 
             return new ReportCardDto
             {
@@ -61,7 +87,8 @@ public class ReportCardQueryHandlers
                 ClassName = sectionName,
                 ExamId = reportCard.ExamId,
                 ExamName = reportCard.Exam!.Name,
-                ExamDate = reportCard.Exam!.ExamDate,
+                StartDate = reportCard.Exam!.StartDate,
+                EndDate = reportCard.Exam!.EndDate,
                 SubjectMarks = subjectWiseMarks,
                 Summary = new ReportCardSummaryDto
                 {
@@ -146,6 +173,102 @@ public class ReportCardQueryHandlers
         }
     }
 
+    public class GetReportCardByIdQueryHandler : IRequestHandler<GetReportCardByIdQuery, ReportCardDto>
+    {
+        private readonly IApplicationDbContext _context;
+        public GetReportCardByIdQueryHandler(IApplicationDbContext context) => _context = context;
+        
+        public async Task<ReportCardDto> Handle(GetReportCardByIdQuery request, CancellationToken cancellationToken)
+        {
+            // Get report card by ID
+            var reportCard = await _context.StudentReportCards
+                .Include(rc => rc.Exam)
+                .Include(rc => rc.Student)
+                .FirstOrDefaultAsync(rc => rc.Id == request.ReportCardId, cancellationToken);
+
+            if (reportCard == null)
+                throw new InvalidOperationException($"Report card not found with ID {request.ReportCardId}");
+
+            // Get student's section for class name
+            var studentSection = await _context.StudentSections
+                .Where(ss => ss.StudentId == reportCard.StudentId && ss.IsCurrent)
+                .Select(ss => new { ss.SectionId, ss.RollNumber })
+                .FirstOrDefaultAsync(cancellationToken);
+
+            var sectionName = studentSection != null 
+                ? (await _context.Sections.FirstOrDefaultAsync(s => s.Id == studentSection.SectionId, cancellationToken))?.SectionName ?? "Unknown"
+                : "Unknown";
+
+            // Get subject-wise marks
+            var studentMarks = await _context.StudentMarks
+                .Where(m => m.ExamId == reportCard.ExamId && m.StudentId == reportCard.StudentId)
+                .AsNoTracking()
+                .ToListAsync(cancellationToken);
+
+            // Load all ExamSubjects for this exam with their Subject names
+            var examSubjects = await _context.ExamSubjects
+                .Where(es => es.ExamId == reportCard.ExamId)
+                .Include(es => es.Subject)
+                .AsNoTracking()
+                .ToListAsync(cancellationToken);
+
+            // Create a lookup dictionary: (ExamId, SubjectId) -> (MaxMarks, SubjectName)
+            var subjectLookup = examSubjects.ToDictionary(
+                es => (es.ExamId, es.SubjectId),
+                es => (es.MaxMarks, es.Subject?.Name ?? "Unknown"));
+
+            // Map to DTO with MaxMarks from lookup
+            var subjectWiseMarks = studentMarks.Select(mark =>
+            {
+                var key = (mark.ExamId, mark.SubjectId);
+                var (maxMarks, subjectName) = subjectLookup.ContainsKey(key)
+                    ? subjectLookup[key]
+                    : (0m, "Unknown");
+
+                var percentage = mark.MarksObtained.HasValue && maxMarks > 0
+                    ? (mark.MarksObtained.Value / maxMarks) * 100
+                    : 0;
+
+                var grade = DetermineGrade((double)percentage);
+
+                return new SubjectReportCardDto
+                {
+                    SubjectId = mark.SubjectId,
+                    SubjectName = subjectName,
+                    MaxMarks = maxMarks,
+                    Obtained = mark.MarksObtained ?? 0,
+                    Percentage = percentage,
+                    Grade = grade
+                };
+            }).ToList();
+
+            return new ReportCardDto
+            {
+                Id = reportCard.Id,
+                StudentId = reportCard.StudentId,
+                StudentName = $"{reportCard.Student!.FirstName} {reportCard.Student.LastName}",
+                RollNumber = studentSection != null ? (studentSection.RollNumber ?? 0).ToString() : "",
+                ClassName = sectionName,
+                ExamId = reportCard.ExamId,
+                ExamName = reportCard.Exam!.Name,
+                StartDate = reportCard.Exam!.StartDate,
+                EndDate = reportCard.Exam!.EndDate,
+                SubjectMarks = subjectWiseMarks,
+                Summary = new ReportCardSummaryDto
+                {
+                    TotalMarks = reportCard.TotalMarks,
+                    TotalObtained = reportCard.TotalMarksObtained,
+                    Percentage = reportCard.Percentage,
+                    OverallGrade = reportCard.OverallGrade,
+                    ClassPosition = reportCard.ClassPosition
+                },
+                AttendancePercentage = 100,
+                Remarks = "",
+                GeneratedAt = reportCard.GeneratedAt ?? DateTime.UtcNow
+            };
+        }
+    }
+
     public class ExportReportCardPdfQueryHandler : IRequestHandler<ExportReportCardPdfQuery, byte[]>
     {
         private readonly IApplicationDbContext _context;
@@ -168,11 +291,33 @@ public class ReportCardQueryHandlers
                 .FirstOrDefaultAsync(cancellationToken);
 
             // Get subject-wise marks
-            var subjectMarks = await _context.StudentMarks
+            var studentMarks = await _context.StudentMarks
                 .Where(m => m.ExamId == reportCard.ExamId && m.StudentId == reportCard.StudentId)
-                .Include(m => m.ExamSubject)
-                .ThenInclude(es => es.Subject)
+                .AsNoTracking()
                 .ToListAsync(cancellationToken);
+
+            // Load all ExamSubjects for this exam with their Subject names
+            var examSubjects = await _context.ExamSubjects
+                .Where(es => es.ExamId == reportCard.ExamId)
+                .Include(es => es.Subject)
+                .AsNoTracking()
+                .ToListAsync(cancellationToken);
+
+            // Create a lookup dictionary: (ExamId, SubjectId) -> ExamSubject
+            var subjectLookup = examSubjects.ToDictionary(
+                es => (es.ExamId, es.SubjectId),
+                es => es);
+
+            // Map to StudentMarks with ExamSubject navigation populated
+            var subjectMarksList = studentMarks.Select(mark =>
+            {
+                var key = (mark.ExamId, mark.SubjectId);
+                if (subjectLookup.ContainsKey(key))
+                {
+                    mark.ExamSubject = subjectLookup[key];
+                }
+                return mark;
+            }).ToList();
 
             // Generate PDF
             var document = Document.Create(container =>
@@ -208,7 +353,7 @@ public class ReportCardQueryHandlers
                                 row.RelativeItem().Column(c2 =>
                                 {
                                     c2.Item().Text($"Exam: {reportCard.Exam!.Name}").FontSize(11f).FontColor("#374151");
-                                    c2.Item().PaddingTop(4).Text($"Exam Date: {reportCard.Exam.ExamDate:dd MMM yyyy}").FontSize(11f).FontColor("#374151");
+                                    c2.Item().PaddingTop(4).Text($"Exam Date: {reportCard.Exam.StartDate:dd MMM yyyy}").FontSize(11f).FontColor("#374151");
                                 });
                             });
                         });
@@ -296,7 +441,7 @@ public class ReportCardQueryHandlers
 
                             // Rows
                             int rowIndex = 0;
-                            foreach (var mark in subjectMarks)
+                            foreach (var mark in subjectMarksList)
                             {
                                 var percentage = mark.MarksObtained.HasValue && mark.ExamSubject!.MaxMarks > 0
                                     ? ((double)mark.MarksObtained.Value) / ((double)mark.ExamSubject.MaxMarks) * 100
@@ -345,14 +490,14 @@ public class ReportCardQueryHandlers
 
             return document.GeneratePdf();
         }
+    }
 
-        private static string DetermineGrade(double percentage)
-        {
-            if (percentage >= 90) return "A";
-            if (percentage >= 80) return "B";
-            if (percentage >= 70) return "C";
-            if (percentage >= 60) return "D";
-            return "F";
-        }
+    private static string DetermineGrade(double percentage)
+    {
+        if (percentage >= 90) return "A";
+        if (percentage >= 80) return "B";
+        if (percentage >= 70) return "C";
+        if (percentage >= 60) return "D";
+        return "F";
     }
 }

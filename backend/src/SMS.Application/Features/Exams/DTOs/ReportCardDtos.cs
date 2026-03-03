@@ -9,7 +9,8 @@ public class ReportCardDto
     public Guid Id { get; set; }
     public Guid ExamId { get; set; }
     public string ExamName { get; set; } = string.Empty;
-    public DateTime ExamDate { get; set; }
+    public DateTime StartDate { get; set; }
+    public DateTime EndDate { get; set; }
     public Guid StudentId { get; set; }
     public string StudentName { get; set; } = string.Empty;
     public string RollNumber { get; set; } = string.Empty;

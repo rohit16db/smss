@@ -8,6 +8,7 @@ import {
 } from "@tanstack/react-query";
 import type { UseQueryResult } from "@tanstack/react-query";
 import examApi from "../services/examApi";
+import { classApi } from "../services/api";
 import type {
   ExamAnalyticsDto,
   ClassPerformanceDto,
@@ -225,5 +226,22 @@ export const useDetailedAnalyticsReport = (
     enabled: !!examId, // Don't fetch if no exam ID
     staleTime: 15 * 60 * 1000, // 15 minutes (more expensive query)
     gcTime: 30 * 60 * 1000, // 30 minutes
+  });
+};
+
+// ============================================================================
+// CLASS LISTING HOOK
+// ============================================================================
+
+/**
+ * Fetch all available classes for selection
+ * @returns Query result with class list
+ */
+export const useClasses = (): UseQueryResult<any, Error> => {
+  return useQuery({
+    queryKey: ["classes", "all"],
+    queryFn: () => classApi.getAll({ pageSize: 100 }),
+    staleTime: 30 * 60 * 1000, // 30 minutes
+    gcTime: 60 * 60 * 1000, // 1 hour
   });
 };

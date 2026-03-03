@@ -38,6 +38,15 @@ public class GetStudentReportCardsQuery : IRequest<List<ReportCardListDto>>
 }
 
 /// <summary>
+/// Query to get a report card by ID
+/// Single Responsibility: Request report card by StudentReportCard ID
+/// </summary>
+public class GetReportCardByIdQuery : IRequest<ReportCardDto>
+{
+    public Guid ReportCardId { get; set; }
+}
+
+/// <summary>
 /// Query to export report card as PDF
 /// Single Responsibility: Request PDF export of report card
 /// </summary>

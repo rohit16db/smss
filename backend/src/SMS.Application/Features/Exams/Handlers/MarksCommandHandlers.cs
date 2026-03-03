@@ -194,8 +194,9 @@ public class MarksCommandHandlers
             // Determine grade based on percentage
             var grade = DetermineGrade(percentage);
 
-            // Check if student passed
-            var passed = percentage >= exam.PassMarks;
+            // Check if student passed - consistent with grade system (D grade or above = pass, F = fail)
+            // D grade is 40%, so student passes if overall percentage >= 40%
+            var passed = percentage >= 40;
 
             // Check if report card already exists
             var existingReportCard = await _context.StudentReportCards

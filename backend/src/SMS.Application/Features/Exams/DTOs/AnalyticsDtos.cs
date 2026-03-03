@@ -8,7 +8,8 @@ public class ExamAnalyticsDto
 {
     public Guid ExamId { get; set; }
     public string ExamName { get; set; } = string.Empty;
-    public DateTime ExamDate { get; set; }
+    public DateTime StartDate { get; set; }
+    public DateTime EndDate { get; set; }
     public int TotalStudents { get; set; }
     public int PassedStudents { get; set; }
     public int FailedStudents { get; set; }
@@ -117,7 +118,8 @@ public class ExamPerformancePointDto
 {
     public Guid ExamId { get; set; }
     public string ExamName { get; set; } = string.Empty;
-    public DateTime ExamDate { get; set; }
+    public DateTime StartDate { get; set; }
+    public DateTime EndDate { get; set; }
     public decimal MarksObtained { get; set; }
     public decimal Percentage { get; set; }
     public string Grade { get; set; } = string.Empty;
@@ -193,7 +195,8 @@ public class ExamComparisonItemDto
 {
     public Guid ExamId { get; set; }
     public string ExamName { get; set; } = string.Empty;
-    public DateTime ExamDate { get; set; }
+    public DateTime StartDate { get; set; }
+    public DateTime EndDate { get; set; }
     public decimal ClassAverage { get; set; }
     public decimal PassPercentage { get; set; }
     public int PassCount { get; set; }
@@ -219,7 +222,8 @@ public class SubjectExamComparisonDto
 {
     public Guid ExamId { get; set; }
     public string ExamName { get; set; } = string.Empty;
-    public DateTime ExamDate { get; set; }
+    public DateTime StartDate { get; set; }
+    public DateTime EndDate { get; set; }
     public decimal AverageMarks { get; set; }
     public decimal AveragePercentage { get; set; }
     public int PassCount { get; set; }

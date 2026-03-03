@@ -10,7 +10,8 @@ public class Exam : BaseEntity
 {
     public string Name { get; set; } = string.Empty;
     public string? Description { get; set; }
-    public DateTime ExamDate { get; set; }
+    public DateTime StartDate { get; set; }
+    public DateTime EndDate { get; set; }
     public decimal TotalMarks { get; set; } = 100;
     public decimal PassMarks { get; set; } = 40;
     public ExamStatus Status { get; set; } = ExamStatus.Draft;

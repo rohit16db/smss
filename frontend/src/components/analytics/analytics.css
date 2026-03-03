@@ -293,11 +293,12 @@
    ============================================================================ */
 
 .histogram.chart-visualization {
-  flex-direction: row;
-  align-items: flex-end;
+  flex-direction: column;
+  align-items: stretch;
   justify-content: flex-start;
-  gap: 0.5rem;
-  padding: 2rem 0;
+  gap: 1rem;
+  padding: 1.5rem 0;
+  overflow: hidden;
 }
 
 .histogram-bars {
@@ -308,15 +309,24 @@
   gap: 0.5rem;
   height: 280px;
   margin-bottom: 1rem;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 0.5rem;
+  border: 1px solid #ecf0f1;
+  border-radius: 4px;
+  background: #fafbfc;
 }
 
 .histogram-bar-container {
-  flex: 1;
+  flex: 0 0 auto;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: flex-end;
-  min-width: 40px;
+  min-width: 50px;
+  max-width: 80px;
+  height: 100%;
+  padding: 0 4px;
 }
 
 .bar-wrapper {
@@ -325,7 +335,8 @@
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  margin-bottom: 1rem;
+  margin-bottom: 0.5rem;
+  min-height: 40px;
 }
 
 .histogram-bar {
@@ -455,14 +466,15 @@
 }
 
 .data-table thead {
-  background: linear-gradient(90deg, #34495e 0%, #2c3e50 100%);
-  color: white;
+  background-color: #f3f4f6;
+  border-bottom: 2px solid #e5e7eb;
 }
 
 .data-table th {
-  padding: 14px 12px;
+  padding: 1rem;
   text-align: left;
   font-weight: 600;
+  color: #1f2937;
   white-space: nowrap;
 }
 
@@ -471,9 +483,9 @@
 }
 
 .data-table td {
-  padding: 12px;
-  border-bottom: 1px solid #ecf0f1;
-  color: #34495e;
+  padding: 1rem;
+  border-bottom: 1px solid #e5e7eb;
+  color: #1f2937;
 }
 
 .data-table tbody tr {
@@ -789,6 +801,12 @@
 
   .histogram-bars {
     height: 200px;
+    gap: 0.4rem;
+  }
+
+  .histogram-bar-container {
+    min-width: 45px;
+    max-width: 70px;
   }
 
   .grade-item {
@@ -830,6 +848,11 @@
   .histogram-bars {
     height: 150px;
     gap: 0.25rem;
+  }
+
+  .histogram-bar-container {
+    min-width: 40px;
+    max-width: 60px;
   }
 
   .performer-row {

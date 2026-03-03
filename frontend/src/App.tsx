@@ -24,6 +24,7 @@ import { HolidaysPage } from './pages/HolidaysPage';
 import { ExamsPage } from './pages/ExamsPage';
 import { MarksPage } from './pages/MarksPage';
 import { ReportCardsPage } from './pages/ReportCardsPage';
+import { ReportCardDetailPage } from './pages/ReportCardDetailPage';
 import { PerformanceAnalyticsPage } from './pages/PerformanceAnalyticsPage';
 import { SalaryStructurePage } from './pages/SalaryStructurePage';
 import { TeacherSalaryAssignmentPage } from './pages/TeacherSalaryAssignmentPage';
@@ -253,6 +254,14 @@ function App() {
                     }
                   />
                 </Route>
+                <Route
+                  path="report-cards/:examId/:studentId"
+                  element={
+                    <ProtectedRoute allowedRoles={["Admin", "Clerk", "Teacher"]}>
+                      <ReportCardDetailPage />
+                    </ProtectedRoute>
+                  }
+                />
                 <Route
                   path="roll-numbers"
                   element={

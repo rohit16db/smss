@@ -26,7 +26,7 @@ public class ExamQueryHandlers
 
             // Apply pagination
             var exams = await query
-                .OrderByDescending(e => e.ExamDate)
+                .OrderByDescending(e => e.StartDate)
                 .Skip((request.Page - 1) * request.PageSize)
                 .Take(request.PageSize)
                 .Select(e => new ExamDto
@@ -34,10 +34,13 @@ public class ExamQueryHandlers
                     Id = e.Id,
                     Name = e.Name,
                     Description = e.Description,
-                    ExamDate = e.ExamDate,
+                    StartDate = e.StartDate,
+                    EndDate = e.EndDate,
                     TotalMarks = e.TotalMarks,
                     PassMarks = e.PassMarks,
-                    Status = e.Status.ToString()
+                    Status = e.Status.ToString(),
+                    CreatedAt = e.CreatedAt,
+                    UpdatedAt = e.UpdatedAt
                 })
                 .ToListAsync(cancellationToken);
 
@@ -95,7 +98,8 @@ public class ExamQueryHandlers
                 Id = exam.Id,
                 Name = exam.Name,
                 Description = exam.Description,
-                ExamDate = exam.ExamDate,
+                StartDate = exam.StartDate,
+                EndDate = exam.EndDate,
                 TotalMarks = exam.TotalMarks,
                 PassMarks = exam.PassMarks,
                 Status = exam.Status.ToString(),
@@ -114,7 +118,8 @@ public class ExamQueryHandlers
                     MarksEntryStatus = ec.MarksEntryStatus.ToString(),
                     SubmittedAt = ec.SubmittedAt
                 }).ToList(),
-                CreatedAt = exam.CreatedAt
+                CreatedAt = exam.CreatedAt,
+                UpdatedAt = exam.UpdatedAt
             };
         }
     }

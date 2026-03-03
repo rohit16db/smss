@@ -47,10 +47,16 @@ public class ExamsController : ControllerBase
             {
                 Name = request.Name,
                 Description = request.Description,
-                ExamDate = request.ExamDate,
+                StartDate = request.StartDate,
+                EndDate = request.EndDate,
                 TotalMarks = request.TotalMarks,
                 PassMarks = request.PassMarks,
-                SubjectIds = request.SubjectIds,
+                Subjects = request.Subjects.Select(s => new ExamSubjectInput
+                {
+                    SubjectId = s.SubjectId,
+                    MaxMarks = s.MaxMarks,
+                    PassMarks = s.PassMarks
+                }).ToList(),
                 ClassIds = request.ClassIds,
                 CreatedById = User.GetCurrentUserId() // Get from JWT token
             };
@@ -165,9 +171,17 @@ public class ExamsController : ControllerBase
                 ExamId = examId,
                 Name = request.Name,
                 Description = request.Description,
-                ExamDate = request.ExamDate,
+                StartDate = request.StartDate,
+                EndDate = request.EndDate,
                 TotalMarks = request.TotalMarks,
-                PassMarks = request.PassMarks
+                PassMarks = request.PassMarks,
+                Subjects = request.Subjects.Select(s => new ExamSubjectInput 
+                { 
+                    SubjectId = s.SubjectId, 
+                    MaxMarks = s.MaxMarks,
+                    PassMarks = s.PassMarks
+                }).ToList(),
+                ClassIds = request.ClassIds
             };
 
             var result = await _mediator.Send(command);
@@ -196,9 +210,15 @@ public class ExamsController : ControllerBase
             await _mediator.Send(command);
             return NoContent();
         }
+        catch (InvalidOperationException ex)
+        {
+            // Return 400 for validation errors (draft status, marks exist, etc.)
+            _logger.LogWarning(ex, "Delete exam validation failed for exam {examId}", examId);
+            return BadRequest(new { message = ex.Message });
+        }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error deleting exam");
+            _logger.LogError(ex, "Error deleting exam {examId}", examId);
             return StatusCode(StatusCodes.Status500InternalServerError, new { message = "Error deleting exam" });
         }
     }

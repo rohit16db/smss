@@ -21,12 +21,31 @@ public class AnalyticsQueryHandlers
         {
             var exam = await _context.Exams
                 .Include(e => e.StudentReportCards)
+                .ThenInclude(rc => rc.Student)
                 .FirstOrDefaultAsync(e => e.Id == request.ExamId, cancellationToken);
 
             if (exam == null)
                 throw new InvalidOperationException($"Exam with ID {request.ExamId} not found");
 
-            var reportCards = exam.StudentReportCards.ToList();
+            // Load all student sections at once to avoid N+1 queries
+            var studentIds = exam.StudentReportCards.Select(rc => rc.StudentId).Distinct().ToList();
+            var studentSectionsQuery = _context.StudentSections
+                .Where(ss => studentIds.Contains(ss.StudentId) && ss.IsCurrent);
+
+            // Filter by class if provided
+            if (request.ClassId.HasValue)
+            {
+                studentSectionsQuery = studentSectionsQuery.Where(ss => ss.Section.ClassId == request.ClassId.Value);
+            }
+
+            var studentSections = await studentSectionsQuery.Include(ss => ss.Section).ToListAsync(cancellationToken);
+
+            // Filter report cards to only include students in the selected class (if classId provided)
+            var filteredStudentIds = studentSections.Select(ss => ss.StudentId).ToList();
+            var reportCards = request.ClassId.HasValue
+                ? exam.StudentReportCards.Where(rc => filteredStudentIds.Contains(rc.StudentId)).ToList()
+                : exam.StudentReportCards.ToList();
+
             var totalStudents = reportCards.Count;
             var passedStudents = reportCards.Count(rc => rc.Pass);
             var failedStudents = totalStudents - passedStudents;
@@ -52,8 +71,8 @@ public class AnalyticsQueryHandlers
                 .Select(rc => new StudentPerformanceDto
                 {
                     StudentId = rc.StudentId,
-                    StudentName = $"{rc.Student!.FirstName} {rc.Student.LastName}",
-                    RollNumber = _context.StudentSections.Where(ss => ss.StudentId == rc.StudentId && ss.IsCurrent).Select(ss => (ss.RollNumber ?? 0).ToString()).FirstOrDefault() ?? "",
+                    StudentName = rc.Student != null ? $"{rc.Student.FirstName} {rc.Student.LastName}" : "Unknown Student",
+                    RollNumber = studentSections.FirstOrDefault(ss => ss.StudentId == rc.StudentId)?.RollNumber?.ToString() ?? "",
                     MarksObtained = rc.TotalMarksObtained,
                     Percentage = rc.Percentage,
                     Grade = rc.OverallGrade,
@@ -68,8 +87,8 @@ public class AnalyticsQueryHandlers
                 .Select(rc => new StudentPerformanceDto
                 {
                     StudentId = rc.StudentId,
-                    StudentName = $"{rc.Student!.FirstName} {rc.Student.LastName}",
-                    RollNumber = _context.StudentSections.Where(ss => ss.StudentId == rc.StudentId && ss.IsCurrent).Select(ss => (ss.RollNumber ?? 0).ToString()).FirstOrDefault() ?? "",
+                    StudentName = rc.Student != null ? $"{rc.Student.FirstName} {rc.Student.LastName}" : "Unknown Student",
+                    RollNumber = studentSections.FirstOrDefault(ss => ss.StudentId == rc.StudentId)?.RollNumber?.ToString() ?? "",
                     MarksObtained = rc.TotalMarksObtained,
                     Percentage = rc.Percentage,
                     Grade = rc.OverallGrade,
@@ -77,11 +96,54 @@ public class AnalyticsQueryHandlers
                 })
                 .ToList();
 
+            // Subject-wise analysis - Load student marks and group by subject
+            var studentMarks = await _context.StudentMarks
+                .Where(m => m.ExamId == request.ExamId && studentIds.Contains(m.StudentId))
+                .Include(m => m.ExamSubject)
+                .ThenInclude(es => es.Subject)
+                .ToListAsync(cancellationToken);
+
+            // Filter student marks by class if provided
+            if (request.ClassId.HasValue)
+            {
+                studentMarks = studentMarks
+                    .Where(m => filteredStudentIds.Contains(m.StudentId))
+                    .ToList();
+            }
+
+            var subjectAnalysis = studentMarks
+                .GroupBy(m => m.SubjectId)
+                .Select(g => new SubjectAnalysisDto
+                {
+                    SubjectId = g.Key,
+                    SubjectName = g.First().ExamSubject?.Subject?.Name ?? "Unknown Subject",
+                    MaxMarks = (int)(g.First().ExamSubject?.MaxMarks ?? 0),
+                    AverageMarks = g.Where(m => m.MarksObtained.HasValue).Any() 
+                        ? g.Where(m => m.MarksObtained.HasValue).Average(m => m.MarksObtained!.Value)
+                        : 0,
+                    AveragePercentage = g.Where(m => m.MarksObtained.HasValue).Any()
+                        ? g.Where(m => m.MarksObtained.HasValue).Average(m => (m.MarksObtained!.Value / (decimal)(g.First().ExamSubject?.MaxMarks ?? 1)) * 100)
+                        : 0,
+                    HighestMarks = g.Where(m => m.MarksObtained.HasValue).Any()
+                        ? g.Where(m => m.MarksObtained.HasValue).Max(m => m.MarksObtained!.Value)
+                        : 0,
+                    LowestMarks = g.Where(m => m.MarksObtained.HasValue && !m.IsAbsent).Any()
+                        ? g.Where(m => m.MarksObtained.HasValue && !m.IsAbsent).Min(m => m.MarksObtained!.Value)
+                        : 0,
+                    PassCount = g.Count(m => m.MarksObtained.HasValue && (m.MarksObtained!.Value / (decimal)(g.First().ExamSubject?.MaxMarks ?? 1)) * 100 >= (g.First().ExamSubject?.PassMarks ?? 40)),
+                    FailCount = g.Count(m => !m.MarksObtained.HasValue || (m.MarksObtained!.Value / (decimal)(g.First().ExamSubject?.MaxMarks ?? 1)) * 100 < (g.First().ExamSubject?.PassMarks ?? 40)),
+                    PassPercentage = g.Any() 
+                        ? (g.Count(m => m.MarksObtained.HasValue && (m.MarksObtained!.Value / (decimal)(g.First().ExamSubject?.MaxMarks ?? 1)) * 100 >= (g.First().ExamSubject?.PassMarks ?? 40)) * 100.0m) / g.Count()
+                        : 0
+                })
+                .ToList();
+
             return new ExamAnalyticsDto
             {
                 ExamId = exam.Id,
                 ExamName = exam.Name,
-                ExamDate = exam.ExamDate,
+                StartDate = exam.StartDate,
+                EndDate = exam.EndDate,
                 TotalStudents = totalStudents,
                 PassedStudents = passedStudents,
                 FailedStudents = failedStudents,
@@ -90,7 +152,8 @@ public class AnalyticsQueryHandlers
                 ClassAverageMarks = reportCards.Any() ? reportCards.Average(rc => rc.TotalMarksObtained) : 0,
                 GradeDistribution = gradeDistribution,
                 TopPerformers = topPerformers,
-                BottomPerformers = bottomPerformers
+                BottomPerformers = bottomPerformers,
+                SubjectAnalysis = subjectAnalysis
             };
         }
     }
@@ -126,24 +189,38 @@ public class AnalyticsQueryHandlers
             var classAverage = reportCards.Any() ? reportCards.Average(rc => rc.Percentage) : 0;
 
             // Subject-wise analysis
-            var subjectAnalysis = await _context.StudentMarks
+            var studentMarksForClass = await _context.StudentMarks
                 .Where(m => m.ExamId == request.ExamId && studentIds.Contains(m.StudentId))
                 .Include(m => m.ExamSubject)
+                .ThenInclude(es => es.Subject)
+                .ToListAsync(cancellationToken);
+
+            var subjectAnalysis = studentMarksForClass
                 .GroupBy(m => m.SubjectId)
                 .Select(g => new SubjectAnalysisDto
                 {
                     SubjectId = g.Key,
-                    SubjectName = g.First().ExamSubject!.Subject!.Name,
-                    MaxMarks = _context.Exams.First(e => e.Id == request.ExamId).TotalMarks,
-                    AverageMarks = g.Where(m => m.MarksObtained.HasValue).Average(m => m.MarksObtained!.Value),
-                    AveragePercentage = g.Where(m => m.MarksObtained.HasValue).Average(m => (m.MarksObtained!.Value / _context.Exams.First(e => e.Id == request.ExamId).TotalMarks) * 100),
-                    HighestMarks = g.Where(m => m.MarksObtained.HasValue).Max(m => m.MarksObtained!.Value),
-                    LowestMarks = g.Where(m => m.MarksObtained.HasValue && !m.IsAbsent).Min(m => m.MarksObtained!.Value),
-                    PassCount = g.Count(m => m.MarksObtained.HasValue && (m.MarksObtained!.Value / _context.Exams.First(e => e.Id == request.ExamId).TotalMarks) * 100 >= _context.Exams.First(e => e.Id == request.ExamId).PassMarks),
-                    FailCount = g.Count(m => !m.MarksObtained.HasValue || (m.MarksObtained!.Value / _context.Exams.First(e => e.Id == request.ExamId).TotalMarks) * 100 < _context.Exams.First(e => e.Id == request.ExamId).PassMarks),
-                    PassPercentage = (g.Count(m => m.MarksObtained.HasValue && (m.MarksObtained!.Value / _context.Exams.First(e => e.Id == request.ExamId).TotalMarks) * 100 >= _context.Exams.First(e => e.Id == request.ExamId).PassMarks) * 100.0m) / g.Count()
+                    SubjectName = g.First().ExamSubject?.Subject?.Name ?? "Unknown Subject",
+                    MaxMarks = (int)(g.First().ExamSubject?.MaxMarks ?? 0),
+                    AverageMarks = g.Where(m => m.MarksObtained.HasValue).Any()
+                        ? g.Where(m => m.MarksObtained.HasValue).Average(m => m.MarksObtained!.Value)
+                        : 0,
+                    AveragePercentage = g.Where(m => m.MarksObtained.HasValue).Any()
+                        ? g.Where(m => m.MarksObtained.HasValue).Average(m => (m.MarksObtained!.Value / (decimal)(g.First().ExamSubject?.MaxMarks ?? 1)) * 100)
+                        : 0,
+                    HighestMarks = g.Where(m => m.MarksObtained.HasValue).Any()
+                        ? g.Where(m => m.MarksObtained.HasValue).Max(m => m.MarksObtained!.Value)
+                        : 0,
+                    LowestMarks = g.Where(m => m.MarksObtained.HasValue && !m.IsAbsent).Any()
+                        ? g.Where(m => m.MarksObtained.HasValue && !m.IsAbsent).Min(m => m.MarksObtained!.Value)
+                        : 0,
+                    PassCount = g.Count(m => m.MarksObtained.HasValue && (m.MarksObtained!.Value / (decimal)(g.First().ExamSubject?.MaxMarks ?? 1)) * 100 >= (g.First().ExamSubject?.PassMarks ?? 40)),
+                    FailCount = g.Count(m => !m.MarksObtained.HasValue || (m.MarksObtained!.Value / (decimal)(g.First().ExamSubject?.MaxMarks ?? 1)) * 100 < (g.First().ExamSubject?.PassMarks ?? 40)),
+                    PassPercentage = g.Any()
+                        ? (g.Count(m => m.MarksObtained.HasValue && (m.MarksObtained!.Value / (decimal)(g.First().ExamSubject?.MaxMarks ?? 1)) * 100 >= (g.First().ExamSubject?.PassMarks ?? 40)) * 100.0m) / g.Count()
+                        : 0
                 })
-                .ToListAsync(cancellationToken);
+                .ToList();
 
             return new ClassPerformanceDto
             {
@@ -188,7 +265,7 @@ public class AnalyticsQueryHandlers
             var reportCards = await _context.StudentReportCards
                 .Where(rc => rc.StudentId == request.StudentId)
                 .Include(rc => rc.Exam)
-                .OrderBy(rc => rc.Exam!.ExamDate)
+                .OrderBy(rc => rc.Exam!.StartDate)
                 .ToListAsync(cancellationToken);
 
             var performanceHistory = reportCards
@@ -196,7 +273,8 @@ public class AnalyticsQueryHandlers
                 {
                     ExamId = rc.ExamId,
                     ExamName = rc.Exam!.Name,
-                    ExamDate = rc.Exam.ExamDate,
+                    StartDate = rc.Exam.StartDate,
+                    EndDate = rc.Exam.EndDate,
                     MarksObtained = rc.TotalMarksObtained,
                     Percentage = rc.Percentage,
                     Grade = rc.OverallGrade,
@@ -287,23 +365,40 @@ public class AnalyticsQueryHandlers
             if (exam == null)
                 throw new InvalidOperationException($"Exam with ID {request.ExamId} not found");
 
-            var reportCards = await _context.StudentReportCards
-                .Where(rc => rc.ExamId == request.ExamId)
-                .ToListAsync(cancellationToken);
+            // Build query for report cards
+            var reportCardsQuery = _context.StudentReportCards
+                .Include(rc => rc.Exam)
+                .Include(rc => rc.Student)
+                .ThenInclude(s => s.StudentSections)
+                .ThenInclude(ss => ss.Section)
+                .Where(rc => rc.ExamId == request.ExamId);
+
+            // Filter by class if provided
+            if (request.ClassId.HasValue)
+            {
+                reportCardsQuery = reportCardsQuery.Where(rc =>
+                    rc.Student.StudentSections.Any(ss =>
+                        ss.Section.ClassId == request.ClassId &&
+                        (ss.LeftDate == null || ss.LeftDate > rc.Exam.StartDate)));
+            }
+
+            var reportCards = await reportCardsQuery.ToListAsync(cancellationToken);
 
             var bucketSize = request.BucketSize > 0 ? request.BucketSize : 10;
             var buckets = new List<MarkRangeBucketDto>();
+            var maxMarks = (decimal)exam.TotalMarks;
 
-            for (decimal i = 0; i < 100; i += bucketSize)
+            // Create buckets based on exam total marks
+            for (decimal i = 0; i <= maxMarks; i += bucketSize)
             {
                 var start = i;
-                var end = i + bucketSize - 1;
+                var end = Math.Min(i + bucketSize - 1, maxMarks);
                 var count = reportCards.Count(rc => rc.TotalMarksObtained >= start && rc.TotalMarksObtained <= end);
                 var percentage = reportCards.Any() ? (count * 100.0m) / reportCards.Count : 0;
 
                 buckets.Add(new MarkRangeBucketDto
                 {
-                    RangeLabel = $"{start}-{end}",
+                    RangeLabel = $"{(int)start}-{(int)end}",
                     StartMark = (int)start,
                     EndMark = (int)end,
                     StudentCount = count,
@@ -314,7 +409,7 @@ public class AnalyticsQueryHandlers
             return new MarksDistributionDto
             {
                 ExamId = exam.Id,
-                Buckets = buckets.Where(b => b.StudentCount > 0).ToList(),
+                Buckets = buckets,
                 Total = reportCards.Count
             };
         }
@@ -333,7 +428,7 @@ public class AnalyticsQueryHandlers
                 .ToListAsync(cancellationToken);
 
             var exams = await _context.Exams
-                .OrderByDescending(e => e.ExamDate)
+                .OrderByDescending(e => e.StartDate)
                 .Take(request.LimitToLastNExams ?? 10)
                 .ToListAsync(cancellationToken);
 
@@ -352,7 +447,8 @@ public class AnalyticsQueryHandlers
                 {
                     ExamId = exam.Id,
                     ExamName = exam.Name,
-                    ExamDate = exam.ExamDate,
+                    StartDate = exam.StartDate,
+                    EndDate = exam.EndDate,
                     PassCount = passedStudents,
                     TotalStudents = totalStudents,
                     PassPercentage = totalStudents > 0 ? (passedStudents * 100.0m) / totalStudents : 0,
@@ -381,7 +477,7 @@ public class AnalyticsQueryHandlers
                 throw new InvalidOperationException($"Subject with ID {request.SubjectId} not found");
 
             var exams = await _context.Exams
-                .OrderByDescending(e => e.ExamDate)
+                .OrderByDescending(e => e.StartDate)
                 .Take(request.LimitToLastNExams ?? 10)
                 .ToListAsync(cancellationToken);
 
@@ -398,7 +494,8 @@ public class AnalyticsQueryHandlers
                 {
                     ExamId = exam.Id,
                     ExamName = exam.Name,
-                    ExamDate = exam.ExamDate,
+                    StartDate = exam.StartDate,
+                    EndDate = exam.EndDate,
                     AverageMarks = validMarks.Any() ? validMarks.Average(m => m.MarksObtained!.Value) : 0,
                     AveragePercentage = validMarks.Any() ? validMarks.Average(m => (m.MarksObtained!.Value / exam.TotalMarks) * 100) : 0,
                     PassCount = validMarks.Count(m => (m.MarksObtained!.Value / exam.TotalMarks) * 100 >= exam.PassMarks),

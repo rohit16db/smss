@@ -45,13 +45,20 @@ apiClient.interceptors.response.use(
 // EXAM API ENDPOINTS
 // ============================================================================
 
+export interface ExamSubjectInput {
+  subjectId: string;
+  maxMarks: number;
+  passMarks: number;
+}
+
 export interface CreateExamRequest {
   name: string;
   description?: string;
-  examDate: string;
+  startDate: string;
+  endDate: string;
   totalMarks: number;
   passMarks: number;
-  subjectIds: string[];
+  subjects: ExamSubjectInput[];
   classIds: string[];
 }
 
@@ -59,7 +66,8 @@ export interface ExamDto {
   id: string;
   name: string;
   description?: string;
-  examDate: string;
+  startDate: string;
+  endDate: string;
   totalMarks: number;
   passMarks: number;
   status: string;
@@ -328,7 +336,13 @@ export interface ReportCardListDto {
 }
 
 const reportCardApi = {
-  // Get specific report card
+  // Get specific report card by ID
+  getReportCardById: async (cardId: string): Promise<ReportCardDto> => {
+    const response = await apiClient.get<ReportCardDto>(`/v1/reportcards/${cardId}`);
+    return response.data;
+  },
+
+  // Get specific report card by exam and student
   getReportCard: async (examId: string, studentId: string): Promise<ReportCardDto> => {
     const response = await apiClient.get<ReportCardDto>(`/v1/reportcards/${examId}/${studentId}`);
     return response.data;
@@ -412,7 +426,8 @@ const gradesApi = {
 export interface ExamAnalyticsDto {
   examId: string;
   examName: string;
-  examDate: string;
+  startDate: string;
+  endDate: string;
   totalStudents: number;
   passedStudents: number;
   failedStudents: number;
@@ -491,7 +506,8 @@ export interface StudentPerformanceTrendDto {
 export interface ExamPerformancePointDto {
   examId: string;
   examName: string;
-  examDate: string;
+  startDate: string;
+  endDate: string;
   marksObtained: number;
   percentage: number;
   grade: string;
@@ -537,7 +553,8 @@ export interface ExamComparisonAnalysisDto {
 export interface ExamComparisonItemDto {
   examId: string;
   examName: string;
-  examDate: string;
+  startDate: string;
+  endDate: string;
   classAverage: number;
   passPercentage: number;
   passCount: number;
@@ -553,7 +570,8 @@ export interface SubjectComparisonAnalysisDto {
 export interface SubjectExamComparisonDto {
   examId: string;
   examName: string;
-  examDate: string;
+  startDate: string;
+  endDate: string;
   averageMarks: number;
   averagePercentage: number;
   passCount: number;
