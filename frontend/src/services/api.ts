@@ -680,65 +680,65 @@ export type StudentSectionHistoryDto = {
 // Class API Client
 export const classApi = {
   getAll: async (params?: { pageNumber?: number; pageSize?: number; searchTerm?: string; isActive?: boolean }) => {
-    const response = await api.get<PaginatedClassListDto>('/classes', { params });
+    const response = await api.get<PaginatedClassListDto>('/v1/classes', { params });
     return response.data;
   },
 
   getById: async (id: string) => {
-    const response = await api.get<Class>(`/classes/${id}`);
+    const response = await api.get<Class>(`/v1/classes/${id}`);
     return response.data;
   },
 
   create: async (data: { name: string; academicYear?: string }) => {
-    const response = await api.post<Class>('/classes', data);
+    const response = await api.post<Class>('/v1/classes', data);
     return response.data;
   },
 
   update: async (id: string, data: { name: string; academicYear?: string; isActive: boolean }) => {
-    const response = await api.put<Class>(`/classes/${id}`, data);
+    const response = await api.put<Class>(`/v1/classes/${id}`, data);
     return response.data;
   },
 
   delete: async (id: string) => {
-    await api.delete(`/classes/${id}`);
+    await api.delete(`/v1/classes/${id}`);
   },
 
   getSectionsByClass: async (classId: string) => {
-    const response = await api.get<SectionListDto[]>(`/classes/${classId}/sections`);
+    const response = await api.get<SectionListDto[]>(`/v1/classes/${classId}/sections`);
     return response.data;
   },
 
   getSectionById: async (id: string) => {
-    const response = await api.get<Section>(`/classes/sections/${id}`);
+    const response = await api.get<Section>(`/v1/classes/sections/${id}`);
     return response.data;
   },
 
   createSection: async (data: { classId: string; sectionName: string }) => {
-    const response = await api.post<Section>('/classes/sections', data);
+    const response = await api.post<Section>('/v1/classes/sections', data);
     return response.data;
   },
 
   updateSection: async (id: string, data: { sectionName: string; isActive: boolean }) => {
-    const response = await api.put<Section>(`/classes/sections/${id}`, data);
+    const response = await api.put<Section>(`/v1/classes/sections/${id}`, data);
     return response.data;
   },
 
   deleteSection: async (id: string) => {
-    await api.delete(`/classes/sections/${id}`);
+    await api.delete(`/v1/classes/sections/${id}`);
   },
 
   getStudentSectionHistory: async (studentId: string) => {
-    const response = await api.get<StudentSectionHistoryDto>(`/classes/students/${studentId}/section-history`);
+    const response = await api.get<StudentSectionHistoryDto>(`/v1/classes/students/${studentId}/section-history`);
     return response.data;
   },
 
   getStudentCurrentSection: async (studentId: string) => {
-    const response = await api.get<StudentSection>(`/classes/students/${studentId}/current-section`);
+    const response = await api.get<StudentSection>(`/v1/classes/students/${studentId}/current-section`);
     return response.data;
   },
 
   moveStudentToSection: async (studentId: string, newSectionId: string) => {
-    const response = await api.post<StudentSection>(`/classes/students/${studentId}/move-section`, {
+    const response = await api.post<StudentSection>(`/v1/classes/students/${studentId}/move-section`, {
       newSectionId,
     });
     return response.data;
@@ -746,24 +746,24 @@ export const classApi = {
   
   // Roll Number Management
   getRollNumbers: async (sectionId: string) => {
-    const response = await api.get<StudentSection[]>(`/classes/sections/${sectionId}/roll-numbers`);
+    const response = await api.get<StudentSection[]>(`/v1/classes/sections/${sectionId}/roll-numbers`);
     return response.data;
   },
   
   autoAssignRollNumbers: async (sectionId: string) => {
-    const response = await api.post<{ message: string }>(`/classes/sections/${sectionId}/auto-assign-roll-numbers`);
+    const response = await api.post<{ message: string }>(`/v1/classes/sections/${sectionId}/auto-assign-roll-numbers`);
     return response.data;
   },
   
   updateRollNumber: async (studentSectionId: string, rollNumber: number) => {
-    const response = await api.put<{ message: string }>(`/classes/student-sections/${studentSectionId}/roll-number`, {
+    const response = await api.put<{ message: string }>(`/v1/classes/student-sections/${studentSectionId}/roll-number`, {
       rollNumber,
     });
     return response.data;
   },
   
   bulkUpdateRollNumbers: async (sectionId: string, rollNumberUpdates: Record<string, number>) => {
-    const response = await api.put<{ message: string }>(`/classes/sections/${sectionId}/bulk-update-roll-numbers`, {
+    const response = await api.put<{ message: string }>(`/v1/classes/sections/${sectionId}/bulk-update-roll-numbers`, {
       rollNumberUpdates,
     });
     return response.data;

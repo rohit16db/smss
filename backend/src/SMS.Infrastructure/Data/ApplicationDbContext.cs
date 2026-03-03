@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using SMS.Application.Common.Interfaces;
 using SMS.Domain.Entities;
 
@@ -44,11 +45,22 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<SalaryStructure> SalaryStructures => Set<SalaryStructure>();
     public DbSet<SalaryPayment> SalaryPayments => Set<SalaryPayment>();
 
+    // Phase 4: Exam & Marks Management
+    public DbSet<Exam> Exams => Set<Exam>();
+    public DbSet<ExamSubject> ExamSubjects => Set<ExamSubject>();
+    public DbSet<ExamClass> ExamClasses => Set<ExamClass>();
+    public DbSet<StudentMarks> StudentMarks => Set<StudentMarks>();
+    public DbSet<GradeConfiguration> GradeConfigurations => Set<GradeConfiguration>();
+    public DbSet<StudentReportCard> StudentReportCards => Set<StudentReportCard>();
+
     /// <summary>
-    /// Save changes with automatic audit field updates
+    /// Save changes with automatic audit field updates and DateTime UTC conversion
     /// </summary>
     public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
+        // Convert all DateTime values with Unspecified kind to UTC
+        ConvertAllDateTimesToUtc();
+        
         // Update timestamps automatically
         var entries = ChangeTracker.Entries<BaseEntity>();
 
@@ -66,6 +78,31 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
         }
 
         return await base.SaveChangesAsync(cancellationToken);
+    }
+
+    /// <summary>
+    /// Convert all DateTime properties with Unspecified kind to UTC
+    /// Prevents: PostgreSQL "Cannot write DateTime with Kind=Unspecified" errors
+    /// </summary>
+    private void ConvertAllDateTimesToUtc()
+    {
+        foreach (var entry in ChangeTracker.Entries())
+        {
+            foreach (var property in entry.Properties)
+            {
+                if (property.CurrentValue is DateTime dateTime)
+                {
+                    if (dateTime.Kind == DateTimeKind.Unspecified)
+                    {
+                        property.CurrentValue = DateTime.SpecifyKind(dateTime, DateTimeKind.Utc);
+                    }
+                    else if (dateTime.Kind == DateTimeKind.Local)
+                    {
+                        property.CurrentValue = dateTime.ToUniversalTime();
+                    }
+                }
+            }
+        }
     }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)

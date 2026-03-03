@@ -9,7 +9,7 @@ import {
   TrendingUp,
   AlertTriangle,
 } from 'lucide-react';
-import { reportApi, type BudgetVsActualDto } from '../services/api';
+import { reportApi } from '../services/api';
 import './ReportPages.css';
 
 interface FilterState {
