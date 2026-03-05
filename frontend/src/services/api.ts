@@ -338,6 +338,29 @@ export type CreateStudentFeeDto = {
   endDate?: string;
 };
 
+export type BulkAssignStudentFeeDto = {
+  feeStructureId: string;
+  sectionId: string;
+  startDate: string;
+  endDate?: string;
+  skipAlreadyAssigned: boolean;
+};
+
+export type AssignmentErrorDto = {
+  studentId: string;
+  studentName: string;
+  errorMessage: string;
+};
+
+export type BulkAssignmentResultDto = {
+  successCount: number;
+  skippedCount: number;
+  failureCount: number;
+  totalAssignedAmount: number;
+  errors: AssignmentErrorDto[];
+  assignedAt: string;
+};
+
 export type FeePayment = {
   id: string;
   studentFeeId: string;
@@ -464,6 +487,11 @@ export const feeApi = {
     return response.data;
   },
 
+  bulkAssignStudentFee: async (data: BulkAssignStudentFeeDto) => {
+    const response = await api.post<BulkAssignmentResultDto>('/fees/student-fees/bulk-assign', data);
+    return response.data;
+  },
+
   // Payments
   getAllPayments: async (params?: { pageNumber?: number; pageSize?: number; studentFeeId?: string }) => {
     const response = await api.get<PaginatedFeePaymentList>('/fees/payments', { params });
@@ -477,6 +505,13 @@ export const feeApi = {
 
   recordPayment: async (data: CreateFeePaymentDto) => {
     const response = await api.post<FeePayment>('/fees/payments', data);
+    return response.data;
+  },
+
+  downloadFeeReceipt: async (paymentId: string) => {
+    const response = await api.get(`/fees/payments/${paymentId}/receipt`, {
+      responseType: 'arraybuffer',
+    });
     return response.data;
   },
 
@@ -738,6 +773,7 @@ export type StudentSection = {
   id: string;
   studentId: string;
   studentName: string;
+  enrollmentNumber: string;
   sectionId: string;
   sectionName: string;
   className: string;
@@ -1003,13 +1039,16 @@ export const holidayApi = {
 // Report Types
 export type OutstandingFeeDto = {
   studentId: string;
-  studentName: string;
-  enrollmentNumber: string;
-  className: string;
+  studentInfo: string;
+  classSection: string;
   dueAmount: number;
   daysOverdue: number;
-  agingBucket: string;
+  dueDate: string;
   lastPaymentDate?: string;
+  agingBucket: string;
+  remarks?: string;
+  contactInfo?: string;
+  isActive: boolean;
 };
 
 export type FeeCollectionSummaryDto = {

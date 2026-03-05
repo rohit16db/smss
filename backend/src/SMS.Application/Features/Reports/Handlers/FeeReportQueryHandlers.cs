@@ -254,6 +254,9 @@ public class GetOutstandingFeesQueryHandler : IRequestHandler<GetOutstandingFees
     {
         var unpaidFees = await _context.StudentFees
             .Include(f => f.Student)
+            .ThenInclude(s => s!.StudentSections)
+            .ThenInclude(ss => ss.Section)
+            .ThenInclude(s => s!.Class)
             .Include(f => f.Payments)
             .ToListAsync(cancellationToken);
 
@@ -278,11 +281,17 @@ public class GetOutstandingFeesQueryHandler : IRequestHandler<GetOutstandingFees
                         : "90+";
                 }
 
+                // Get current section for the student
+                var currentSection = f.Student?.StudentSections?.FirstOrDefault(ss => ss.IsCurrent);
+                var className = currentSection?.Section?.Class?.Name ?? "N/A";
+                var sectionName = currentSection?.Section?.SectionName ?? "N/A";
+                var classSection = $"{className} - {sectionName}";
+
                 return new OutstandingFeeDto
                 {
                     StudentId = f.StudentId.ToString(),
                     StudentInfo = $"{f.Student?.FirstName} {f.Student?.LastName}",
-                    ClassSection = "TBD",
+                    ClassSection = classSection,
                     DueAmount = outstanding,
                     DaysOverdue = lastPaymentDate.HasValue ? (DateTime.UtcNow.Date - lastPaymentDate.Value.ToDateTime(TimeOnly.MinValue).Date).Days : 0,
                     DueDate = f.EndDate.HasValue ? f.EndDate.Value.ToDateTime(TimeOnly.MinValue) : DateTime.UtcNow.AddDays(30),

@@ -300,6 +300,7 @@ public class GetStudentsWithRollNumbersQueryHandler : IRequestHandler<GetStudent
                 Id = ss.Id.ToString(),
                 StudentId = ss.StudentId.ToString(),
                 StudentName = ss.Student != null ? $"{ss.Student.FirstName} {ss.Student.LastName}" : "",
+                EnrollmentNumber = ss.Student != null ? ss.Student.EnrollmentNumber : "",
                 SectionId = ss.SectionId.ToString(),
                 SectionName = ss.Section != null ? ss.Section.SectionName : "",
                 ClassName = ss.Section != null && ss.Section.Class != null ? ss.Section.Class.Name : "",

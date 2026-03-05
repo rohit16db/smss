@@ -213,3 +213,61 @@ public class PaginatedFeeReportListDto
     public int DueCount { get; set; }
     public int OverdueCount { get; set; }
 }
+
+/// <summary>
+/// DTO for bulk fee assignment result
+/// </summary>
+public class BulkAssignmentResultDto
+{
+    public int SuccessCount { get; set; }
+    public int SkippedCount { get; set; }
+    public int FailureCount { get; set; }
+    public decimal TotalAssignedAmount { get; set; }
+    public List<AssignmentErrorDto> Errors { get; set; } = new();
+    public DateTime AssignedAt { get; set; }
+}
+
+/// <summary>
+/// DTO for assignment error details
+/// </summary>
+public class AssignmentErrorDto
+{
+    public string StudentId { get; set; } = string.Empty;
+    public string StudentName { get; set; } = string.Empty;
+    public string ErrorMessage { get; set; } = string.Empty;
+}
+
+/// <summary>
+/// DTO for bulk fee assignment request
+/// </summary>
+public class BulkAssignStudentFeeDto
+{
+    public required string FeeStructureId { get; set; }
+    public required string SectionId { get; set; }
+    public required DateTime StartDate { get; set; }
+    public DateTime? EndDate { get; set; }
+    public required bool SkipAlreadyAssigned { get; set; }
+}
+
+/// <summary>
+/// DTO for fee receipt PDF generation
+/// </summary>
+public class FeeReceiptDto
+{
+    public string ReceiptNumber { get; set; } = string.Empty;
+    public string StudentName { get; set; } = string.Empty;
+    public string EnrollmentNumber { get; set; } = string.Empty;
+    public string ClassName { get; set; } = string.Empty;
+    public string SectionName { get; set; } = string.Empty;
+    public string FeeStructureName { get; set; } = string.Empty;
+    public decimal AmountPaid { get; set; }
+    public DateTime PaymentDate { get; set; }
+    public string PaymentMethod { get; set; } = string.Empty;
+    public string? Notes { get; set; }
+    public decimal PreviousBalance { get; set; }
+    public decimal CurrentBalance { get; set; }
+    public decimal TotalDueAmount { get; set; }
+    public string SchoolName { get; set; } = "School Management System";
+    public string SchoolAddress { get; set; } = "123 Education Street, City";
+    public string SchoolPhone { get; set; } = "+91-XXXX-XXXX";
+}

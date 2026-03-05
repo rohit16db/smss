@@ -46,7 +46,7 @@ public class MarkStudentAttendanceCommandHandler : IRequestHandler<MarkStudentAt
                                 cancellationToken);
 
         if (existingAttendance != null)
-            throw new InvalidOperationException($"Attendance already marked for student {request.StudentId} on {request.AttendanceDate:yyyy-MM-dd}");
+            throw new InvalidOperationException($"Attendance already marked for student {request.StudentId} on {request.AttendanceDate:dd/MM/yyyy}");
 
         var attendance = new StudentAttendance
         {
@@ -180,7 +180,7 @@ public class RecordTeacherAttendanceCommandHandler : IRequestHandler<RecordTeach
                                 cancellationToken);
 
         if (existingAttendance != null)
-            throw new InvalidOperationException($"Attendance already recorded for teacher {request.TeacherId} on {request.AttendanceDate:yyyy-MM-dd}");
+            throw new InvalidOperationException($"Attendance already recorded for teacher {request.TeacherId} on {request.AttendanceDate:dd/MM/yyyy}");
 
         var teacher = await _context.Teachers
             .FirstOrDefaultAsync(t => t.Id == teacherId, cancellationToken);

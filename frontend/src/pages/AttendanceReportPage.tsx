@@ -2,6 +2,7 @@ import { useState } from 'react';
 import toast from 'react-hot-toast';
 import { useQuery, type UseQueryResult } from '@tanstack/react-query';
 import { attendanceApi, type MonthlyAttendanceReportItem, type LowAttendanceAlertDto, type ClassAttendanceSummaryDto, type PaginatedMonthlyAttendanceReportDto } from '../services/api';
+import { formatDate } from '../utils/dateFormat';
 import type { AxiosError } from 'axios';
 
 type TabType = 'monthly' | 'low-attendance' | 'class-summary';
@@ -147,7 +148,7 @@ export function AttendanceReportPage() {
           alert.attendancePercentage.toFixed(2),
           alert.absentDays,
           alert.alertLevel,
-          new Date(alert.lastAbsentDate).toLocaleDateString()
+          formatDate(alert.lastAbsentDate)
         ].join(',')
       )
     ].join('\n');

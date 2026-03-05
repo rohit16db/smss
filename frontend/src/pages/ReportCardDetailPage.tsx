@@ -8,6 +8,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useReportCard } from "../hooks/useReportCardHooks";
 import { useMutation } from "@tanstack/react-query";
 import examApi from "../services/examApi";
+import { formatDate } from "../utils/dateFormat";
 import "../styles/pages.css";
 
 export const ReportCardDetailPage: React.FC = () => {
@@ -130,7 +131,7 @@ export const ReportCardDetailPage: React.FC = () => {
             <div>
               <p className="text-sm text-gray-600 font-medium">Exam Date</p>
               <p className="text-lg font-semibold text-gray-900">
-                {new Date(reportCard.examDate).toLocaleDateString()}
+                {formatDate(reportCard.examDate)}
               </p>
             </div>
           </div>
@@ -242,7 +243,7 @@ export const ReportCardDetailPage: React.FC = () => {
         {/* Footer */}
         <div className="bg-gray-100 px-6 sm:px-8 py-4 text-center border-t border-gray-200 rounded-b-2xl">
           <p className="text-sm text-gray-600">
-            Report Card Generated on {new Date(reportCard.generatedAt).toLocaleDateString()}
+            Report Card Generated on {formatDate(reportCard.generatedAt)}
           </p>
         </div>
       </div>

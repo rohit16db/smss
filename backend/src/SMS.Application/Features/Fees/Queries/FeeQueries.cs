@@ -99,3 +99,11 @@ public class GetFeeReportQuery : IRequest<PaginatedFeeReportListDto>
     public DateTime? StartDate { get; set; }
     public DateTime? EndDate { get; set; }
 }
+
+/// <summary>
+/// Query to get fee receipt data for PDF generation
+/// </summary>
+public class GetFeeReceiptDataQuery : IRequest<FeeReceiptDto?>
+{
+    public required string PaymentId { get; set; }
+}

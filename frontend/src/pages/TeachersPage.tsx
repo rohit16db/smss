@@ -5,6 +5,7 @@ import { teacherApi, type CreateTeacherDto, type UpdateTeacherDto, type Teacher 
 import { LoadingSkeleton } from '../components/common/LoadingSkeleton';
 import { TeacherAssignmentsDialog } from '../components/teachers/TeacherAssignmentsDialog';
 import { ImageCropModal } from '../components/common/ImageCropModal';
+import { formatDate } from '../utils/dateFormat';
 
 export function TeachersPage() {
   const queryClient = useQueryClient();
@@ -285,7 +286,7 @@ export function TeachersPage() {
                           <div className="text-xs text-gray-600">years</div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-700">
-                          {new Date(teacher.joiningDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
+                          {formatDate(teacher.joiningDate)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <button

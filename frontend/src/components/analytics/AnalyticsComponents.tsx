@@ -4,6 +4,7 @@
 
 import React from "react";
 import type { GradeDistributionDto, MarkRangeBucketDto, StudentPerformanceDto, SubjectAnalysisDto, ExamComparisonItemDto } from "../../services/examApi";
+import { formatDate } from "../../utils/dateFormat";
 
 /**
  * GradeDistributionChart - Pie/Donut chart for grade distribution
@@ -101,7 +102,7 @@ export const ExamTrendChart: React.FC<{
             {data.map((exam) => (
               <tr key={exam.examId}>
                 <td>{exam.examName}</td>
-                <td>{new Date(exam.startDate).toLocaleDateString()}</td>
+                <td>{formatDate(exam.startDate)}</td>
                 <td className="average">
                   {exam.classAverage.toFixed(2)}%
                 </td>

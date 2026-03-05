@@ -7,6 +7,7 @@ import React, { useState, useEffect } from "react";
 import { useExams, useCreateExam, usePublishExam, useDeleteExam, useUpdateExam } from "../hooks/useExamHooks";
 import { useNavigate, Outlet, useLocation } from "react-router-dom";
 import { api } from "../services/api";
+import { formatDate } from "../utils/dateFormat";
 import "../styles/pages.css";
 
 interface SubjectSelection {
@@ -679,7 +680,7 @@ export const ExamsPage: React.FC = () => {
                         <div className="text-sm font-bold text-gray-900">{exam.name}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-700">
-                        {new Date(exam.startDate).toLocaleDateString()}
+                        {formatDate(exam.startDate)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-700">
                         {exam.totalMarks}
