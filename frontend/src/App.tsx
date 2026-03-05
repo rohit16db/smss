@@ -24,6 +24,7 @@ import { RollNumberManagementPage } from './pages/RollNumberManagementPage';
 import { HolidaysPage } from './pages/HolidaysPage';
 import { ExamsPage } from './pages/ExamsPage';
 import { MarksPage } from './pages/MarksPage';
+import { SettingsPage } from './pages/SettingsPage';
 import { ReportCardsPage } from './pages/ReportCardsPage';
 import { ReportCardDetailPage } from './pages/ReportCardDetailPage';
 import { PerformanceAnalyticsPage } from './pages/PerformanceAnalyticsPage';
@@ -284,6 +285,14 @@ function App() {
                   element={
                     <ProtectedRoute allowedRoles={["Admin"]}>
                       <HolidaysPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="admin/settings"
+                  element={
+                    <ProtectedRoute allowedRoles={["Admin"]}>
+                      <SettingsPage />
                     </ProtectedRoute>
                   }
                 />

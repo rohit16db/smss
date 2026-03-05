@@ -98,53 +98,31 @@ public class MarksCommandHandlers
             CancellationToken cancellationToken)
         {
             var existingMarks = await context.StudentMarks
-                            .FirstOrDefaultAsync(m => m.ExamId == request.ExamId && 
-                                          m.StudentId == studentId &&
-                                                      m.SubjectId == subjectMarkEntry.Key, cancellationToken);
+                .FirstOrDefaultAsync(m => m.ExamId == request.ExamId && 
+                    m.StudentId == studentId &&
+                    m.SubjectId == subjectMarkEntry.Key, cancellationToken);
 
-                        if (existingMarks != null)
-                        {
-                            existingMarks.MarksObtained = subjectMarkEntry.Value.Obtained;
-                            existingMarks.IsAbsent = subjectMarkEntry.Value.IsAbsent;
-                            existingMarks.UpdatedAt = DateTime.UtcNow;
-                context.StudentMarks.Update(existingMarks);
-                        }
-                        else
-                        {
-                            var marks = new StudentMarks
-                            {
-                                Id = Guid.NewGuid(),
-                                ExamId = request.ExamId,
-                    StudentId = studentId,
-                                SubjectId = subjectMarkEntry.Key,
-                                MarksObtained = subjectMarkEntry.Value.Obtained,
-                                IsAbsent = subjectMarkEntry.Value.IsAbsent,
-                                CreatedAt = DateTime.UtcNow
-                            };
-                context.StudentMarks.Add(marks);
-                    }
-                }
-
-                if (studentMarks > 0)
-                    markedStudents++;
-                else
-                    unmarkedStudents++;
-            }
-
-            await _context.SaveChangesAsync(cancellationToken);
-
-            return new SaveMarksResponseDto
+            if (existingMarks != null)
             {
-                Success = true,
-                Message = $"Marks saved successfully. Saved: {savedCount}",
-                MarksCount = savedCount,
-                ValidationResults = new()
+                existingMarks.MarksObtained = subjectMarkEntry.Value.Obtained;
+                existingMarks.IsAbsent = subjectMarkEntry.Value.IsAbsent;
+                existingMarks.UpdatedAt = DateTime.UtcNow;
+                context.StudentMarks.Update(existingMarks);
+            }
+            else
+            {
+                var marks = new StudentMarks
                 {
-                    StudentCount = request.MarksData.Count,
-                    MarkedCount = markedStudents,
-                    UnmarkedCount = unmarkedStudents
-                }
-            };
+                    Id = Guid.NewGuid(),
+                    ExamId = request.ExamId,
+                    StudentId = studentId,
+                    SubjectId = subjectMarkEntry.Key,
+                    MarksObtained = subjectMarkEntry.Value.Obtained,
+                    IsAbsent = subjectMarkEntry.Value.IsAbsent,
+                    CreatedAt = DateTime.UtcNow
+                };
+                context.StudentMarks.Add(marks);
+            }
         }
     }
 

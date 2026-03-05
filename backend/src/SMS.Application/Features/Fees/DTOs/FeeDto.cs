@@ -267,7 +267,12 @@ public class FeeReceiptDto
     public decimal PreviousBalance { get; set; }
     public decimal CurrentBalance { get; set; }
     public decimal TotalDueAmount { get; set; }
+    
+    // School Settings
     public string SchoolName { get; set; } = "School Management System";
     public string SchoolAddress { get; set; } = "123 Education Street, City";
     public string SchoolPhone { get; set; } = "+91-XXXX-XXXX";
+    public string? SchoolEmail { get; set; }
+    public string? SchoolWebsite { get; set; }
+    public string? SchoolCode { get; set; }
 }
