@@ -130,16 +130,23 @@ function FeeStructuresTab() {
     },
   });
 
-  const handleOpenDialog = (structure?: FeeStructure) => {
+  const handleOpenDialog = async (structure?: FeeStructure) => {
     if (structure) {
-      setSelectedStructure(structure);
-      setFormData({
-        name: structure.name,
-        academicYear: structure.academicYear,
-        frequency: structure.frequency,
-        totalAmount: structure.totalAmount,
-        categories: structure.categories.map(c => ({ category: c.category, amount: c.amount })),
-      });
+      // Fetch the full structure with categories from the API
+      try {
+        const fullStructure = await feeApi.getStructureById(structure.id);
+        setSelectedStructure(fullStructure);
+        setFormData({
+          name: fullStructure.name,
+          academicYear: fullStructure.academicYear,
+          frequency: fullStructure.frequency,
+          totalAmount: fullStructure.totalAmount,
+          categories: (fullStructure.categories || []).map(c => ({ category: c.category, amount: c.amount })),
+        });
+      } catch (error) {
+        toast.error('Failed to load fee structure details');
+        return;
+      }
     } else {
       setSelectedStructure(null);
       setFormData({
@@ -228,62 +235,72 @@ function FeeStructuresTab() {
       </div>
 
       {/* Desktop Table */}
-      <div className="hidden lg:block card overflow-hidden">
+      <div className="hidden lg:block bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-gray-50 border-b border-gray-200">
+            <thead className="bg-gradient-to-r from-emerald-600 to-emerald-700">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Academic Year</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Frequency</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total Amount</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Categories</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
+                <th className="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Name</th>
+                <th className="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Academic Year</th>
+                <th className="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Frequency</th>
+                <th className="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Total Amount</th>
+                <th className="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Categories</th>
+                <th className="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Status</th>
+                <th className="px-6 py-4 text-right text-xs font-bold text-white uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="divide-y divide-gray-200">
               {isLoading ? (
                 <tr>
                   <td colSpan={7} className="px-6 py-12 text-center">
                     <div className="flex justify-center items-center">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600"></div>
                     </div>
                   </td>
                 </tr>
               ) : data?.items.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="px-6 py-12 text-center text-gray-500">
-                    <p>No fee structures found</p>
+                    <p className="text-lg font-medium">No fee structures found</p>
                   </td>
                 </tr>
               ) : (
-                data?.items.map((structure) => (
-                  <tr key={structure.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-6 py-4">
-                      <div className="text-sm font-medium text-gray-900">{structure.name}</div>
+                data?.items.map((structure, index) => (
+                  <tr key={structure.id} className={`${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-gradient-to-r hover:from-emerald-50 hover:to-emerald-50/50 transition-all duration-200`}>
+                    <td className="px-6 py-5">
+                      <div className="text-sm font-bold text-gray-900">{structure.name}</div>
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-500">{structure.academicYear}</td>
-                    <td className="px-6 py-4 text-sm text-gray-500">{structure.frequency}</td>
-                    <td className="px-6 py-4">
-                      <div className="text-sm font-semibold text-green-600">₹{structure.totalAmount.toFixed(2)}</div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="text-sm text-gray-500">{structure.categories?.length ?? 0} categories</div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className={`badge ${structure.isActive ? 'badge-success' : 'badge-danger'}`}>
-                        {structure.isActive ? 'Active' : 'Inactive'}
+                    <td className="px-6 py-5 text-sm text-gray-600 font-medium">{structure.academicYear}</td>
+                    <td className="px-6 py-5">
+                      <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700">
+                        {structure.frequency}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-right">
+                    <td className="px-6 py-5">
+                      <div className="font-bold text-emerald-600 text-lg">₹{structure.totalAmount.toFixed(2)}</div>
+                    </td>
+                    <td className="px-6 py-5">
+                      <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-700">
+                        View in edit
+                      </span>
+                    </td>
+                    <td className="px-6 py-5">
+                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold ${
+                        structure.isActive 
+                          ? 'bg-green-100 text-green-700' 
+                          : 'bg-gray-200 text-gray-700'
+                      }`}>
+                        {structure.isActive ? '✓ Active' : '✕ Inactive'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-5 text-right">
                       <div className="flex gap-2 justify-end">
-                        <button onClick={() => handleOpenDialog(structure)} className="text-blue-600 hover:text-blue-900 p-2 hover:bg-blue-50 rounded-lg transition-colors" title="Edit">
+                        <button onClick={() => handleOpenDialog(structure)} className="p-2.5 text-blue-600 hover:bg-blue-100 rounded-lg transition-all duration-200 hover:shadow-md" title="Edit">
                           <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                           </svg>
                         </button>
-                        <button onClick={() => handleDelete(structure.id)} className="text-red-600 hover:text-red-900 p-2 hover:bg-red-50 rounded-lg transition-colors" title="Delete">
+                        <button onClick={() => handleDelete(structure.id)} className="p-2.5 text-red-600 hover:bg-red-100 rounded-lg transition-all duration-200 hover:shadow-md" title="Delete">
                           <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                           </svg>
@@ -663,21 +680,21 @@ function StudentFeesTab() {
       </div>
 
       {/* Table */}
-      <div className="hidden lg:block card overflow-hidden">
+      <div className="hidden lg:block bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-gray-50 border-b border-gray-200">
+            <thead className="bg-gradient-to-r from-blue-600 to-blue-700">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Student ID</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fee Structure</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Start Date</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total Amount</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Paid/Balance</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
+                <th className="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Student ID</th>
+                <th className="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Fee Structure</th>
+                <th className="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Start Date</th>
+                <th className="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Total Amount</th>
+                <th className="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Paid/Balance</th>
+                <th className="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Status</th>
+                <th className="px-6 py-4 text-right text-xs font-bold text-white uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="divide-y divide-gray-200">
               {isLoading ? (
                 <tr>
                   <td colSpan={7} className="px-6 py-12 text-center">
@@ -689,7 +706,7 @@ function StudentFeesTab() {
               ) : data?.items.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="px-6 py-12 text-center text-gray-500">
-                    <p>No student fee assignments found</p>
+                    <p className="text-lg font-medium">No student fee assignments found</p>
                   </td>
                 </tr>
               ) : (
@@ -702,52 +719,56 @@ function StudentFeesTab() {
                   return filteredItems.length === 0 ? (
                     <tr>
                       <td colSpan={7} className="px-6 py-12 text-center text-gray-500">
-                        <p>No student fee assignments found for the selected section</p>
+                        <p className="text-lg font-medium">No student fee assignments found for the selected section</p>
                       </td>
                     </tr>
                   ) : (
-                    filteredItems.map((fee) => (
-                      <tr key={fee.id} className="hover:bg-gray-50 transition-colors">
-                        <td className="px-6 py-4">
-                          <div className="text-sm font-medium text-gray-900">{fee.studentName}</div>
-                          <div className="text-xs font-mono text-blue-600">{fee.enrollmentNumber}</div>
+                    filteredItems.map((fee, index) => (
+                      <tr key={fee.id} className={`${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-gradient-to-r hover:from-blue-50 hover:to-blue-50/50 transition-all duration-200`}>
+                        <td className="px-6 py-5">
+                          <div className="text-sm font-bold text-gray-900">{fee.studentName}</div>
+                          <div className="text-xs font-mono text-blue-600 font-semibold mt-1">{fee.enrollmentNumber}</div>
                         </td>
-                        <td className="px-6 py-4 text-sm text-gray-500">{fee.feeStructureName || structureMap.get(fee.feeStructureId) || 'N/A'}</td>
-                        <td className="px-6 py-4 text-sm text-gray-500">{formatDate(fee.startDate)}</td>
-                        <td className="px-6 py-4">
-                          <div className="text-sm font-semibold text-green-600">₹{fee.totalAmount.toFixed(2)}</div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="text-sm">
-                            <div className="font-medium text-gray-900">Paid: ₹{fee.paidAmount.toFixed(2)}</div>
-                            <div className="text-gray-500">Balance: ₹{fee.balanceAmount.toFixed(2)}</div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <span className={`badge ${
-                            !fee.isActive 
-                              ? 'badge-danger' 
-                              : fee.balanceAmount === 0 
-                              ? 'badge-blue' 
-                              : 'badge-success'
-                          }`}>
-                            {!fee.isActive 
-                              ? 'Terminated' 
-                              : fee.balanceAmount === 0 
-                              ? 'Paid' 
-                              : 'Active'}
+                        <td className="px-6 py-5">
+                          <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-indigo-100 text-indigo-700">
+                            {fee.feeStructureName || structureMap.get(fee.feeStructureId) || 'N/A'}
                           </span>
                         </td>
-                        <td className="px-6 py-4 text-right">
+                        <td className="px-6 py-5 text-sm font-medium text-gray-700">{formatDate(fee.startDate)}</td>
+                        <td className="px-6 py-5">
+                          <div className="font-bold text-emerald-600 text-lg">₹{fee.totalAmount.toFixed(2)}</div>
+                        </td>
+                        <td className="px-6 py-5">
+                          <div className="text-sm space-y-1">
+                            <div className="font-bold text-gray-900">Paid: <span className="text-green-600">₹{fee.paidAmount.toFixed(2)}</span></div>
+                            <div className="text-gray-600">Balance: <span className="font-semibold text-orange-600">₹{fee.balanceAmount.toFixed(2)}</span></div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-5">
+                          <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold ${
+                            !fee.isActive 
+                              ? 'bg-gray-200 text-gray-700' 
+                              : fee.balanceAmount === 0 
+                              ? 'bg-green-100 text-green-700' 
+                              : 'bg-yellow-100 text-yellow-700'
+                          }`}>
+                            {!fee.isActive 
+                              ? '✕ Terminated' 
+                              : fee.balanceAmount === 0 
+                              ? '✓ Paid' 
+                              : '⏳ Active'}
+                          </span>
+                        </td>
+                        <td className="px-6 py-5 text-right">
                           <button
                             onClick={() => handleTerminate(fee.id)}
                             disabled={!fee.isActive}
-                            className="text-orange-600 hover:text-orange-900 p-2 hover:bg-orange-50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="p-2.5 text-orange-600 hover:bg-orange-100 rounded-lg transition-all duration-200 hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
                             title="Terminate"
                       >
-                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
+                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
                           </button>
                         </td>
                       </tr>
@@ -1297,55 +1318,59 @@ function PaymentsTab() {
       </div>
 
       {/* Table */}
-      <div className="hidden lg:block card overflow-hidden">
+      <div className="hidden lg:block bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-gray-50 border-b border-gray-200">
+            <thead className="bg-gradient-to-r from-amber-600 to-amber-700">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Receipt #</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fee Name</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount Paid</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Payment Date</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Payment Method</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Notes</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                <th className="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Receipt #</th>
+                <th className="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Fee Name</th>
+                <th className="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Amount Paid</th>
+                <th className="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Payment Date</th>
+                <th className="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Payment Method</th>
+                <th className="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Notes</th>
+                <th className="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="divide-y divide-gray-200">
               {isLoading ? (
                 <tr>
                   <td colSpan={6} className="px-6 py-12 text-center">
                     <div className="flex justify-center items-center">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-600"></div>
                     </div>
                   </td>
                 </tr>
               ) : data?.items.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="px-6 py-12 text-center text-gray-500">
-                    <p>No payments recorded yet</p>
+                    <p className="text-lg font-medium">No payments recorded yet</p>
                   </td>
                 </tr>
               ) : (
-                data?.items.map((payment) => (
-                  <tr key={payment.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-6 py-4">
-                      <div className="text-sm font-mono font-semibold text-blue-600">{payment.receiptNumber}</div>
+                data?.items.map((payment, index) => (
+                  <tr key={payment.id} className={`${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-gradient-to-r hover:from-amber-50 hover:to-amber-50/50 transition-all duration-200`}>
+                    <td className="px-6 py-5">
+                      <div className="text-sm font-mono font-bold text-amber-600 bg-amber-50 px-3 py-1 rounded-lg inline-block">{payment.receiptNumber}</div>
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-900">{getFeeName(payment.studentFeeId)}</td>
-                    <td className="px-6 py-4">
-                      <div className="text-sm font-semibold text-green-600">₹{payment.amountPaid.toFixed(2)}</div>
+                    <td className="px-6 py-5">
+                      <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-purple-100 text-purple-700">
+                        {getFeeName(payment.studentFeeId)}
+                      </span>
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-500">
+                    <td className="px-6 py-5">
+                      <div className="font-bold text-emerald-600 text-lg">₹{payment.amountPaid.toFixed(2)}</div>
+                    </td>
+                    <td className="px-6 py-5 text-sm font-medium text-gray-700">
                       {formatDate(payment.paymentDate)}
                     </td>
-                    <td className="px-6 py-4">
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                    <td className="px-6 py-5">
+                      <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-700">
                         {payment.paymentMethod}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-500">{payment.notes || '-'}</td>
-                    <td className="px-6 py-4">
+                    <td className="px-6 py-5 text-sm text-gray-600">{payment.notes ? <span className="line-clamp-1">{payment.notes}</span> : <span className="text-gray-400">-</span>}</td>
+                    <td className="px-6 py-5">
                       <button
                         onClick={() => handleDownloadReceipt(payment.id)}
                         disabled={downloadingPaymentId === payment.id}

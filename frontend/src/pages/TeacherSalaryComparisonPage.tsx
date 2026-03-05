@@ -10,7 +10,6 @@ import {
   BarChart,
 } from 'lucide-react';
 import { reportApi } from '../services/api';
-import './ReportPages.css';
 
 interface FilterState {
   startDate: string;
@@ -137,29 +136,13 @@ export const TeacherSalaryComparisonPage: React.FC = () => {
 
   if (isError) {
     return (
-      <div className="report-page">
-        <div className="error-container" style={{
-          backgroundColor: '#fee',
-          border: '1px solid #fcc',
-          borderRadius: '8px',
-          padding: '20px',
-          margin: '20px',
-          color: '#c00'
-        }}>
-          <h2>Error Loading Data</h2>
-          <p>{error instanceof Error ? error.message : 'Failed to load teacher salary comparison data'}</p>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-4 sm:p-6 lg:p-8">
+        <div className="max-w-4xl mx-auto bg-red-50 border-2 border-red-200 rounded-2xl p-8">
+          <h2 className="text-2xl font-bold text-red-700 mb-2">Error Loading Data</h2>
+          <p className="text-red-600 mb-6">{error instanceof Error ? error.message : 'Failed to load teacher salary comparison data'}</p>
           <button
             onClick={() => refetch()}
-            className="btn-primary"
-            style={{
-              backgroundColor: '#007bff',
-              color: 'white',
-              padding: '10px 20px',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: 'pointer',
-              marginTop: '10px'
-            }}
+            className="px-6 py-2.5 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-lg hover:from-red-700 hover:to-red-800 transition-all font-semibold shadow-md hover:shadow-lg"
           >
             Retry
           </button>
@@ -169,142 +152,156 @@ export const TeacherSalaryComparisonPage: React.FC = () => {
   }
 
   return (
-    <div className="report-page">
-      <div className="report-header">
-        <div>
-          <h1>Teacher Salary Comparison</h1>
-          <p>Analyze and compare teacher salaries across periods</p>
-        </div>
-        <div className="header-actions">
-          <button
-            onClick={() => refetch()}
-            disabled={isLoading}
-            className="btn-icon"
-            title="Refresh data"
-          >
-            <RefreshCw size={20} />
-          </button>
-          <button
-            onClick={handleExport}
-            disabled={salaryComparison.length === 0}
-            className="btn-icon"
-            title="Export to CSV"
-          >
-            <Download size={20} />
-          </button>
-        </div>
-      </div>
-
-      {/* Summary Statistics */}
-      <div className="stats-grid">
-        <div className="stat-card info">
-          <div className="stat-icon">
-            <BarChart3 size={24} />
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 pb-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+        
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div>
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent">
+              Teacher Salary Comparison
+            </h1>
+            <p className="text-gray-600 mt-2">Analyze and compare teacher salaries across periods</p>
           </div>
-          <div className="stat-content">
-            <p className="stat-label">Average Net Salary</p>
-            <p className="stat-value">₹{statistics.averageNetSalary.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</p>
-          </div>
-        </div>
-
-        <div className="stat-card success">
-          <div className="stat-icon">
-            <TrendingUp size={24} />
-          </div>
-          <div className="stat-content">
-            <p className="stat-label">Paid Status</p>
-            <p className="stat-value">{statistics.paidCount}</p>
-            <p className="stat-subtitle">Salaries paid</p>
-          </div>
-        </div>
-
-        <div className="stat-card warning">
-          <div className="stat-icon">
-            <Calendar size={24} />
-          </div>
-          <div className="stat-content">
-            <p className="stat-label">Pending Approval</p>
-            <p className="stat-value">{statistics.pendingCount}</p>
-          </div>
-        </div>
-
-        <div className="stat-card">
-          <div className="stat-icon">
-            <BarChart size={24} />
-          </div>
-          <div className="stat-content">
-            <p className="stat-label">Total Bonus Paid</p>
-            <p className="stat-value">₹{statistics.totalBonus.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Filters */}
-      <div className="filter-panel">
-        <div className="filter-title">
-          <Filter size={20} />
-          <h3>Filters</h3>
-        </div>
-
-        <div className="filter-grid">
-          <div className="filter-group">
-            <label>Start Date</label>
-            <input
-              type="date"
-              value={filters.startDate}
-              onChange={(e) => handleFilterChange('startDate', e.target.value)}
-              className="filter-input"
-            />
-          </div>
-
-          <div className="filter-group">
-            <label>End Date</label>
-            <input
-              type="date"
-              value={filters.endDate}
-              onChange={(e) => handleFilterChange('endDate', e.target.value)}
-              className="filter-input"
-            />
-          </div>
-
-          <div className="filter-group">
-            <label>Status</label>
-            <select
-              value={filters.status}
-              onChange={(e) => handleFilterChange('status', e.target.value)}
-              className="filter-input"
+          <div className="flex gap-2">
+            <button
+              onClick={() => refetch()}
+              disabled={isLoading}
+              className="p-3 bg-white rounded-xl border-2 border-gray-200 hover:border-blue-400 hover:bg-blue-50 transition-all disabled:opacity-50 shadow-md hover:shadow-lg"
+              title="Refresh data"
             >
-              <option value="">All Statuses</option>
-              <option value="Pending">Pending</option>
-              <option value="Approved">Approved</option>
-              <option value="Paid">Paid</option>
-            </select>
+              <RefreshCw size={20} className="text-gray-600" />
+            </button>
+            <button
+              onClick={handleExport}
+              disabled={salaryComparison.length === 0}
+              className="p-3 bg-white rounded-xl border-2 border-gray-200 hover:border-green-400 hover:bg-green-50 transition-all disabled:opacity-50 shadow-md hover:shadow-lg"
+              title="Export to CSV"
+            >
+              <Download size={20} className="text-gray-600" />
+            </button>
+          </div>
+        </div>
+
+        {/* Summary Statistics */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="bg-white rounded-2xl shadow-lg border-l-4 border-blue-500 p-6 hover:shadow-xl transition-shadow">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-blue-100 rounded-lg">
+                <BarChart3 size={24} className="text-blue-600" />
+              </div>
+              <div className="flex-1">
+                <p className="text-gray-600 text-sm font-medium">Average Net Salary</p>
+                <p className="text-2xl font-bold text-gray-900 mt-1">₹{statistics.averageNetSalary.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</p>
+              </div>
+            </div>
           </div>
 
-          <div className="filter-group">
-            <label>Sort By</label>
-            <select
-              value={filters.sortBy}
-              onChange={(e) => handleFilterChange('sortBy', e.target.value)}
-              className="filter-input"
-            >
-              <option value="name">Name</option>
-              <option value="netsalary">Net Salary</option>
-              <option value="bonus">Bonus</option>
-              <option value="deduction">Deduction</option>
-            </select>
+          <div className="bg-white rounded-2xl shadow-lg border-l-4 border-green-500 p-6 hover:shadow-xl transition-shadow">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-green-100 rounded-lg">
+                <TrendingUp size={24} className="text-green-600" />
+              </div>
+              <div className="flex-1">
+                <p className="text-gray-600 text-sm font-medium">Paid Status</p>
+                <p className="text-2xl font-bold text-gray-900 mt-1">{statistics.paidCount}</p>
+                <p className="text-xs text-gray-500 mt-1">Salaries paid</p>
+              </div>
+            </div>
           </div>
 
-          <div className="filter-group">
-            <label>Sort Order</label>
-            <select
-              value={filters.descending ? 'desc' : 'asc'}
-              onChange={(e) => handleFilterChange('descending', e.target.value === 'desc')}
-              className="filter-input"
-            >
-              <option value="asc">Ascending</option>
-              <option value="desc">Descending</option>
-            </select>
+          <div className="bg-white rounded-2xl shadow-lg border-l-4 border-amber-500 p-6 hover:shadow-xl transition-shadow">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-amber-100 rounded-lg">
+                <Calendar size={24} className="text-amber-600" />
+              </div>
+              <div className="flex-1">
+                <p className="text-gray-600 text-sm font-medium">Pending Approval</p>
+                <p className="text-2xl font-bold text-gray-900 mt-1">{statistics.pendingCount}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-2xl shadow-lg border-l-4 border-purple-500 p-6 hover:shadow-xl transition-shadow">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-purple-100 rounded-lg">
+                <BarChart size={24} className="text-purple-600" />
+              </div>
+              <div className="flex-1">
+                <p className="text-gray-600 text-sm font-medium">Total Bonus Paid</p>
+                <p className="text-2xl font-bold text-gray-900 mt-1">₹{statistics.totalBonus.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Filters Panel */}
+        <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
+          <div className="flex items-center gap-3 mb-6">
+            <Filter size={22} className="text-blue-600" />
+            <h3 className="text-xl font-bold text-gray-900">Filters</h3>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Start Date</label>
+              <input
+                type="date"
+                value={filters.startDate}
+                onChange={(e) => handleFilterChange('startDate', e.target.value)}
+                className="w-full px-4 py-2.5 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">End Date</label>
+              <input
+                type="date"
+                value={filters.endDate}
+                onChange={(e) => handleFilterChange('endDate', e.target.value)}
+                className="w-full px-4 py-2.5 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Status</label>
+              <select
+                value={filters.status}
+                onChange={(e) => handleFilterChange('status', e.target.value)}
+                className="w-full px-4 py-2.5 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+              >
+                <option value="">All Statuses</option>
+                <option value="Pending">Pending</option>
+                <option value="Approved">Approved</option>
+                <option value="Paid">Paid</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Sort By</label>
+              <select
+                value={filters.sortBy}
+                onChange={(e) => handleFilterChange('sortBy', e.target.value)}
+                className="w-full px-4 py-2.5 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+              >
+                <option value="name">Name</option>
+                <option value="netsalary">Net Salary</option>
+                <option value="bonus">Bonus</option>
+                <option value="deduction">Deduction</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Sort Order</label>
+              <select
+                value={filters.descending ? 'desc' : 'asc'}
+                onChange={(e) => handleFilterChange('descending', e.target.value === 'desc')}
+                className="w-full px-4 py-2.5 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+              >
+                <option value="asc">Ascending</option>
+                <option value="desc">Descending</option>
+              </select>
+            </div>
           </div>
 
           <button
@@ -317,93 +314,97 @@ export const TeacherSalaryComparisonPage: React.FC = () => {
                 descending: false,
               })
             }
-            className="btn-secondary"
+            className="mt-6 px-6 py-2.5 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-all font-semibold"
           >
             Reset Filters
           </button>
         </div>
-      </div>
 
-      {/* Data Table */}
-      <div className="table-container">
-        {isLoading ? (
-          <div className="loading-state">
-            <div className="spinner"></div>
-            <p>Loading salary comparison data...</p>
+        {/* Data Table */}
+        <div className="bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-100">
+          {isLoading ? (
+            <div className="flex flex-col items-center justify-center py-16 px-6">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
+              <p className="text-gray-600 font-medium">Loading salary comparison data...</p>
+            </div>
+          ) : salaryComparison.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16 px-6">
+              <div className="p-4 bg-blue-100 rounded-full mb-4">
+                <BarChart size={48} className="text-blue-600" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">No salary records found</h3>
+              <p className="text-gray-600">Try adjusting your filters</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gradient-to-r from-gray-900 to-gray-800">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-white">Teacher Name</th>
+                    <th className="px-6 py-3 text-right text-sm font-semibold text-white">Base Salary</th>
+                    <th className="px-6 py-3 text-right text-sm font-semibold text-white">Bonus</th>
+                    <th className="px-6 py-3 text-right text-sm font-semibold text-white">Deduction</th>
+                    <th className="px-6 py-3 text-right text-sm font-semibold text-white bg-blue-600">Net Salary</th>
+                    <th className="px-6 py-3 text-center text-sm font-semibold text-white">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {salaryComparison.map((salary, index) => (
+                    <tr key={salary.teacherId} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                      <td className="px-6 py-4 text-sm font-medium text-gray-900">{salary.teacherName}</td>
+                      <td className="px-6 py-4 text-sm text-right text-gray-600">₹{salary.baseSalary.toFixed(2)}</td>
+                      <td className="px-6 py-4 text-sm text-right text-green-600 font-medium">+₹{salary.bonus.toFixed(2)}</td>
+                      <td className="px-6 py-4 text-sm text-right text-red-600 font-medium">-₹{salary.deductions.toFixed(2)}</td>
+                      <td className="px-6 py-4 text-sm text-right text-blue-600 font-bold bg-blue-50">₹{salary.netSalary.toFixed(2)}</td>
+                      <td className="px-6 py-4 text-center">
+                        <span
+                          className={`inline-flex px-3 py-1 rounded-full text-xs font-semibold ${
+                            salary.status === 'Paid'
+                              ? 'bg-green-100 text-green-800'
+                              : salary.status === 'Approved'
+                              ? 'bg-blue-100 text-blue-800'
+                              : 'bg-amber-100 text-amber-800'
+                          }`}
+                        >
+                          {salary.status}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot className="bg-gray-100 border-t-2 border-gray-200">
+                  <tr>
+                    <td className="px-6 py-4 text-sm font-bold text-gray-900">TOTAL / AVERAGE</td>
+                    <td className="px-6 py-4 text-right text-sm text-gray-600">-</td>
+                    <td className="px-6 py-4 text-right text-sm text-green-600 font-bold">₹{statistics.totalBonus.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</td>
+                    <td className="px-6 py-4 text-right text-sm text-red-600 font-bold">₹{statistics.totalDeduction.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</td>
+                    <td className="px-6 py-4 text-right text-sm text-blue-600 font-bold">₹{statistics.totalSalaries.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</td>
+                    <td>-</td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          )}
+        </div>
+
+        {/* Summary Footer */}
+        {salaryComparison.length > 0 && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
+              <p className="text-gray-600 text-sm mb-2">Showing Records</p>
+              <p className="text-3xl font-bold text-gray-900">{salaryComparison.length}</p>
+            </div>
+            <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
+              <p className="text-gray-600 text-sm mb-2">Highest Salary</p>
+              <p className="text-3xl font-bold text-gray-900">₹{statistics.highestSalary.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</p>
+            </div>
+            <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
+              <p className="text-gray-600 text-sm mb-2">Lowest Salary</p>
+              <p className="text-3xl font-bold text-gray-900">₹{statistics.lowestSalary.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</p>
+            </div>
           </div>
-        ) : salaryComparison.length === 0 ? (
-          <div className="empty-state">
-            <BarChart size={48} />
-            <h3>No salary records found</h3>
-            <p>Try adjusting your filters</p>
-          </div>
-        ) : (
-          <table className="report-table">
-            <thead>
-              <tr>
-                <th>Teacher Name</th>
-                <th className="amount">Base Salary</th>
-                <th className="amount">Bonus</th>
-                <th className="amount">Deduction</th>
-                <th className="amount highlighted">Net Salary</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {salaryComparison.map((salary) => (
-                <tr key={salary.teacherId}>
-                  <td className="teacher-name">{salary.teacherName}</td>
-                  <td className="amount">₹{salary.baseSalary.toFixed(2)}</td>
-                  <td className="amount positive">+₹{salary.bonus.toFixed(2)}</td>
-                  <td className="amount negative">-₹{salary.deductions.toFixed(2)}</td>
-                  <td className="amount highlighted">
-                    <strong>₹{salary.netSalary.toFixed(2)}</strong>
-                  </td>
-                  <td>
-                    <span className={`status-badge ${getStatusBadgeClass(salary.status)}`}>
-                      {salary.status}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-            <tfoot>
-              <tr className="summary-row">
-                <td className="teacher-name">
-                  <strong>TOTAL / AVERAGE</strong>
-                </td>
-                <td className="amount">-</td>
-                <td className="amount positive">
-                  <strong>₹{statistics.totalBonus.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</strong>
-                </td>
-                <td className="amount negative">
-                  <strong>₹{statistics.totalDeduction.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</strong>
-                </td>
-                <td className="amount highlighted">
-                  <strong>₹{statistics.totalSalaries.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</strong>
-                </td>
-                <td>-</td>
-                <td>-</td>
-              </tr>
-            </tfoot>
-          </table>
         )}
       </div>
-
-      {/* Summary Footer */}
-      {salaryComparison.length > 0 && (
-        <div className="report-footer">
-          <p>Showing {salaryComparison.length} teacher records</p>
-          <div className="footer-stats">
-            <p>
-              <strong>Highest Salary: </strong>₹{statistics.highestSalary.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
-            </p>
-            <p>
-              <strong>Lowest Salary: </strong>₹{statistics.lowestSalary.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
-            </p>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

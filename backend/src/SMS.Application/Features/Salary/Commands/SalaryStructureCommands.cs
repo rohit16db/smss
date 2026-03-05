@@ -63,6 +63,14 @@ public class AssignSalaryStructureToTeacherCommand : IRequest<TeacherSalaryAssig
 }
 
 /// <summary>
+/// Remove salary structure assignment from a teacher
+/// </summary>
+public class RemoveSalaryStructureAssignmentCommand : IRequest<bool>
+{
+    public Guid TeacherId { get; set; }
+}
+
+/// <summary>
 /// Bulk create salary payments for all teachers with assigned salary structures
 /// </summary>
 public class BulkCreateSalaryFromStructuresCommand : IRequest<SalaryPaymentReportDto>

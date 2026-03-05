@@ -3,9 +3,10 @@ import {
   useTeachersWithSalaryStructures,
   useApplicableSalaryStructures,
   useAssignSalaryStructureToTeacher,
+  useRemoveSalaryStructureAssignment,
 } from '../services/salaryStructureService';
 import { teacherApi } from '../services/api';
-import { UserCheck, Plus } from 'lucide-react';
+import { UserCheck, Plus, Trash2 } from 'lucide-react';
 import type { Teacher } from '../services/api';
 
 interface AssignmentForm {
@@ -19,6 +20,9 @@ export const TeacherSalaryAssignmentPage: React.FC = () => {
   const [allTeachers, setAllTeachers] = useState<Teacher[]>([]);
   const [loadingTeachers, setLoadingTeachers] = useState(true);
   const assignMutation = useAssignSalaryStructureToTeacher();
+  const removeMutation = useRemoveSalaryStructureAssignment();
+  const [showRemoveDialog, setShowRemoveDialog] = useState(false);
+  const [teacherToRemove, setTeacherToRemove] = useState<{ id: string; name: string } | null>(null);
 
   const [showDialog, setShowDialog] = useState(false);
   const [selectedTeacherId, setSelectedTeacherId] = useState('');
@@ -79,6 +83,29 @@ export const TeacherSalaryAssignmentPage: React.FC = () => {
     } catch (error) {
       console.error('Error assigning salary structure:', error);
       alert('Failed to assign salary structure');
+    }
+  };
+
+  const handleOpenRemoveDialog = (teacherId: string, teacherName: string) => {
+    setTeacherToRemove({ id: teacherId, name: teacherName });
+    setShowRemoveDialog(true);
+  };
+
+  const handleCloseRemoveDialog = () => {
+    setShowRemoveDialog(false);
+    setTeacherToRemove(null);
+  };
+
+  const handleConfirmRemove = async () => {
+    if (!teacherToRemove) return;
+
+    try {
+      await removeMutation.mutateAsync(teacherToRemove.id);
+      handleCloseRemoveDialog();
+      refetch();
+    } catch (error) {
+      console.error('Error removing salary structure assignment:', error);
+      alert('Failed to remove assignment. Please try again.');
     }
   };
 
@@ -193,6 +220,7 @@ export const TeacherSalaryAssignmentPage: React.FC = () => {
                       <th className="px-6 py-4 text-left text-sm font-bold text-gray-900">Salary Structure</th>
                       <th className="px-6 py-4 text-left text-sm font-bold text-gray-900">Gross Salary</th>
                       <th className="px-6 py-4 text-left text-sm font-bold text-gray-900">Effective From</th>
+                      <th className="px-6 py-4 text-center text-sm font-bold text-gray-900">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
@@ -227,6 +255,16 @@ export const TeacherSalaryAssignmentPage: React.FC = () => {
                         </td>
                         <td className="px-6 py-4 text-sm text-gray-600 font-medium">
                           {new Date(assignment.effectiveDate).toLocaleDateString('en-IN')}
+                        </td>
+                        <td className="px-6 py-4 text-center">
+                          <button
+                            onClick={() => handleOpenRemoveDialog(assignment.teacherId, assignment.teacherName)}
+                            disabled={removeMutation.isPending}
+                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                            title="Remove assignment"
+                          >
+                            <Trash2 size={18} />
+                          </button>
                         </td>
                       </tr>
                     ))}
@@ -343,6 +381,60 @@ export const TeacherSalaryAssignmentPage: React.FC = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Remove Assignment Confirmation Dialog */}
+      {showRemoveDialog && teacherToRemove && (
+        <div className="fixed inset-0 bg-black bg-opacity-40 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fadeIn">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full transform transition-all duration-300">
+            <div className="p-6 border-b-2 border-gray-100 bg-gradient-to-r from-red-50 to-orange-50">
+              <h2 className="text-2xl font-bold text-red-600 flex items-center gap-3">
+                <Trash2 size={28} />
+                Remove Assignment
+              </h2>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <p className="text-gray-700">
+                Are you sure you want to remove the salary structure assignment for{' '}
+                <span className="font-bold text-gray-900">{teacherToRemove.name}</span>?
+              </p>
+              <div className="bg-yellow-50 border-2 border-yellow-200 rounded-lg p-4">
+                <p className="text-sm text-yellow-800">
+                  ⚠️ <strong>Warning:</strong> This will unassign the teacher's salary structure. The teacher must be reassigned before creating salary payments.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex gap-3 p-6 border-t-2 border-gray-100">
+              <button
+                type="button"
+                onClick={handleCloseRemoveDialog}
+                disabled={removeMutation.isPending}
+                className="flex-1 px-4 py-3 border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 hover:border-gray-400 transition-all duration-200 font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmRemove}
+                disabled={removeMutation.isPending}
+                className="flex-1 px-4 py-3 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-lg hover:shadow-lg hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:scale-100 transition-all duration-200 font-semibold flex items-center justify-center gap-2"
+              >
+                {removeMutation.isPending ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    Removing...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 size={18} />
+                    Remove Assignment
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       )}

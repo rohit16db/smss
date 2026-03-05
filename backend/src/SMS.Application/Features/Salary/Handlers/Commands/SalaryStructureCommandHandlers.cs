@@ -199,6 +199,36 @@ public class AssignSalaryStructureToTeacherCommandHandler : IRequestHandler<Assi
     }
 }
 
+public class RemoveSalaryStructureAssignmentCommandHandler : IRequestHandler<RemoveSalaryStructureAssignmentCommand, bool>
+{
+    private readonly IApplicationDbContext _context;
+
+    public RemoveSalaryStructureAssignmentCommandHandler(IApplicationDbContext context)
+    {
+        _context = context;
+    }
+
+    public async Task<bool> Handle(RemoveSalaryStructureAssignmentCommand request, CancellationToken cancellationToken)
+    {
+        var teacher = await _context.Teachers
+            .FirstOrDefaultAsync(t => t.Id == request.TeacherId, cancellationToken);
+
+        if (teacher == null)
+            throw new InvalidOperationException($"Teacher with ID {request.TeacherId} not found");
+
+        if (teacher.SalaryStructureId == null)
+            throw new InvalidOperationException($"Teacher {teacher.FullName} does not have any salary structure assigned");
+
+        teacher.SalaryStructureId = null;
+        teacher.SalaryStructureEffectiveDate = null;
+
+        _context.Teachers.Update(teacher);
+        await _context.SaveChangesAsync(cancellationToken);
+
+        return true;
+    }
+}
+
 public class BulkCreateSalaryFromStructuresCommandHandler : IRequestHandler<BulkCreateSalaryFromStructuresCommand, SalaryPaymentReportDto>
 {
     private readonly IApplicationDbContext _context;

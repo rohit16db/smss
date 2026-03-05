@@ -258,6 +258,28 @@ public class SalaryStructureController : ControllerBase
     }
 
     /// <summary>
+    /// Remove salary structure assignment from a teacher
+    /// </summary>
+    [HttpDelete("remove-assignment/{teacherId}")]
+    public async Task<ActionResult> RemoveSalaryStructureAssignment(Guid teacherId)
+    {
+        try
+        {
+            var command = new RemoveSalaryStructureAssignmentCommand { TeacherId = teacherId };
+            await _mediator.Send(command);
+            return NoContent();
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { message = "An error occurred", error = ex.Message });
+        }
+    }
+
+    /// <summary>
     /// Bulk create salary payments from structures for all teachers
     /// </summary>
     [HttpPost("bulk-create-salaries")]

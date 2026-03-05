@@ -192,6 +192,22 @@ export const salaryStructureApi = {
     return response.json();
   },
 
+  removeSalaryStructureAssignment: async (teacherId: string): Promise<void> => {
+    const response = await fetch(
+      `${API_BASE_URL}/v1/salarystructure/remove-assignment/${teacherId}`,
+      {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('authToken') || ''}`,
+        },
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error('Failed to remove salary structure assignment');
+    }
+  },
+
   bulkCreateSalaryPayments: async (
     data: BulkCreateFromStructureDto
   ): Promise<SalaryPaymentReportDto> => {
@@ -293,6 +309,17 @@ export const useAssignSalaryStructureToTeacher = () => {
 
   return useMutation({
     mutationFn: salaryStructureApi.assignSalaryStructureToTeacher,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['teachersWithAssignments'] });
+    },
+  });
+};
+
+export const useRemoveSalaryStructureAssignment = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: salaryStructureApi.removeSalaryStructureAssignment,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['teachersWithAssignments'] });
     },
