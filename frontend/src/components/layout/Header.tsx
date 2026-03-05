@@ -446,6 +446,20 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
                   )}
                 </div>
                 <hr className="my-1 border-gray-200" />
+                {isAdmin && (
+                  <>
+                    <button
+                      onClick={() => {
+                        navigate('/admin/settings');
+                        setUserMenuOpen(false);
+                      }}
+                      className="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-colors flex items-center gap-2"
+                    >
+                      ⚙️ Settings
+                    </button>
+                    <hr className="my-1 border-gray-200" />
+                  </>
+                )}
                 <button
                   onClick={() => {
                     navigate('/change-password');
@@ -792,6 +806,17 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
 
               {/* Account Section */}
               <div className="border-t border-blue-700 pt-2 space-y-1">
+                {isAdmin && (
+                  <button
+                    onClick={() => {
+                      navigate('/admin/settings');
+                      setMobileMenuOpen(false);
+                    }}
+                    className="w-full px-4 py-2 rounded-lg text-white hover:bg-blue-700 transition-colors duration-200 text-left"
+                  >
+                    ⚙️ Settings
+                  </button>
+                )}
                 <button
                   onClick={() => {
                     navigate('/change-password');

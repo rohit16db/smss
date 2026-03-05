@@ -719,6 +719,11 @@ public class GetFeeReceiptDataQueryHandler : IRequestHandler<GetFeeReceiptDataQu
         var previousBalance = totalPaid - payment.AmountPaid;
         var currentBalance = (decimal)studentFee.TotalAmount - totalPaid;
 
+        // Get active school settings for the receipt
+        var school = await _context.Schools
+            .Where(s => s.IsActive)
+            .FirstOrDefaultAsync(cancellationToken);
+
         return new FeeReceiptDto
         {
             ReceiptNumber = payment.ReceiptNumber,
@@ -733,7 +738,13 @@ public class GetFeeReceiptDataQueryHandler : IRequestHandler<GetFeeReceiptDataQu
             Notes = payment.Notes,
             PreviousBalance = Math.Max(0, previousBalance),
             CurrentBalance = Math.Max(0, currentBalance),
-            TotalDueAmount = studentFee.TotalAmount
+            TotalDueAmount = studentFee.TotalAmount,
+            SchoolName = school?.Name ?? "School Management System",
+            SchoolAddress = !string.IsNullOrEmpty(school?.Address) ? $"{school.Address}, {school.City}" : "123 Education Street, City",
+            SchoolPhone = school?.PhoneNumber ?? "+91-XXXX-XXXX",
+            SchoolEmail = school?.EmailAddress,
+            SchoolWebsite = school?.Website,
+            SchoolCode = school?.Code
         };
     }
 }

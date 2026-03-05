@@ -52,6 +52,9 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<StudentMarks> StudentMarks => Set<StudentMarks>();
     public DbSet<GradeConfiguration> GradeConfigurations => Set<GradeConfiguration>();
     public DbSet<StudentReportCard> StudentReportCards => Set<StudentReportCard>();
+    
+    // School Configuration
+    public DbSet<School> Schools => Set<School>();
 
     /// <summary>
     /// Save changes with automatic audit field updates and DateTime UTC conversion

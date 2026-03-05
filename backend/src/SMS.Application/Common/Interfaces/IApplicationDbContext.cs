@@ -46,6 +46,9 @@ public interface IApplicationDbContext
     DbSet<StudentMarks> StudentMarks { get; }
     DbSet<GradeConfiguration> GradeConfigurations { get; }
     DbSet<StudentReportCard> StudentReportCards { get; }
+    
+    // School Configuration
+    DbSet<School> Schools { get; }
 
     /// <summary>
     /// Save all changes to the database

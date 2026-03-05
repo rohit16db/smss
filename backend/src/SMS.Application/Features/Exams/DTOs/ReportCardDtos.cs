@@ -20,6 +20,14 @@ public class ReportCardDto
     public decimal AttendancePercentage { get; set; }
     public string Remarks { get; set; } = string.Empty;
     public DateTime GeneratedAt { get; set; }
+    
+    // School Settings
+    public string SchoolName { get; set; } = "School Management System";
+    public string SchoolAddress { get; set; } = "123 Education Street, City";
+    public string SchoolPhone { get; set; } = "+91-XXXX-XXXX";
+    public string? SchoolEmail { get; set; }
+    public string? SchoolWebsite { get; set; }
+    public string? SchoolCode { get; set; }
 }
 
 public class SubjectReportCardDto
@@ -62,4 +70,9 @@ public class ReportCardListDto
     public int ClassPosition { get; set; }
     public string Status { get; set; } = string.Empty;
     public DateTime GeneratedAt { get; set; }
+    
+    // School Settings
+    public string SchoolName { get; set; } = "School Management System";
+    public string SchoolAddress { get; set; } = "123 Education Street, City";
+    public string SchoolPhone { get; set; } = "+91-XXXX-XXXX";
 }

@@ -65,6 +65,40 @@ namespace SMS.Infrastructure.Seeders
                 await context.SaveChangesAsync();
                 
                 Console.WriteLine($"✓ Seeded {users.Count} users successfully!");
+
+                // Seed School Configuration
+                var school = new School
+                {
+                    Id = Guid.NewGuid(),
+                    Name = "My School",
+                    Code = "SCH001",
+                    Address = "123 School Street",
+                    City = "City",
+                    State = "State",
+                    PostalCode = "12345",
+                    PhoneNumber = "+1234567890",
+                    EmailAddress = "school@sms.com",
+                    Website = "https://school.com",
+                    EstablishedDate = DateTime.UtcNow.AddYears(-10),
+                    IsActive = true,
+                    PrimaryColor = "#1976D2",
+                    SecondaryColor = "#DC004E",
+                    AccentColor = "#FF6F00",
+                    HeaderText = "Welcome to My School",
+                    FooterText = "© 2026 My School. All rights reserved.",
+                    DateFormat = "dd/MM/yyyy",
+                    CurrencyCode = "INR",
+                    CurrencySymbol = "₹",
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow,
+                    CreatedBy = "system",
+                    UpdatedBy = "system"
+                };
+
+                await context.Schools.AddAsync(school);
+                await context.SaveChangesAsync();
+                
+                Console.WriteLine("✓ Seeded school configuration successfully!");
                 Console.WriteLine("Database seeding completed!");
             }
             catch (Exception ex)

@@ -78,6 +78,11 @@ public class ReportCardQueryHandlers
                 };
             }).ToList();
 
+            // Get active school settings
+            var school = await _context.Schools
+                .Where(s => s.IsActive)
+                .FirstOrDefaultAsync(cancellationToken);
+
             return new ReportCardDto
             {
                 Id = reportCard.Id,
@@ -100,7 +105,13 @@ public class ReportCardQueryHandlers
                 },
                 AttendancePercentage = 100,
                 Remarks = "",
-                GeneratedAt = reportCard.GeneratedAt ?? DateTime.UtcNow
+                GeneratedAt = reportCard.GeneratedAt ?? DateTime.UtcNow,
+                SchoolName = school?.Name ?? "School Management System",
+                SchoolAddress = !string.IsNullOrEmpty(school?.Address) ? $"{school.Address}, {school.City}" : "123 Education Street, City",
+                SchoolPhone = school?.PhoneNumber ?? "+91-XXXX-XXXX",
+                SchoolEmail = school?.EmailAddress,
+                SchoolWebsite = school?.Website,
+                SchoolCode = school?.Code
             };
         }
     }
@@ -135,6 +146,19 @@ public class ReportCardQueryHandlers
                 })
                 .ToListAsync(cancellationToken);
 
+            // Get active school settings
+            var school = await _context.Schools
+                .Where(s => s.IsActive)
+                .FirstOrDefaultAsync(cancellationToken);
+
+            // Populate school settings for all report cards
+            foreach (var card in reportCards)
+            {
+                card.SchoolName = school?.Name ?? "School Management System";
+                card.SchoolAddress = !string.IsNullOrEmpty(school?.Address) ? $"{school.Address}, {school.City}" : "123 Education Street, City";
+                card.SchoolPhone = school?.PhoneNumber ?? "+91-XXXX-XXXX";
+            }
+
             return reportCards;
         }
     }
@@ -168,6 +192,19 @@ public class ReportCardQueryHandlers
                     GeneratedAt = rc.GeneratedAt ?? DateTime.UtcNow
                 })
                 .ToListAsync(cancellationToken);
+
+            // Get active school settings
+            var school = await _context.Schools
+                .Where(s => s.IsActive)
+                .FirstOrDefaultAsync(cancellationToken);
+
+            // Populate school settings for all report cards
+            foreach (var card in reportCards)
+            {
+                card.SchoolName = school?.Name ?? "School Management System";
+                card.SchoolAddress = !string.IsNullOrEmpty(school?.Address) ? $"{school.Address}, {school.City}" : "123 Education Street, City";
+                card.SchoolPhone = school?.PhoneNumber ?? "+91-XXXX-XXXX";
+            }
 
             return reportCards;
         }
@@ -242,6 +279,11 @@ public class ReportCardQueryHandlers
                 };
             }).ToList();
 
+            // Get active school settings
+            var school = await _context.Schools
+                .Where(s => s.IsActive)
+                .FirstOrDefaultAsync(cancellationToken);
+
             return new ReportCardDto
             {
                 Id = reportCard.Id,
@@ -264,7 +306,13 @@ public class ReportCardQueryHandlers
                 },
                 AttendancePercentage = 100,
                 Remarks = "",
-                GeneratedAt = reportCard.GeneratedAt ?? DateTime.UtcNow
+                GeneratedAt = reportCard.GeneratedAt ?? DateTime.UtcNow,
+                SchoolName = school?.Name ?? "School Management System",
+                SchoolAddress = !string.IsNullOrEmpty(school?.Address) ? $"{school.Address}, {school.City}" : "123 Education Street, City",
+                SchoolPhone = school?.PhoneNumber ?? "+91-XXXX-XXXX",
+                SchoolEmail = school?.EmailAddress,
+                SchoolWebsite = school?.Website,
+                SchoolCode = school?.Code
             };
         }
     }
@@ -319,6 +367,15 @@ public class ReportCardQueryHandlers
                 return mark;
             }).ToList();
 
+            // Get active school settings
+            var school = await _context.Schools
+                .Where(s => s.IsActive)
+                .FirstOrDefaultAsync(cancellationToken);
+
+            var schoolName = school?.Name ?? "School Management System";
+            var schoolAddress = !string.IsNullOrEmpty(school?.Address) ? $"{school.Address}, {school.City}" : "";
+            var schoolPhone = school?.PhoneNumber ?? "";
+
             // Generate PDF
             var document = Document.Create(container =>
             {
@@ -332,7 +389,11 @@ public class ReportCardQueryHandlers
                         col.Item().Background("#1F2937").Padding(20).Column(inner =>
                         {
                             inner.Item().Text("STUDENT REPORT CARD").FontSize(28).Bold().FontColor("#FFFFFF");
-                            inner.Item().PaddingTop(5).Text("School Management System").FontSize(12).FontColor("#D1D5DB");
+                            inner.Item().PaddingTop(5).Text(schoolName).FontSize(12).FontColor("#D1D5DB");
+                            if (!string.IsNullOrEmpty(schoolAddress))
+                                inner.Item().PaddingTop(2).Text(schoolAddress).FontSize(9).FontColor("#9CA3AF");
+                            if (!string.IsNullOrEmpty(schoolPhone))
+                                inner.Item().PaddingTop(2).Text($"Phone: {schoolPhone}").FontSize(9).FontColor("#9CA3AF");
                         });
                         col.Item().PaddingVertical(5);
                     });

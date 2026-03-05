@@ -1282,3 +1282,49 @@ export const reportApi = {
     return response.data;
   },
 };
+// School Configuration Types
+export type SchoolDto = {
+  id: string;
+  name: string;
+  code: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  postalCode?: string;
+  phoneNumber?: string;
+  emailAddress?: string;
+  website?: string;
+  logoBase64?: string;
+  establishedDate: Date;
+  isActive: boolean;
+  primaryColor: string;
+  secondaryColor: string;
+  accentColor: string;
+  headerText?: string;
+  footerText?: string;
+  dateFormat: string;
+  currencyCode: string;
+  currencySymbol: string;
+};
+
+// School/Settings API
+export const settingsApi = {
+  getSchoolSettings: async (): Promise<SchoolDto> => {
+    const response = await api.get<SchoolDto>('/v1/settings/school');
+    return response.data;
+  },
+
+  updateSchoolSettings: async (data: Partial<SchoolDto>): Promise<SchoolDto> => {
+    const response = await api.put<SchoolDto>('/v1/settings/school', data);
+    return response.data;
+  },
+
+  uploadLogo: async (file: File): Promise<SchoolDto> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await api.post<SchoolDto>('/v1/settings/school/logo', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data;
+  },
+};
