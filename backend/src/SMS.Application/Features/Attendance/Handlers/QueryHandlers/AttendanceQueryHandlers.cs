@@ -401,3 +401,210 @@ public class GetTeacherAttendanceSummaryQueryHandler : IRequestHandler<GetTeache
         return summary;
     }
 }
+/// <summary>
+/// Handler for GetMonthlyAttendanceReportQuery
+/// </summary>
+public class GetMonthlyAttendanceReportQueryHandler : IRequestHandler<GetMonthlyAttendanceReportQuery, PaginatedMonthlyAttendanceReportDto>
+{
+    private readonly IApplicationDbContext _context;
+
+    public GetMonthlyAttendanceReportQueryHandler(IApplicationDbContext context)
+    {
+        _context = context;
+    }
+
+    public async Task<PaginatedMonthlyAttendanceReportDto> Handle(GetMonthlyAttendanceReportQuery request, CancellationToken cancellationToken)
+    {
+        var startDate = new DateOnly(request.Year, request.Month, 1);
+        var endDate = startDate.AddMonths(1).AddDays(-1);
+
+        var studentAttendances = await _context.StudentAttendances
+            .Where(a => a.AttendanceDate >= startDate && a.AttendanceDate <= endDate)
+            .Join(
+                _context.Students,
+                attendance => attendance.StudentId,
+                student => student.Id,
+                (attendance, student) => new { attendance, student })
+            .ToListAsync(cancellationToken);
+
+        var sections = await _context.Sections
+            .Select(s => new { s.Id, s.SectionName }).ToListAsync(cancellationToken);
+
+        var sectionMap = sections.ToDictionary(s => s.Id.ToString(), s => s.SectionName);
+        var reportItems = new List<MonthlyAttendanceReportDto>();
+
+        var studentGroups = studentAttendances.GroupBy(g => new { g.attendance.StudentId, g.attendance.SectionId });
+
+        foreach (var group in studentGroups)
+        {
+            var student = group.First().student;
+            var presentDays = group.Count(a => a.attendance.Status.ToLower() == "present");
+            var totalDays = group.Count();
+            var percentage = totalDays > 0 ? Math.Round((decimal)presentDays / totalDays * 100, 2) : 0;
+            var status = percentage >= 75 ? "Good" : percentage >= 50 ? "Warning" : "Critical";
+            var sectionName = sectionMap.TryGetValue(group.Key.SectionId.ToString(), out var name) ? name : "Unknown";
+
+            reportItems.Add(new MonthlyAttendanceReportDto
+            {
+                StudentId = group.Key.StudentId.ToString(),
+                StudentName = student.FirstName + " " + student.LastName,
+                EnrollmentNumber = student.EnrollmentNumber,
+                SectionId = group.Key.SectionId.ToString(),
+                SectionName = sectionName,
+                Year = request.Year,
+                Month = request.Month,
+                TotalWorkingDays = totalDays,
+                PresentDays = presentDays,
+                AbsentDays = group.Count(a => a.attendance.Status.ToLower() == "absent"),
+                LateDays = group.Count(a => a.attendance.Status.ToLower() == "late"),
+                LeaveDays = group.Count(a => a.attendance.Status.ToLower() == "leave"),
+                AttendancePercentage = percentage,
+                AttendanceStatus = status
+            });
+        }
+
+        var totalCount = reportItems.Count;
+        var average = reportItems.Any() ? Math.Round(reportItems.Average(r => r.AttendancePercentage), 2) : 0;
+        var lowCount = reportItems.Count(r => r.AttendancePercentage < 75);
+
+        var pagedItems = reportItems.OrderBy(r => r.StudentName)
+            .Skip((request.PageNumber - 1) * request.PageSize)
+            .Take(request.PageSize).ToList();
+
+        return new PaginatedMonthlyAttendanceReportDto
+        {
+            Items = pagedItems,
+            TotalCount = totalCount,
+            PageNumber = request.PageNumber,
+            PageSize = request.PageSize,
+            AverageAttendancePercentage = average,
+            LowAttendanceCount = lowCount
+        };
+    }
+}
+
+/// <summary>
+/// Handler for GetLowAttendanceAlertsQuery
+/// </summary>
+public class GetLowAttendanceAlertsQueryHandler : IRequestHandler<GetLowAttendanceAlertsQuery, List<LowAttendanceAlertDto>>
+{
+    private readonly IApplicationDbContext _context;
+
+    public GetLowAttendanceAlertsQueryHandler(IApplicationDbContext context)
+    {
+        _context = context;
+    }
+
+    public async Task<List<LowAttendanceAlertDto>> Handle(GetLowAttendanceAlertsQuery request, CancellationToken cancellationToken)
+    {
+        var startDate = new DateOnly(request.Year, request.Month, 1);
+        var endDate = startDate.AddMonths(1).AddDays(-1);
+
+        var attendances = await _context.StudentAttendances
+            .Where(a => a.AttendanceDate >= startDate && a.AttendanceDate <= endDate)
+            .Join(
+                _context.Students,
+                attendance => attendance.StudentId,
+                student => student.Id,
+                (attendance, student) => new { attendance, student })
+            .ToListAsync(cancellationToken);
+
+        var sections = await _context.Sections
+            .Select(s => new { s.Id, s.SectionName }).ToListAsync(cancellationToken);
+
+        var sectionMap = sections.ToDictionary(s => s.Id.ToString(), s => s.SectionName);
+        var alerts = new List<LowAttendanceAlertDto>();
+
+        foreach (var group in attendances.GroupBy(a => new { a.attendance.StudentId, a.attendance.SectionId }))
+        {
+            var absentCount = group.Count(a => a.attendance.Status.ToLower() == "absent");
+            var totalDays = group.Count();
+            var percentage = totalDays > 0 ? Math.Round((decimal)(totalDays - absentCount) / totalDays * 100, 2) : 0;
+
+            if (percentage < request.AttendanceThreshold)
+            {
+                var student = group.First().student;
+                var lastAbsent = group.Where(a => a.attendance.Status.ToLower() == "absent")
+                    .OrderByDescending(a => a.attendance.AttendanceDate).FirstOrDefault();
+                var sectionName = sectionMap.TryGetValue(group.Key.SectionId.ToString(), out var name) ? name : "Unknown";
+
+                alerts.Add(new LowAttendanceAlertDto
+                {
+                    StudentId = group.Key.StudentId.ToString(),
+                    StudentName = student.FirstName + " " + student.LastName,
+                    EnrollmentNumber = student.EnrollmentNumber,
+                    SectionId = group.Key.SectionId.ToString(),
+                    SectionName = sectionName,
+                    AttendancePercentage = percentage,
+                    AbsentDays = absentCount,
+                    TotalDays = totalDays,
+                    AlertLevel = percentage < 50 ? "Critical" : "Warning",
+                    LastAbsentDate = lastAbsent?.attendance.AttendanceDate.ToDateTime(TimeOnly.MinValue) ?? DateTime.UtcNow
+                });
+            }
+        }
+
+        return alerts.OrderBy(a => a.AlertLevel).ThenBy(a => a.AttendancePercentage).ToList();
+    }
+}
+
+/// <summary>
+/// Handler for GetClassAttendanceSummaryQuery
+/// </summary>
+public class GetClassAttendanceSummaryQueryHandler : IRequestHandler<GetClassAttendanceSummaryQuery, List<ClassAttendanceSummaryDto>>
+{
+    private readonly IApplicationDbContext _context;
+
+    public GetClassAttendanceSummaryQueryHandler(IApplicationDbContext context)
+    {
+        _context = context;
+    }
+
+    public async Task<List<ClassAttendanceSummaryDto>> Handle(GetClassAttendanceSummaryQuery request, CancellationToken cancellationToken)
+    {
+        var startDate = new DateOnly(request.Year, request.Month, 1);
+        var endDate = startDate.AddMonths(1).AddDays(-1);
+
+        var studentAttendances = await _context.StudentAttendances
+            .Where(a => a.AttendanceDate >= startDate && a.AttendanceDate <= endDate)
+            .Join(
+                _context.Students,
+                attendance => attendance.StudentId,
+                student => student.Id,
+                (attendance, student) => new { attendance, student })
+            .ToListAsync(cancellationToken);
+
+        var sections = await _context.Sections.Include(s => s.Class).ToListAsync(cancellationToken);
+        var results = new List<ClassAttendanceSummaryDto>();
+
+        foreach (var section in sections)
+        {
+            var secAttendances = studentAttendances.Where(a => a.attendance.SectionId == section.Id).ToList();
+            if (!secAttendances.Any()) continue;
+
+            var percentages = new List<decimal>();
+            foreach (var studentGroup in secAttendances.GroupBy(a => a.attendance.StudentId))
+            {
+                var present = studentGroup.Count(a => a.attendance.Status.ToLower() == "present");
+                var total = studentGroup.Count();
+                percentages.Add(total > 0 ? Math.Round((decimal)present / total * 100, 2) : 0);
+            }
+
+            results.Add(new ClassAttendanceSummaryDto
+            {
+                SectionId = section.Id.ToString(),
+                SectionName = section.SectionName,
+                ClassName = section.Class?.Name ?? "Unknown",
+                TotalStudents = percentages.Count,
+                AverageAttendancePercentage = percentages.Any() ? Math.Round(percentages.Average(), 2) : 0,
+                HighAttendanceCount = percentages.Count(p => p >= 75),
+                MediumAttendanceCount = percentages.Count(p => p >= 50 && p < 75),
+                LowAttendanceCount = percentages.Count(p => p < 50),
+                Year = request.Year,
+                Month = request.Month
+            });
+        }
+
+        return results.OrderBy(r => r.ClassName).ThenBy(r => r.SectionName).ToList();
+    }
+}

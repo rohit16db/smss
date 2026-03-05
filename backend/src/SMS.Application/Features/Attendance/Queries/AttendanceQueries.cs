@@ -82,3 +82,37 @@ public class GetTeacherAttendanceSummaryQuery : IRequest<AttendanceStatisticsDto
     public DateTime? StartDate { get; set; }
     public DateTime? EndDate { get; set; }
 }
+/// <summary>
+/// Query to get monthly attendance report for students
+/// </summary>
+public class GetMonthlyAttendanceReportQuery : IRequest<PaginatedMonthlyAttendanceReportDto>
+{
+    public string? StudentId { get; set; }
+    public string? SectionId { get; set; }
+    public int Year { get; set; }
+    public int Month { get; set; }
+    public decimal? MinAttendancePercentage { get; set; }
+    public int PageNumber { get; set; } = 1;
+    public int PageSize { get; set; } = 10;
+}
+
+/// <summary>
+/// Query to get low attendance alerts (students with <75% attendance)
+/// </summary>
+public class GetLowAttendanceAlertsQuery : IRequest<List<LowAttendanceAlertDto>>
+{
+    public string? SectionId { get; set; }
+    public int Year { get; set; }
+    public int Month { get; set; }
+    public decimal AttendanceThreshold { get; set; } = 75m; // Default 75%
+}
+
+/// <summary>
+/// Query to get class attendance summary for a specific month
+/// </summary>
+public class GetClassAttendanceSummaryQuery : IRequest<List<ClassAttendanceSummaryDto>>
+{
+    public int Year { get; set; }
+    public int Month { get; set; }
+    public string? SectionId { get; set; }
+}

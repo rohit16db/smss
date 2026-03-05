@@ -16,6 +16,7 @@ public class MarksCommandHandlers
         
         public async Task<SaveMarksResponseDto> Handle(SaveStudentMarksCommand request, CancellationToken cancellationToken)
         {
+            // Validate exam exists
             var exam = await _context.Exams.FirstOrDefaultAsync(e => e.Id == request.ExamId, cancellationToken);
             if (exam == null)
                 return new SaveMarksResponseDto { Success = false, Message = "Exam not found" };
@@ -26,61 +27,8 @@ public class MarksCommandHandlers
             if (section == null)
                 return new SaveMarksResponseDto { Success = false, Message = "Section not found" };
 
-            var savedCount = 0;
-            var markedStudents = 0;
-            var unmarkedStudents = 0;
-
-            foreach (var marksEntry in request.MarksData)
-            {
-                var studentMarks = 0;
-
-                foreach (var subjectMarkEntry in marksEntry.SubjectMarks)
-                {
-                    try
-                    {
-                        var existingMarks = await _context.StudentMarks
-                            .FirstOrDefaultAsync(m => m.ExamId == request.ExamId && 
-                                                      m.StudentId == marksEntry.StudentId &&
-                                                      m.SubjectId == subjectMarkEntry.Key, cancellationToken);
-
-                        if (existingMarks != null)
-                        {
-                            existingMarks.MarksObtained = subjectMarkEntry.Value.Obtained;
-                            existingMarks.IsAbsent = subjectMarkEntry.Value.IsAbsent;
-                            existingMarks.UpdatedAt = DateTime.UtcNow;
-                            _context.StudentMarks.Update(existingMarks);
-                        }
-                        else
-                        {
-                            var marks = new StudentMarks
-                            {
-                                Id = Guid.NewGuid(),
-                                ExamId = request.ExamId,
-                                StudentId = marksEntry.StudentId,
-                                SubjectId = subjectMarkEntry.Key,
-                                MarksObtained = subjectMarkEntry.Value.Obtained,
-                                IsAbsent = subjectMarkEntry.Value.IsAbsent,
-                                CreatedAt = DateTime.UtcNow
-                            };
-                            _context.StudentMarks.Add(marks);
-                        }
-                        if (subjectMarkEntry.Value.Obtained.HasValue)
-                            studentMarks++;
-                        savedCount++;
-                    }
-                    catch
-                    {
-                        // Log error but continue processing
-                    }
-                }
-
-                if (studentMarks > 0)
-                    markedStudents++;
-                else
-                    unmarkedStudents++;
-            }
-
-            await _context.SaveChangesAsync(cancellationToken);
+            // Save marks for all students
+            var (savedCount, markedStudents, unmarkedStudents) = await SaveStudentMarksAsync(request, cancellationToken);
 
             return new SaveMarksResponseDto
             {
@@ -94,6 +42,87 @@ public class MarksCommandHandlers
                     UnmarkedCount = unmarkedStudents
                 }
             };
+        }
+
+        private async Task<(int savedCount, int markedStudents, int unmarkedStudents)> SaveStudentMarksAsync(
+            SaveStudentMarksCommand request, CancellationToken cancellationToken)
+        {
+            var savedCount = 0;
+            var markedStudents = 0;
+            var unmarkedStudents = 0;
+
+            foreach (var marksEntry in request.MarksData)
+            {
+                var studentMarksCount = await SaveSubjectMarksForStudentAsync(_context, request, marksEntry, cancellationToken);
+                savedCount += studentMarksCount;
+
+                if (studentMarksCount > 0)
+                    markedStudents++;
+                else
+                    unmarkedStudents++;
+            }
+
+            await _context.SaveChangesAsync(cancellationToken);
+            return (savedCount, markedStudents, unmarkedStudents);
+        }
+
+        private static async Task<int> SaveSubjectMarksForStudentAsync(
+            IApplicationDbContext context,
+            SaveStudentMarksCommand request, 
+            StudentMarksEntryDto marksEntry, 
+            CancellationToken cancellationToken)
+        {
+            var savedCount = 0;
+
+            foreach (var subjectMarkEntry in marksEntry.SubjectMarks)
+            {
+                try
+                {
+                    await SaveSubjectMarkAsync(context, request, marksEntry.StudentId, subjectMarkEntry, cancellationToken);
+                    savedCount++;
+                }
+                catch
+                {
+                    // Log error but continue processing
+                }
+            }
+
+            return savedCount;
+        }
+
+        private static async Task SaveSubjectMarkAsync(
+            IApplicationDbContext context,
+            SaveStudentMarksCommand request,
+            Guid studentId,
+            KeyValuePair<Guid, SubjectMarkEntryDto> subjectMarkEntry,
+            CancellationToken cancellationToken)
+        {
+            var existingMarks = await context.StudentMarks
+                .FirstOrDefaultAsync(m => m.ExamId == request.ExamId && 
+                                          m.StudentId == studentId &&
+                                          m.SubjectId == subjectMarkEntry.Key, cancellationToken);
+
+            if (existingMarks != null)
+            {
+                existingMarks.MarksObtained = subjectMarkEntry.Value.Obtained;
+                existingMarks.IsAbsent = subjectMarkEntry.Value.IsAbsent;
+                existingMarks.UpdatedAt = DateTime.UtcNow;
+                context.StudentMarks.Update(existingMarks);
+            }
+            else
+            {
+                var marks = new StudentMarks
+                {
+                    Id = Guid.NewGuid(),
+                    ExamId = request.ExamId,
+                    StudentId = studentId,
+                    SubjectId = subjectMarkEntry.Key,
+                    MarksObtained = subjectMarkEntry.Value.Obtained,
+                    IsAbsent = subjectMarkEntry.Value.IsAbsent,
+                    CreatedAt = DateTime.UtcNow
+                };
+                context.StudentMarks.Add(marks);
+            }
         }
     }
 
@@ -186,7 +215,7 @@ public class MarksCommandHandlers
             // Calculate total marks
             var totalMarksObtained = studentMarks
                 .Where(m => !m.IsAbsent && m.MarksObtained.HasValue)
-                .Sum(m => m.MarksObtained.Value);
+                .Sum(m => m.MarksObtained ?? 0);
 
             var totalMarks = exam.TotalMarks;
             var percentage = totalMarks > 0 ? (totalMarksObtained / totalMarks) * 100 : 0;
@@ -235,7 +264,7 @@ public class MarksCommandHandlers
             return Unit.Value;
         }
 
-        private string DetermineGrade(decimal percentage)
+        private static string DetermineGrade(decimal percentage)
         {
             return percentage switch
             {

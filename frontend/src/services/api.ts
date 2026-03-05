@@ -548,6 +548,59 @@ export type PaginatedTeacherAttendanceList = {
   pageSize: number;
 };
 
+// Attendance Report Types
+export type MonthlyAttendanceReportItem = {
+  studentId: string;
+  studentName: string;
+  enrollmentNumber: string;
+  sectionId: string;
+  sectionName: string;
+  year: number;
+  month: number;
+  totalWorkingDays: number;
+  presentDays: number;
+  absentDays: number;
+  lateDays: number;
+  leaveDays: number;
+  attendancePercentage: number;
+  attendanceStatus: 'Good' | 'Warning' | 'Critical';
+};
+
+export type PaginatedMonthlyAttendanceReportDto = {
+  items: MonthlyAttendanceReportItem[];
+  totalCount: number;
+  pageNumber: number;
+  pageSize: number;
+  averageAttendancePercentage: number;
+  lowAttendanceCount: number;
+};
+
+export type LowAttendanceAlertDto = {
+  studentId: string;
+  studentName: string;
+  enrollmentNumber: string;
+  sectionId: string;
+  sectionName: string;
+  attendancePercentage: number;
+  absentDays: number;
+  totalDays: number;
+  alertLevel: 'Warning' | 'Critical';
+  lastAbsentDate: string;
+};
+
+export type ClassAttendanceSummaryDto = {
+  sectionId: string;
+  sectionName: string;
+  className: string;
+  totalStudents: number;
+  averageAttendancePercentage: number;
+  highAttendanceCount: number;
+  mediumAttendanceCount: number;
+  lowAttendanceCount: number;
+  year: number;
+  month: number;
+};
+
 export const attendanceApi = {
   // Student Attendance
   getAllStudentAttendance: async (params?: {
@@ -613,6 +666,28 @@ export const attendanceApi = {
 
   deleteTeacherAttendance: async (id: string) => {
     await api.delete(`/attendance/teachers/${id}`);
+  },
+
+  // Report Methods
+  getMonthlyAttendanceReport: async (year: number, month: number, params?: { pageNumber?: number; pageSize?: number; studentId?: string; sectionId?: string }) => {
+    const response = await api.get<PaginatedMonthlyAttendanceReportDto>('/attendance/reports/monthly', {
+      params: { year, month, ...params }
+    });
+    return response.data;
+  },
+
+  getLowAttendanceAlerts: async (year: number, month: number, params?: { sectionId?: string; threshold?: number }) => {
+    const response = await api.get<LowAttendanceAlertDto[]>('/attendance/reports/low-attendance', {
+      params: { year, month, ...params }
+    });
+    return response.data;
+  },
+
+  getClassAttendanceSummary: async (year: number, month: number, sectionId?: string) => {
+    const response = await api.get<ClassAttendanceSummaryDto[]>('/attendance/reports/class-summary', {
+      params: { year, month, sectionId }
+    });
+    return response.data;
   },
 };
 
