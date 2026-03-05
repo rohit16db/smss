@@ -66,8 +66,8 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
     };
 
     readUser();
-    window.addEventListener('storage', readUser);
-    return () => window.removeEventListener('storage', readUser);
+    globalThis.addEventListener('storage', readUser);
+    return () => globalThis.removeEventListener('storage', readUser);
   }, []);
 
   const displayName =
@@ -87,6 +87,7 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
   const canViewPayroll = isAdmin || isAccountant;
   const canManageSalary = isAdmin || isAccountant;
   const canViewAttendance = isAdmin || isClerk || isTeacher;
+  const canViewAttendanceReports = isAdmin || isClerk;
 
   const handleAcademicMouseLeave = () => {
     academicTimeoutRef.current = setTimeout(() => {
@@ -171,9 +172,11 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
               </svg>
             </button>
-            <div 
-              className="flex items-center cursor-pointer group" 
+            <button
+              className="flex items-center cursor-pointer group hover:opacity-80 transition-opacity"
               onClick={() => navigate('/')}
+              type="button"
+              title="Go to home"
             >
               <div className="bg-white rounded-lg p-2 mr-3 group-hover:scale-105 transition-transform">
                 <svg className="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -184,7 +187,7 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
                 School Management System
               </h1>
               <h1 className="text-xl font-bold text-white sm:hidden">SMS</h1>
-            </div>
+            </button>
           </div>
 
           {/* Desktop Navigation */}
@@ -353,7 +356,7 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
             )}
 
             {/* Reports Dropdown */}
-            {canViewFees && (
+            {(canViewFees || canViewAttendanceReports) && (
               <div
                 className="relative"
                 onMouseEnter={handleReportsMouseEnter}
@@ -367,24 +370,39 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
                 </button>
                 {reportsMenuOpen && (
                   <div className="absolute top-full left-0 mt-1 w-56 bg-white rounded-lg shadow-xl border border-gray-200 py-2 animate-fadeIn">
-                    <button
-                      onClick={() => navigate('/outstanding-fees')}
-                      className="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-colors flex items-center gap-2"
-                    >
-                      ⚠️ Outstanding Fees
-                    </button>
-                    <button
-                      onClick={() => navigate('/teacher-salary-comparison')}
-                      className="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-colors flex items-center gap-2"
-                    >
-                      📈 Salary Comparison
-                    </button>
-                    <button
-                      onClick={() => navigate('/budget-vs-actual')}
-                      className="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-colors flex items-center gap-2"
-                    >
-                      📊 Budget vs Actual
-                    </button>
+                    {canViewFees && (
+                      <>
+                        <button
+                          onClick={() => navigate('/outstanding-fees')}
+                          className="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-colors flex items-center gap-2"
+                        >
+                          ⚠️ Outstanding Fees
+                        </button>
+                        <button
+                          onClick={() => navigate('/teacher-salary-comparison')}
+                          className="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-colors flex items-center gap-2"
+                        >
+                          📈 Salary Comparison
+                        </button>
+                        <button
+                          onClick={() => navigate('/budget-vs-actual')}
+                          className="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-colors flex items-center gap-2"
+                        >
+                          📊 Budget vs Actual
+                        </button>
+                      </>
+                    )}
+                    {canViewAttendanceReports && (
+                      <>
+                        {canViewFees && <hr className="my-1 border-gray-200" />}
+                        <button
+                          onClick={() => navigate('/attendance-reports')}
+                          className="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-colors flex items-center gap-2"
+                        >
+                          📅 Attendance Reports
+                        </button>
+                      </>
+                    )}
                   </div>
                 )}
               </div>
@@ -691,7 +709,7 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
               )}
 
               {/* Reports Section */}
-              {canViewFees && (
+              {(canViewFees || canViewAttendanceReports) && (
                 <div className="border-b border-blue-700 pb-2">
                   <button
                     onClick={() => setMobileReportsOpen(!mobileReportsOpen)}
@@ -709,33 +727,51 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
                   </button>
                   {mobileReportsOpen && (
                     <div className="mt-2 ml-4 space-y-1 animate-fade-in">
-                      <button
-                        onClick={() => {
-                          navigate('/outstanding-fees');
-                          setMobileMenuOpen(false);
-                        }}
-                        className="w-full px-4 py-2 rounded-lg text-white hover:bg-blue-700 transition-colors duration-200 text-left"
-                      >
-                        ⚠️ Outstanding Fees
-                      </button>
-                      <button
-                        onClick={() => {
-                          navigate('/teacher-salary-comparison');
-                          setMobileMenuOpen(false);
-                        }}
-                        className="w-full px-4 py-2 rounded-lg text-white hover:bg-blue-700 transition-colors duration-200 text-left"
-                      >
-                        📈 Salary Comparison
-                      </button>
-                      <button
-                        onClick={() => {
-                          navigate('/budget-vs-actual');
-                          setMobileMenuOpen(false);
-                        }}
-                        className="w-full px-4 py-2 rounded-lg text-white hover:bg-blue-700 transition-colors duration-200 text-left"
-                      >
-                        📊 Budget vs Actual
-                      </button>
+                      {canViewFees && (
+                        <>
+                          <button
+                            onClick={() => {
+                              navigate('/outstanding-fees');
+                              setMobileMenuOpen(false);
+                            }}
+                            className="w-full px-4 py-2 rounded-lg text-white hover:bg-blue-700 transition-colors duration-200 text-left"
+                          >
+                            ⚠️ Outstanding Fees
+                          </button>
+                          <button
+                            onClick={() => {
+                              navigate('/teacher-salary-comparison');
+                              setMobileMenuOpen(false);
+                            }}
+                            className="w-full px-4 py-2 rounded-lg text-white hover:bg-blue-700 transition-colors duration-200 text-left"
+                          >
+                            📈 Salary Comparison
+                          </button>
+                          <button
+                            onClick={() => {
+                              navigate('/budget-vs-actual');
+                              setMobileMenuOpen(false);
+                            }}
+                            className="w-full px-4 py-2 rounded-lg text-white hover:bg-blue-700 transition-colors duration-200 text-left"
+                          >
+                            📊 Budget vs Actual
+                          </button>
+                        </>
+                      )}
+                      {canViewAttendanceReports && (
+                        <>
+                          {canViewFees && <div className="my-1 border-t border-blue-700"></div>}
+                          <button
+                            onClick={() => {
+                              navigate('/attendance-reports');
+                              setMobileMenuOpen(false);
+                            }}
+                            className="w-full px-4 py-2 rounded-lg text-white hover:bg-blue-700 transition-colors duration-200 text-left"
+                          >
+                            📅 Attendance Reports
+                          </button>
+                        </>
+                      )}
                     </div>
                   )}
                 </div>

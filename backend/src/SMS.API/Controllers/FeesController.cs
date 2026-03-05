@@ -1,6 +1,7 @@
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using SMS.API.Extensions;
 using SMS.Application.Features.Fees.Commands;
 using SMS.Application.Features.Fees.DTOs;
 using SMS.Application.Features.Fees.Queries;
@@ -132,7 +133,7 @@ public class FeesController : ControllerBase
                 AcademicYear = dto.AcademicYear,
                 Frequency = dto.Frequency,
                 Categories = dto.Categories,
-                CreatedByUserId = GetCurrentUserId()
+                CreatedByUserId = User.GetCurrentUserId().ToString()
             };
 
             var result = await _mediator.Send(command);
@@ -170,7 +171,7 @@ public class FeesController : ControllerBase
                 Frequency = dto.Frequency,
                 IsActive = dto.IsActive,
                 Categories = dto.Categories,
-                UpdatedByUserId = GetCurrentUserId()
+                UpdatedByUserId = User.GetCurrentUserId().ToString()
             };
 
             var result = await _mediator.Send(command);
@@ -357,7 +358,7 @@ public class FeesController : ControllerBase
                 FeeStructureId = dto.FeeStructureId,
                 StartDate = dto.StartDate,
                 EndDate = dto.EndDate,
-                CreatedByUserId = GetCurrentUserId()
+                CreatedByUserId = User.GetCurrentUserId().ToString()
             };
 
             var result = await _mediator.Send(command);
@@ -408,6 +409,43 @@ public class FeesController : ControllerBase
         {
             _logger.LogError(ex, "Error terminating student fee with ID {Id}", id);
             return StatusCode(StatusCodes.Status500InternalServerError, "Error terminating student fee");
+        }
+    }
+
+    /// <summary>
+    /// Bulk assign fee structure to all students in a section
+    /// </summary>
+    /// <param name="dto">Bulk assignment data including fee structure, section, and dates</param>
+    /// <returns>Result with success/skip/failure counts</returns>
+    [HttpPost("student-fees/bulk-assign")]
+    [ProducesResponseType(typeof(BulkAssignmentResultDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> BulkAssignStudentFee([FromBody] BulkAssignStudentFeeDto dto)
+    {
+        try
+        {
+            var command = new BulkAssignStudentFeeCommand
+            {
+                FeeStructureId = dto.FeeStructureId,
+                SectionId = dto.SectionId,
+                StartDate = dto.StartDate,
+                EndDate = dto.EndDate,
+                SkipAlreadyAssigned = dto.SkipAlreadyAssigned,
+                CreatedByUserId = User.GetCurrentUserId().ToString()
+            };
+
+            var result = await _mediator.Send(command);
+            return Ok(result);
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogWarning(ex, "Invalid bulk fee assignment request");
+            return BadRequest(ex.Message);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error performing bulk fee assignment");
+            return StatusCode(StatusCodes.Status500InternalServerError, "Error performing bulk fee assignment");
         }
     }
 
@@ -489,7 +527,7 @@ public class FeesController : ControllerBase
                 PaymentDate = dto.PaymentDate,
                 PaymentMethod = dto.PaymentMethod,
                 Notes = dto.Notes,
-                CreatedByUserId = GetCurrentUserId()
+                CreatedByUserId = User.GetCurrentUserId().ToString()
             };
 
             var result = await _mediator.Send(command);
@@ -558,11 +596,42 @@ public class FeesController : ControllerBase
 
     #endregion
 
+    #region Fee Receipt PDF Endpoints
+
     /// <summary>
-    /// Helper method to get current user ID from claims
+    /// Generate and download fee receipt PDF
     /// </summary>
-    private string GetCurrentUserId()
+    /// <param name="paymentId">Payment ID for which to generate receipt</param>
+    /// <returns>PDF file</returns>
+    [HttpGet("payments/{paymentId}/receipt")]
+    [ProducesResponseType(typeof(FileResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetFeeReceiptPdf([FromRoute] string paymentId)
     {
-        var userIdClaim = User.FindFirst("sub") ?? User.FindFirst("nameid");
-        return userIdClaim?.Value ?? Guid.Empty.ToString();
-    }}
+        try
+        {
+            var command = new GenerateFeeReceiptPdfCommand
+            {
+                PaymentId = paymentId
+            };
+
+            var pdf = await _mediator.Send(command);
+
+            // Return PDF file
+            return File(pdf, "application/pdf", $"fee-receipt-{paymentId}.pdf");
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogError(ex, "Payment not found for receipt generation");
+            return NotFound(new { message = "Payment not found" });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error generating fee receipt PDF");
+            return StatusCode(StatusCodes.Status500InternalServerError, "Error generating fee receipt PDF");
+        }
+    }
+
+    #endregion
+
+}

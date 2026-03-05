@@ -666,3 +666,74 @@ public class GetFeeReportQueryHandler : IRequestHandler<GetFeeReportQuery, Pagin
         };
     }
 }
+
+/// <summary>
+/// Handler for GetFeeReceiptDataQuery
+/// Fetches data required for fee receipt PDF generation
+/// </summary>
+public class GetFeeReceiptDataQueryHandler : IRequestHandler<GetFeeReceiptDataQuery, FeeReceiptDto?>
+{
+    private readonly IApplicationDbContext _context;
+
+    public GetFeeReceiptDataQueryHandler(IApplicationDbContext context)
+    {
+        _context = context;
+    }
+
+    public async Task<FeeReceiptDto?> Handle(GetFeeReceiptDataQuery request, CancellationToken cancellationToken)
+    {
+        if (!Guid.TryParse(request.PaymentId, out var paymentId))
+            return null;
+
+        // Get the payment with related student fee, student, structure, and section
+        var payment = await _context.FeePayments
+            .Include(p => p.StudentFee)
+            .ThenInclude(sf => sf!.Student)
+            .ThenInclude(s => s!.StudentSections)
+            .ThenInclude(ss => ss.Section)
+            .ThenInclude(s => s!.Class)
+            .Include(p => p.StudentFee)
+            .ThenInclude(sf => sf!.FeeStructure)
+            .FirstOrDefaultAsync(p => p.Id == paymentId, cancellationToken);
+
+        if (payment?.StudentFee == null)
+            return null;
+
+        var studentFee = payment.StudentFee;
+        var student = studentFee.Student;
+        var feeStructure = studentFee.FeeStructure;
+
+        if (student == null || feeStructure == null)
+            return null;
+
+        // Get student's current section info
+        var studentSection = student.StudentSections?
+            .Where(ss => ss.IsCurrent)
+            .FirstOrDefault();
+
+        // Get total paid for this student fee (all payments)
+        var totalPaid = await _context.FeePayments
+            .Where(fp => fp.StudentFeeId == studentFee.Id)
+            .SumAsync(fp => fp.AmountPaid, cancellationToken);
+
+        var previousBalance = totalPaid - payment.AmountPaid;
+        var currentBalance = (decimal)studentFee.TotalAmount - totalPaid;
+
+        return new FeeReceiptDto
+        {
+            ReceiptNumber = payment.ReceiptNumber,
+            StudentName = $"{student.FirstName} {student.LastName}",
+            EnrollmentNumber = student.EnrollmentNumber,
+            ClassName = studentSection?.Section?.Class?.Name ?? "N/A",
+            SectionName = studentSection?.Section?.SectionName ?? "N/A",
+            FeeStructureName = feeStructure.Name,
+            AmountPaid = payment.AmountPaid,
+            PaymentDate = payment.PaymentDate.ToDateTime(TimeOnly.MinValue),
+            PaymentMethod = payment.PaymentMethod,
+            Notes = payment.Notes,
+            PreviousBalance = Math.Max(0, previousBalance),
+            CurrentBalance = Math.Max(0, currentBalance),
+            TotalDueAmount = studentFee.TotalAmount
+        };
+    }
+}

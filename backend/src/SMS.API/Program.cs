@@ -19,6 +19,12 @@ using SMS.Infrastructure.Data;
 using SMS.Infrastructure.Data.Interceptors;
 using SMS.Infrastructure.Services;
 
+// Define role constants
+const string RoleAdmin = "Admin";
+const string RoleAccountant = "Accountant";
+const string RoleClerk = "Clerk";
+const string RoleTeacher = "Teacher";
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Configure QuestPDF License (Community License - free for open-source)
@@ -109,21 +115,21 @@ builder.Services.AddAuthentication(options =>
 builder.Services.AddAuthorization(options =>
 {
     options.AddPolicy("AdminOnly", policy =>
-        policy.RequireRole("Admin"));
+        policy.RequireRole(RoleAdmin));
     options.AddPolicy("AcademicAccess", policy =>
-        policy.RequireRole("Admin", "Clerk"));
+        policy.RequireRole(RoleAdmin, RoleClerk));
     options.AddPolicy("FeesAccess", policy =>
-        policy.RequireRole("Admin", "Accountant"));
+        policy.RequireRole(RoleAdmin, RoleAccountant));
     options.AddPolicy("SalaryAccess", policy =>
-        policy.RequireRole("Admin", "Accountant", "Teacher"));
+        policy.RequireRole(RoleAdmin, RoleAccountant, RoleTeacher));
     options.AddPolicy("PayrollAccess", policy =>
-        policy.RequireRole("Admin", "Accountant"));
+        policy.RequireRole(RoleAdmin, RoleAccountant));
     options.AddPolicy("SalaryManageAccess", policy =>
-        policy.RequireRole("Admin", "Accountant"));
+        policy.RequireRole(RoleAdmin, RoleAccountant));
     options.AddPolicy("AttendanceAccess", policy =>
-        policy.RequireRole("Admin", "Clerk", "Teacher"));
+        policy.RequireRole(RoleAdmin, RoleClerk, RoleTeacher));
     options.AddPolicy("DashboardAccess", policy =>
-        policy.RequireRole("Admin", "Accountant", "Clerk"));
+        policy.RequireRole(RoleAdmin, RoleAccountant, RoleClerk));
 });
 
 // Configure CORS
@@ -229,4 +235,4 @@ if (app.Environment.IsDevelopment())
     await app.SeedDatabaseAsync();
 }
 
-app.Run();
+await app.RunAsync();

@@ -528,4 +528,83 @@ public class AttendanceController : ControllerBase
     {
         var userIdClaim = User.FindFirst("sub") ?? User.FindFirst("nameid");
         return userIdClaim?.Value ?? Guid.Empty.ToString();
-    }}
+    }
+
+    #region Attendance Report Endpoints
+
+    /// <summary>
+    /// Get monthly attendance report with pagination
+    /// </summary>
+    [HttpGet("reports/monthly")]
+    [ProducesResponseType(typeof(PaginatedMonthlyAttendanceReportDto), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetMonthlyAttendanceReport(
+        [FromQuery] int year, [FromQuery] int month, [FromQuery] int pageNumber = 1,
+        [FromQuery] int pageSize = 10, [FromQuery] string? studentId = null, [FromQuery] string? sectionId = null)
+    {
+        try
+        {
+            if (month < 1 || month > 12)
+                return BadRequest(new { message = "Month must be between 1 and 12" });
+            var query = new GetMonthlyAttendanceReportQuery
+            { Year = year, Month = month, PageNumber = pageNumber, PageSize = pageSize, StudentId = studentId, SectionId = sectionId };
+            var result = await _mediator.Send(query);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving monthly attendance report");
+            return StatusCode(StatusCodes.Status500InternalServerError, "Error retrieving attendance report");
+        }
+    }
+
+    /// <summary>
+    /// Get low attendance alerts
+    /// </summary>
+    [HttpGet("reports/low-attendance")]
+    [ProducesResponseType(typeof(List<LowAttendanceAlertDto>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetLowAttendanceAlerts(
+        [FromQuery] int year, [FromQuery] int month, [FromQuery] string? sectionId = null, [FromQuery] decimal threshold = 75m)
+    {
+        try
+        {
+            if (month < 1 || month > 12)
+                return BadRequest(new { message = "Month must be between 1 and 12" });
+            if (threshold < 0 || threshold > 100)
+                return BadRequest(new { message = "Threshold must be between 0 and 100" });
+            var query = new GetLowAttendanceAlertsQuery
+            { Year = year, Month = month, SectionId = sectionId, AttendanceThreshold = threshold };
+            var result = await _mediator.Send(query);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving low attendance alerts");
+            return StatusCode(StatusCodes.Status500InternalServerError, "Error retrieving low attendance alerts");
+        }
+    }
+
+    /// <summary>
+    /// Get class attendance summary
+    /// </summary>
+    [HttpGet("reports/class-summary")]
+    [ProducesResponseType(typeof(List<ClassAttendanceSummaryDto>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetClassAttendanceSummary(
+        [FromQuery] int year, [FromQuery] int month, [FromQuery] string? sectionId = null)
+    {
+        try
+        {
+            if (month < 1 || month > 12)
+                return BadRequest(new { message = "Month must be between 1 and 12" });
+            var query = new GetClassAttendanceSummaryQuery { Year = year, Month = month, SectionId = sectionId };
+            var result = await _mediator.Send(query);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving class attendance summary");
+            return StatusCode(StatusCodes.Status500InternalServerError, "Error retrieving class attendance summary");
+        }
+    }
+
+    #endregion
+}

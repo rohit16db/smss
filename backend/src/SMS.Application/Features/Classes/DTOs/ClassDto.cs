@@ -107,6 +107,7 @@ public class StudentSectionDto
     public string Id { get; set; } = string.Empty;
     public string StudentId { get; set; } = string.Empty;
     public string StudentName { get; set; } = string.Empty;
+    public string EnrollmentNumber { get; set; } = string.Empty;
     public string SectionId { get; set; } = string.Empty;
     public string SectionName { get; set; } = string.Empty;
     public string ClassName { get; set; } = string.Empty;

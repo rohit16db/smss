@@ -153,3 +153,32 @@ public class RecordFeePaymentCommandValidator : AbstractValidator<RecordFeePayme
             .Must(id => Guid.TryParse(id, out _)).WithMessage("Created by user ID must be a valid GUID");
     }
 }
+
+/// <summary>
+/// Validator for BulkAssignStudentFeeCommand
+/// </summary>
+public class BulkAssignStudentFeeCommandValidator : AbstractValidator<BulkAssignStudentFeeCommand>
+{
+    public BulkAssignStudentFeeCommandValidator()
+    {
+        RuleFor(x => x.FeeStructureId)
+            .NotEmpty().WithMessage("Fee structure ID is required")
+            .Must(id => Guid.TryParse(id, out _)).WithMessage("Fee structure ID must be a valid GUID");
+
+        RuleFor(x => x.SectionId)
+            .NotEmpty().WithMessage("Section ID is required")
+            .Must(id => Guid.TryParse(id, out _)).WithMessage("Section ID must be a valid GUID");
+
+        RuleFor(x => x.StartDate)
+            .NotEmpty().WithMessage("Start date is required")
+            .LessThanOrEqualTo(DateTime.UtcNow.AddDays(365)).WithMessage("Start date cannot be more than 1 year in the future");
+
+        RuleFor(x => x.EndDate)
+            .GreaterThan(x => x.StartDate).WithMessage("End date must be after start date")
+            .When(x => x.EndDate.HasValue);
+
+        RuleFor(x => x.CreatedByUserId)
+            .NotEmpty().WithMessage("Created by user ID is required")
+            .Must(id => Guid.TryParse(id, out _)).WithMessage("Created by user ID must be a valid GUID");
+    }
+}

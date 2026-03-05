@@ -66,7 +66,7 @@ public class ExamsController : ControllerBase
         }
         catch (ValidationException validationEx)
         {
-            _logger.LogWarning("Validation error creating exam: {Errors}", string.Join(", ", validationEx.Errors.Select(e => e.ErrorMessage)));
+            _logger.LogWarning(validationEx, "Validation error creating exam: {Errors}", string.Join(", ", validationEx.Errors.Select(e => e.ErrorMessage)));
             return BadRequest(new {
                 message = "Validation failed",
                 errors = validationEx.Errors.GroupBy(e => e.PropertyName).ToDictionary(
@@ -77,7 +77,7 @@ public class ExamsController : ControllerBase
         }
         catch (UnauthorizedAccessException ex)
         {
-            _logger.LogWarning("Unauthorized access when creating exam: {Message}", ex.Message);
+            _logger.LogWarning(ex, "Unauthorized access when creating exam: {Message}", ex.Message);
             return Unauthorized(new { message = "User not authenticated" });
         }
         catch (Exception ex)
@@ -213,12 +213,12 @@ public class ExamsController : ControllerBase
         catch (InvalidOperationException ex)
         {
             // Return 400 for validation errors (draft status, marks exist, etc.)
-            _logger.LogWarning(ex, "Delete exam validation failed for exam {examId}", examId);
+            _logger.LogWarning(ex, "Delete exam validation failed for exam {ExamId}", examId);
             return BadRequest(new { message = ex.Message });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error deleting exam {examId}", examId);
+            _logger.LogError(ex, "Error deleting exam {ExamId}", examId);
             return StatusCode(StatusCodes.Status500InternalServerError, new { message = "Error deleting exam" });
         }
     }

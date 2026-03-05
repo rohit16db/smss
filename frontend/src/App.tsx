@@ -15,6 +15,7 @@ import { TeacherSalaryComparisonPage } from './pages/TeacherSalaryComparisonPage
 import { BudgetVsActualPage } from './pages/BudgetVsActualPage';
 import { StudentsPage } from './pages/StudentsPage';
 import { AttendancePage } from './pages/AttendancePage';
+import { AttendanceReportPage } from './pages/AttendanceReportPage';
 import { PayrollPage } from './pages/PayrollPage';
 import { SalaryPage } from './pages/SalaryPage';
 import { ClassManagementPage } from './pages/ClassManagementPage';
@@ -122,6 +123,14 @@ function App() {
                   element={
                     <ProtectedRoute allowedRoles={["Admin", "Clerk", "Teacher"]}>
                       <AttendancePage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="attendance-reports"
+                  element={
+                    <ProtectedRoute allowedRoles={["Admin", "Clerk"]}>
+                      <AttendanceReportPage />
                     </ProtectedRoute>
                   }
                 />

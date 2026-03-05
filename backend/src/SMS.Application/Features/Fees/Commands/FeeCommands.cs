@@ -70,3 +70,23 @@ public class RecordFeePaymentCommand : IRequest<FeePaymentDto>
     public string? Notes { get; set; }
     public required string CreatedByUserId { get; set; }
 }
+
+/// <summary>
+/// Command to bulk assign fee structure to all students in a class/section
+/// </summary>
+public class BulkAssignStudentFeeCommand : IRequest<BulkAssignmentResultDto>
+{
+    public required string FeeStructureId { get; set; }
+    public required string SectionId { get; set; }
+    public required DateTime StartDate { get; set; }
+    public DateTime? EndDate { get; set; }
+    public required bool SkipAlreadyAssigned { get; set; }
+    public required string CreatedByUserId { get; set; }
+}
+/// <summary>
+/// Command to generate fee receipt PDF
+/// </summary>
+public class GenerateFeeReceiptPdfCommand : IRequest<byte[]>
+{
+    public required string PaymentId { get; set; }
+}

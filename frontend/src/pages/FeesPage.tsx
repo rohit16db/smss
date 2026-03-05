@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import toast from 'react-hot-toast';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { feeApi, studentApi, type CreateFeeStructureDto, type FeeStructure, type CreateStudentFeeDto, type StudentFee, type CreateFeePaymentDto, type Student } from '../services/api';
+import { feeApi, studentApi, classApi, type CreateFeeStructureDto, type FeeStructure, type CreateStudentFeeDto, type StudentFee, type CreateFeePaymentDto, type Student, type BulkAssignStudentFeeDto, type SectionListDto } from '../services/api';
+import { formatDate } from '../utils/dateFormat';
 import type { AxiosError } from 'axios';
 
 type TabType = 'structures' | 'assignments' | 'payments';
@@ -401,10 +402,12 @@ function StudentFeesTab() {
   const [rowsPerPage] = useState(10);
   const [openDialog, setOpenDialog] = useState(false);
   const [openTerminateDialog, setOpenTerminateDialog] = useState(false);
+  const [openBulkDialog, setOpenBulkDialog] = useState(false);
   const [terminateFeeId, setTerminateFeeId] = useState<string | null>(null);
   const [terminateEndDate, setTerminateEndDate] = useState('');
   const [selectedSectionId, setSelectedSectionId] = useState(''); // Section filter
   const [structures, setStructures] = useState<FeeStructure[]>([]);
+  const [sections, setSections] = useState<(SectionListDto & { className?: string })[]>([]);
   const [studentSearch, setStudentSearch] = useState('');
   const [showStudentDropdown, setShowStudentDropdown] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
@@ -413,6 +416,12 @@ function StudentFeesTab() {
     studentId: '',
     feeStructureId: '',
     startDate: new Date().toISOString().split('T')[0],
+  });
+  const [bulkFormData, setBulkFormData] = useState<BulkAssignStudentFeeDto>({
+    feeStructureId: '',
+    sectionId: '',
+    startDate: new Date().toISOString().split('T')[0],
+    skipAlreadyAssigned: false,
   });
 
   const { data, isLoading } = useQuery({
@@ -427,6 +436,29 @@ function StudentFeesTab() {
   const structuresQuery = useQuery({
     queryKey: ['feeStructures'],
     queryFn: () => feeApi.getAllStructures({ pageSize: 100 }),
+  });
+
+  // Load sections for bulk assignment
+  const sectionsQuery = useQuery({
+    queryKey: ['sections'],
+    queryFn: async () => {
+      const classesData = await classApi.getAll({ pageSize: 1000, isActive: true });
+      const allSections: (SectionListDto & { className?: string })[] = [];
+      for (const cls of classesData.items) {
+        try {
+          const sectionList = await classApi.getSectionsByClass(cls.id);
+          sectionList.forEach((section) => {
+            allSections.push({
+              ...section,
+              className: cls.name,
+            });
+          });
+        } catch (err) {
+          console.error(`Failed to load sections for class ${cls.id}`, err);
+        }
+      }
+      return allSections;
+    },
   });
 
   // Load students based on search term
@@ -475,6 +507,21 @@ function StudentFeesTab() {
     },
   });
 
+  const bulkAssignMutation = useMutation({
+    mutationFn: feeApi.bulkAssignStudentFee,
+    onSuccess: (result) => {
+      toast.success(`Bulk assignment completed: ${result.successCount} students assigned, ${result.skippedCount} skipped`);
+      if (result.failureCount > 0) {
+        toast.error(`${result.failureCount} students failed: ${result.errors.map(e => e.studentName).join(', ')}`);
+      }
+      queryClient.invalidateQueries({ queryKey: ['studentFees'] });
+      handleCloseBulkDialog();
+    },
+    onError: (error: AxiosError<{ message?: string }>) => {
+      toast.error(error.response?.data?.message || 'Failed to perform bulk assignment');
+    },
+  });
+
   const handleOpenDialog = () => {
     setFormData({
       studentId: '',
@@ -492,6 +539,29 @@ function StudentFeesTab() {
     setStudentSearch('');
     setSelectedStudent(null);
     setShowStudentDropdown(false);
+  };
+
+  const handleOpenBulkDialog = () => {
+    setBulkFormData({
+      feeStructureId: '',
+      sectionId: '',
+      startDate: new Date().toISOString().split('T')[0],
+      skipAlreadyAssigned: false,
+    });
+    setOpenBulkDialog(true);
+  };
+
+  const handleCloseBulkDialog = () => {
+    setOpenBulkDialog(false);
+  };
+
+  const handleBulkSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!bulkFormData.feeStructureId || !bulkFormData.sectionId) {
+      toast.error('Please select both fee structure and section');
+      return;
+    }
+    bulkAssignMutation.mutate(bulkFormData);
   };
 
   const handleSelectStudent = (student: Student) => {
@@ -542,18 +612,31 @@ function StudentFeesTab() {
     setStructures(structuresQuery.data.items);
   }
 
+  // Update sections when query data arrives
+  if (sectionsQuery.data && sections.length === 0) {
+    setSections(sectionsQuery.data);
+  }
+
   return (
     <div className="animate-slide-up">
       {/* Action Button */}
       <div className="card mb-6">
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-semibold text-gray-900">Student Fee Assignments</h3>
-          <button onClick={handleOpenDialog} className="btn-primary flex items-center gap-2">
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-            Assign Fee
-          </button>
+          <div className="flex gap-2">
+            <button onClick={handleOpenDialog} className="btn-primary flex items-center gap-2">
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              Assign Fee
+            </button>
+            <button onClick={handleOpenBulkDialog} className="btn-secondary flex items-center gap-2">
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4M18 9l-6 6m0 0l-6-6" />
+              </svg>
+              Bulk Assign
+            </button>
+          </div>
         </div>
       </div>
 
@@ -570,14 +653,9 @@ function StudentFeesTab() {
             className="input-field flex-1 max-w-xs"
           >
             <option value="">All Sections</option>
-            {data?.items.reduce((sections: Array<{ id: string; name: string }>, fee) => {
-              if (fee.sectionId && !sections.find(s => s.id === fee.sectionId)) {
-                sections.push({ id: fee.sectionId, name: fee.sectionName || 'Unknown' });
-              }
-              return sections;
-            }, []).map(section => (
+            {sections.map(section => (
               <option key={section.id} value={section.id}>
-                {section.name}
+                {section.className} - {section.sectionName}
               </option>
             ))}
           </select>
@@ -635,7 +713,7 @@ function StudentFeesTab() {
                           <div className="text-xs font-mono text-blue-600">{fee.enrollmentNumber}</div>
                         </td>
                         <td className="px-6 py-4 text-sm text-gray-500">{fee.feeStructureName || structureMap.get(fee.feeStructureId) || 'N/A'}</td>
-                        <td className="px-6 py-4 text-sm text-gray-500">{new Date(fee.startDate).toLocaleDateString()}</td>
+                        <td className="px-6 py-4 text-sm text-gray-500">{formatDate(fee.startDate)}</td>
                         <td className="px-6 py-4">
                           <div className="text-sm font-semibold text-green-600">₹{fee.totalAmount.toFixed(2)}</div>
                         </td>
@@ -646,8 +724,18 @@ function StudentFeesTab() {
                           </div>
                         </td>
                         <td className="px-6 py-4">
-                          <span className={`badge ${fee.isActive ? 'badge-success' : 'badge-danger'}`}>
-                            {fee.isActive ? 'Active' : 'Terminated'}
+                          <span className={`badge ${
+                            !fee.isActive 
+                              ? 'badge-danger' 
+                              : fee.balanceAmount === 0 
+                              ? 'badge-blue' 
+                              : 'badge-success'
+                          }`}>
+                            {!fee.isActive 
+                              ? 'Terminated' 
+                              : fee.balanceAmount === 0 
+                              ? 'Paid' 
+                              : 'Active'}
                           </span>
                         </td>
                         <td className="px-6 py-4 text-right">
@@ -881,6 +969,132 @@ function StudentFeesTab() {
           </div>
         </div>
       )}
+
+      {/* Bulk Assignment Dialog */}
+      {openBulkDialog && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto animate-slide-up">
+            <div className="bg-gradient-to-r from-green-600 to-emerald-600 px-6 py-4 flex items-center justify-between rounded-t-2xl">
+              <div className="flex items-center gap-3">
+                <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4M18 9l-6 6m0 0l-6-6" />
+                </svg>
+                <h2 className="text-xl font-bold text-white">Bulk Assign Fees to Class</h2>
+              </div>
+              <button onClick={handleCloseBulkDialog} className="text-white hover:text-gray-200 transition-colors">
+                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="p-6">
+              <form onSubmit={handleBulkSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Section <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    value={bulkFormData.sectionId}
+                    onChange={(e) => setBulkFormData({ ...bulkFormData, sectionId: e.target.value })}
+                    className="input-field w-full"
+                    required
+                  >
+                    <option value="">Select a section...</option>
+                    {sections.map((section) => (
+                      <option key={section.id} value={section.id}>
+                        {section.className} - {section.sectionName} ({section.studentCount} students)
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Fee Structure <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    value={bulkFormData.feeStructureId}
+                    onChange={(e) => setBulkFormData({ ...bulkFormData, feeStructureId: e.target.value })}
+                    className="input-field w-full"
+                    required
+                  >
+                    <option value="">Select a fee structure...</option>
+                    {structures.map((structure) => (
+                      <option key={structure.id} value={structure.id}>
+                        {structure.name} (₹{structure.totalAmount.toFixed(2)})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Start Date <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="date"
+                    value={bulkFormData.startDate}
+                    onChange={(e) => setBulkFormData({ ...bulkFormData, startDate: e.target.value })}
+                    className="input-field w-full"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    End Date (Optional)
+                  </label>
+                  <input
+                    type="date"
+                    value={bulkFormData.endDate || ''}
+                    onChange={(e) => setBulkFormData({ ...bulkFormData, endDate: e.target.value || undefined })}
+                    className="input-field w-full"
+                  />
+                </div>
+
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <label className="flex items-center gap-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={bulkFormData.skipAlreadyAssigned}
+                      onChange={(e) => setBulkFormData({ ...bulkFormData, skipAlreadyAssigned: e.target.checked })}
+                      className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+                    />
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">Skip students already assigned</p>
+                      <p className="text-xs text-gray-600 mt-1">If unchecked, existing assignments will be terminated and replaced</p>
+                    </div>
+                  </label>
+                </div>
+
+                <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+                  <p className="text-sm text-gray-700">
+                    <span className="font-semibold">Summary:</span> This will assign <span className="font-bold text-green-700">{sections.find(s => s.id === bulkFormData.sectionId)?.studentCount || 0} students</span> from the selected section to the fee structure.
+                  </p>
+                </div>
+
+                <div className="mt-6 flex gap-3">
+                  <button
+                    type="button"
+                    onClick={handleCloseBulkDialog}
+                    className="flex-1 btn-secondary disabled:opacity-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={bulkAssignMutation.isPending}
+                    className="flex-1 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                  >
+                    {bulkAssignMutation.isPending ? 'Assigning...' : 'Assign Fees'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -895,6 +1109,7 @@ function PaymentsTab() {
   const [studentSearch, setStudentSearch] = useState('');
   const [showStudentDropdown, setShowStudentDropdown] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
+  const [downloadingPaymentId, setDownloadingPaymentId] = useState<string | null>(null);
   const paymentDropdownRef = useRef<HTMLDivElement>(null);
   const [formData, setFormData] = useState<CreateFeePaymentDto>({
     studentFeeId: '',
@@ -1040,6 +1255,32 @@ function PaymentsTab() {
     return fee ? fee.feeStructureName : studentFeeId;
   };
 
+  // Download PDF receipt
+  const handleDownloadReceipt = async (paymentId: string) => {
+    try {
+      setDownloadingPaymentId(paymentId);
+      const response = await feeApi.downloadFeeReceipt(paymentId);
+      
+      // Create blob and trigger download
+      const blob = new Blob([response], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `fee-receipt-${paymentId}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      
+      toast.success('Receipt downloaded successfully!');
+    } catch (error) {
+      console.error('Failed to download receipt:', error);
+      toast.error('Failed to download receipt');
+    } finally {
+      setDownloadingPaymentId(null);
+    }
+  };
+
   return (
     <div className="animate-slide-up">
       {/* Action Button */}
@@ -1067,6 +1308,7 @@ function PaymentsTab() {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Payment Date</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Payment Method</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Notes</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
@@ -1095,7 +1337,7 @@ function PaymentsTab() {
                       <div className="text-sm font-semibold text-green-600">₹{payment.amountPaid.toFixed(2)}</div>
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-500">
-                      {new Date(payment.paymentDate).toLocaleDateString()}
+                      {formatDate(payment.paymentDate)}
                     </td>
                     <td className="px-6 py-4">
                       <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
@@ -1103,6 +1345,30 @@ function PaymentsTab() {
                       </span>
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-500">{payment.notes || '-'}</td>
+                    <td className="px-6 py-4">
+                      <button
+                        onClick={() => handleDownloadReceipt(payment.id)}
+                        disabled={downloadingPaymentId === payment.id}
+                        className="inline-flex items-center gap-1 px-3 py-1 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        title="Download receipt PDF"
+                      >
+                        {downloadingPaymentId === payment.id ? (
+                          <>
+                            <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 2v20m10-10H2" />
+                            </svg>
+                            <span className="text-xs font-medium">Downloading...</span>
+                          </>
+                        ) : (
+                          <>
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                            </svg>
+                            <span className="text-xs font-medium">Download</span>
+                          </>
+                        )}
+                      </button>
+                    </td>
                   </tr>
                 ))
               )}
@@ -1233,7 +1499,7 @@ function PaymentsTab() {
                               <div className="flex-1">
                                 <div className="font-semibold text-gray-900">{fee.feeStructureName}</div>
                                 <div className="text-xs text-gray-500 mt-1">
-                                  {new Date(fee.startDate).toLocaleDateString()} {fee.endDate && `- ${new Date(fee.endDate).toLocaleDateString()}`}
+                                  {formatDate(fee.startDate)} {fee.endDate && `- ${formatDate(fee.endDate)}`}
                                 </div>
                               </div>
                               <div className="text-right ml-4">

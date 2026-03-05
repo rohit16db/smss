@@ -4,6 +4,7 @@ using SMS.Application.Common.Interfaces;
 using SMS.Application.Features.Exams.DTOs;
 using SMS.Application.Features.Exams.Queries;
 
+#nullable disable
 namespace SMS.Application.Features.Exams.Handlers;
 
 /// <summary>
@@ -35,7 +36,7 @@ public class AnalyticsQueryHandlers
             // Filter by class if provided
             if (request.ClassId.HasValue)
             {
-                studentSectionsQuery = studentSectionsQuery.Where(ss => ss.Section.ClassId == request.ClassId.Value);
+                studentSectionsQuery = studentSectionsQuery.Where(ss => ss.Section != null && ss.Section.ClassId == request.ClassId.Value);
             }
 
             var studentSections = await studentSectionsQuery.Include(ss => ss.Section).ToListAsync(cancellationToken);
@@ -377,9 +378,9 @@ public class AnalyticsQueryHandlers
             if (request.ClassId.HasValue)
             {
                 reportCardsQuery = reportCardsQuery.Where(rc =>
-                    rc.Student.StudentSections.Any(ss =>
-                        ss.Section.ClassId == request.ClassId &&
-                        (ss.LeftDate == null || ss.LeftDate > rc.Exam.StartDate)));
+                    rc.Student != null && rc.Student.StudentSections != null && rc.Student.StudentSections.Any(ss =>
+                        ss.Section != null && ss.Section.ClassId == request.ClassId &&
+                        rc.Exam != null && (ss.LeftDate == null || ss.LeftDate > rc.Exam.StartDate)));
             }
 
             var reportCards = await reportCardsQuery.ToListAsync(cancellationToken);
