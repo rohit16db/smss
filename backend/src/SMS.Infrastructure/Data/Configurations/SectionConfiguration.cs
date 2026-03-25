@@ -48,10 +48,7 @@ public class SectionConfiguration : IEntityTypeConfiguration<Section>
             .HasForeignKey(s => s.ClassId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        builder.HasMany(s => s.StudentSections)
-            .WithOne(ss => ss.Section)
-            .HasForeignKey(ss => ss.SectionId)
-            .OnDelete(DeleteBehavior.Cascade);
+
 
         // Indexes
         builder.HasIndex(s => s.ClassId);

@@ -13,21 +13,27 @@ public class ReportCardQueryHandlers
     public class GetReportCardQueryHandler : IRequestHandler<GetReportCardQuery, ReportCardDto>
     {
         private readonly IApplicationDbContext _context;
-        public GetReportCardQueryHandler(IApplicationDbContext context) => _context = context;
+        private readonly IAcademicYearContext _academicYearContext;
+
+        public GetReportCardQueryHandler(IApplicationDbContext context, IAcademicYearContext academicYearContext)
+        {
+            _context = context;
+            _academicYearContext = academicYearContext;
+        }
         
         public async Task<ReportCardDto> Handle(GetReportCardQuery request, CancellationToken cancellationToken)
         {
             var reportCard = await _context.StudentReportCards
                 .Include(rc => rc.Exam)
-                .Include(rc => rc.Student)
-                .FirstOrDefaultAsync(rc => rc.ExamId == request.ExamId && rc.StudentId == request.StudentId, cancellationToken);
+                .Include(rc => rc.Enrollment).ThenInclude(e => e!.Student)
+                .FirstOrDefaultAsync(rc => rc.ExamId == request.ExamId && rc.Enrollment!.StudentId == request.StudentId, cancellationToken);
 
             if (reportCard == null)
                 throw new InvalidOperationException($"Report card not found for exam {request.ExamId} and student {request.StudentId}");
 
-            // Get student's section for class name
-            var studentSection = await _context.StudentSections
-                .Where(ss => ss.StudentId == request.StudentId && ss.IsCurrent)
+            // Get student's section for class name in active academic year
+            var studentSection = await _context.Enrollments
+                .Where(ss => ss.StudentId == request.StudentId && ss.Status == "Enrolled" && ss.AcademicYearId == _academicYearContext.RequiredAcademicYearId)
                 .Select(ss => new { ss.SectionId, ss.RollNumber })
                 .FirstOrDefaultAsync(cancellationToken);
 
@@ -37,7 +43,7 @@ public class ReportCardQueryHandlers
 
             // Get subject-wise marks
             var studentMarks = await _context.StudentMarks
-                .Where(m => m.ExamId == request.ExamId && m.StudentId == request.StudentId)
+                .Where(m => m.ExamId == request.ExamId && m.Enrollment!.StudentId == request.StudentId)
                 .AsNoTracking()
                 .ToListAsync(cancellationToken);
 
@@ -86,8 +92,8 @@ public class ReportCardQueryHandlers
             return new ReportCardDto
             {
                 Id = reportCard.Id,
-                StudentId = reportCard.StudentId,
-                StudentName = $"{reportCard.Student!.FirstName} {reportCard.Student.LastName}",
+                StudentId = reportCard.Enrollment!.StudentId,
+                StudentName = $"{reportCard.Enrollment.Student!.FirstName} {reportCard.Enrollment.Student.LastName}",
                 RollNumber = studentSection != null ? (studentSection.RollNumber ?? 0).ToString() : "",
                 ClassName = sectionName,
                 ExamId = reportCard.ExamId,
@@ -125,7 +131,7 @@ public class ReportCardQueryHandlers
         {
             var reportCards = await _context.StudentReportCards
                 .Where(rc => rc.ExamId == request.ExamId)
-                .Include(rc => rc.Student)
+                .Include(rc => rc.Enrollment).ThenInclude(e => e!.Student)
                 .Include(rc => rc.Exam)
                 .OrderByDescending(rc => rc.Percentage)
                 .Select(rc => new ReportCardListDto
@@ -133,8 +139,8 @@ public class ReportCardQueryHandlers
                     Id = rc.Id,
                     ExamId = rc.ExamId,
                     ExamName = rc.Exam!.Name,
-                    StudentId = rc.StudentId,
-                    StudentName = $"{rc.Student!.FirstName} {rc.Student.LastName}",
+                    StudentId = rc.Enrollment!.StudentId,
+                    StudentName = $"{rc.Enrollment.Student!.FirstName} {rc.Enrollment.Student.LastName}",
                     ClassName = "",
                     TotalObtained = rc.TotalMarksObtained,
                     TotalMarks = rc.TotalMarks,
@@ -171,17 +177,17 @@ public class ReportCardQueryHandlers
         public async Task<List<ReportCardListDto>> Handle(GetStudentReportCardsQuery request, CancellationToken cancellationToken)
         {
             var reportCards = await _context.StudentReportCards
-                .Where(rc => rc.StudentId == request.StudentId)
+                .Where(rc => rc.Enrollment!.StudentId == request.StudentId)
                 .Include(rc => rc.Exam)
-                .Include(rc => rc.Student)
+                .Include(rc => rc.Enrollment).ThenInclude(e => e!.Student)
                 .OrderByDescending(rc => rc.CreatedAt)
                 .Select(rc => new ReportCardListDto
                 {
                     Id = rc.Id,
                     ExamId = rc.ExamId,
                     ExamName = rc.Exam!.Name,
-                    StudentId = rc.StudentId,
-                    StudentName = $"{rc.Student!.FirstName} {rc.Student.LastName}",
+                    StudentId = rc.Enrollment!.StudentId,
+                    StudentName = $"{rc.Enrollment.Student!.FirstName} {rc.Enrollment.Student.LastName}",
                     ClassName = "",
                     TotalObtained = rc.TotalMarksObtained,
                     TotalMarks = rc.TotalMarks,
@@ -213,22 +219,28 @@ public class ReportCardQueryHandlers
     public class GetReportCardByIdQueryHandler : IRequestHandler<GetReportCardByIdQuery, ReportCardDto>
     {
         private readonly IApplicationDbContext _context;
-        public GetReportCardByIdQueryHandler(IApplicationDbContext context) => _context = context;
+        private readonly IAcademicYearContext _academicYearContext;
+
+        public GetReportCardByIdQueryHandler(IApplicationDbContext context, IAcademicYearContext academicYearContext)
+        {
+            _context = context;
+            _academicYearContext = academicYearContext;
+        }
         
         public async Task<ReportCardDto> Handle(GetReportCardByIdQuery request, CancellationToken cancellationToken)
         {
             // Get report card by ID
             var reportCard = await _context.StudentReportCards
                 .Include(rc => rc.Exam)
-                .Include(rc => rc.Student)
+                .Include(rc => rc.Enrollment).ThenInclude(e => e!.Student)
                 .FirstOrDefaultAsync(rc => rc.Id == request.ReportCardId, cancellationToken);
 
             if (reportCard == null)
                 throw new InvalidOperationException($"Report card not found with ID {request.ReportCardId}");
 
-            // Get student's section for class name
-            var studentSection = await _context.StudentSections
-                .Where(ss => ss.StudentId == reportCard.StudentId && ss.IsCurrent)
+            // Get student's section for class name in active academic year
+            var studentSection = await _context.Enrollments
+                .Where(ss => ss.StudentId == reportCard.Enrollment!.StudentId && ss.Status == "Enrolled" && ss.AcademicYearId == _academicYearContext.RequiredAcademicYearId)
                 .Select(ss => new { ss.SectionId, ss.RollNumber })
                 .FirstOrDefaultAsync(cancellationToken);
 
@@ -238,7 +250,7 @@ public class ReportCardQueryHandlers
 
             // Get subject-wise marks
             var studentMarks = await _context.StudentMarks
-                .Where(m => m.ExamId == reportCard.ExamId && m.StudentId == reportCard.StudentId)
+                .Where(m => m.ExamId == reportCard.ExamId && m.Enrollment!.StudentId == reportCard.Enrollment!.StudentId)
                 .AsNoTracking()
                 .ToListAsync(cancellationToken);
 
@@ -287,8 +299,8 @@ public class ReportCardQueryHandlers
             return new ReportCardDto
             {
                 Id = reportCard.Id,
-                StudentId = reportCard.StudentId,
-                StudentName = $"{reportCard.Student!.FirstName} {reportCard.Student.LastName}",
+                StudentId = reportCard.Enrollment!.StudentId,
+                StudentName = $"{reportCard.Enrollment.Student!.FirstName} {reportCard.Enrollment.Student.LastName}",
                 RollNumber = studentSection != null ? (studentSection.RollNumber ?? 0).ToString() : "",
                 ClassName = sectionName,
                 ExamId = reportCard.ExamId,
@@ -320,27 +332,33 @@ public class ReportCardQueryHandlers
     public class ExportReportCardPdfQueryHandler : IRequestHandler<ExportReportCardPdfQuery, byte[]>
     {
         private readonly IApplicationDbContext _context;
-        public ExportReportCardPdfQueryHandler(IApplicationDbContext context) => _context = context;
+        private readonly IAcademicYearContext _academicYearContext;
+
+        public ExportReportCardPdfQueryHandler(IApplicationDbContext context, IAcademicYearContext academicYearContext)
+        {
+            _context = context;
+            _academicYearContext = academicYearContext;
+        }
         
         public async Task<byte[]> Handle(ExportReportCardPdfQuery request, CancellationToken cancellationToken)
         {
             // Fetch report card data
             var reportCard = await _context.StudentReportCards
                 .Include(rc => rc.Exam)
-                .Include(rc => rc.Student)
+                .Include(rc => rc.Enrollment).ThenInclude(e => e!.Student)
                 .FirstOrDefaultAsync(rc => rc.Id == request.CardId, cancellationToken);
 
             if (reportCard == null)
                 throw new InvalidOperationException($"Report card not found with ID: {request.CardId}");
 
-            // Get student's section
-            var studentSection = await _context.StudentSections
-                .Where(ss => ss.StudentId == reportCard.StudentId && ss.IsCurrent)
+            // Get student's section in active academic year
+            var studentSection = await _context.Enrollments
+                .Where(ss => ss.StudentId == reportCard.Enrollment!.StudentId && ss.Status == "Enrolled" && ss.AcademicYearId == _academicYearContext.RequiredAcademicYearId)
                 .FirstOrDefaultAsync(cancellationToken);
 
             // Get subject-wise marks
             var studentMarks = await _context.StudentMarks
-                .Where(m => m.ExamId == reportCard.ExamId && m.StudentId == reportCard.StudentId)
+                .Where(m => m.ExamId == reportCard.ExamId && m.Enrollment!.StudentId == reportCard.Enrollment!.StudentId)
                 .AsNoTracking()
                 .ToListAsync(cancellationToken);
 
@@ -408,7 +426,7 @@ public class ReportCardQueryHandlers
                             {
                                 row.RelativeItem().Column(c1 =>
                                 {
-                                    c1.Item().Text($"Name: {reportCard.Student!.FirstName} {reportCard.Student.LastName}").FontSize(11f).FontColor("#374151");
+                                    c1.Item().Text($"Name: {reportCard.Enrollment!.Student!.FirstName} {reportCard.Enrollment.Student.LastName}").FontSize(11f).FontColor("#374151");
                                     c1.Item().PaddingTop(4).Text($"Roll Number: {(studentSection?.RollNumber ?? 0).ToString()}").FontSize(11f).FontColor("#374151");
                                 });
                                 row.RelativeItem().Column(c2 =>

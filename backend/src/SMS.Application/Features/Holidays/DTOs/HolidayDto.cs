@@ -10,7 +10,8 @@ public class HolidayDto
     public DateTime HolidayDate { get; set; }
     public string? Description { get; set; }
     public string? Type { get; set; }
-    public string AcademicYear { get; set; } = string.Empty;
+    public string AcademicYearId { get; set; } = string.Empty;
+    public string? AcademicYearName { get; set; }
 }
 
 /// <summary>
@@ -22,7 +23,7 @@ public class CreateHolidayDto
     public DateTime HolidayDate { get; set; }
     public string? Description { get; set; }
     public string? Type { get; set; }
-    public string AcademicYear { get; set; } = string.Empty;
+    public string AcademicYearId { get; set; } = string.Empty;
 }
 
 /// <summary>
@@ -35,7 +36,7 @@ public class UpdateHolidayDto
     public DateTime HolidayDate { get; set; }
     public string? Description { get; set; }
     public string? Type { get; set; }
-    public string AcademicYear { get; set; } = string.Empty;
+    public string AcademicYearId { get; set; } = string.Empty;
 }
 
 /// <summary>

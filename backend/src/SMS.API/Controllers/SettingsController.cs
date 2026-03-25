@@ -44,6 +44,49 @@ public class SettingsController : ControllerBase
     }
 
     /// <summary>
+    /// Get list of academic years
+    /// </summary>
+    [HttpGet("academic-years")]
+    public async Task<ActionResult<List<AcademicYearDto>>> GetAcademicYears()
+    {
+        var result = await _mediator.Send(new GetAcademicYearsQuery());
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Get the currently active academic year
+    /// </summary>
+    [HttpGet("academic-years/active")]
+    public async Task<ActionResult<AcademicYearDto>> GetActiveAcademicYear()
+    {
+        var result = await _mediator.Send(new GetActiveAcademicYearQuery());
+        if (result == null) return NotFound("No active academic year found");
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Create a new academic year (Admin only)
+    /// </summary>
+    [HttpPost("academic-years")]
+    [Authorize(Policy = "AdminOnly")]
+    public async Task<ActionResult<AcademicYearDto>> CreateAcademicYear([FromBody] CreateAcademicYearCommand command)
+    {
+        var result = await _mediator.Send(command);
+        return CreatedAtAction(nameof(GetAcademicYears), result);
+    }
+
+    /// <summary>
+    /// Toggle active status for an academic year (Admin only)
+    /// </summary>
+    [HttpPatch("academic-years/{id}/toggle-status")]
+    [Authorize(Policy = "AdminOnly")]
+    public async Task<ActionResult<bool>> ToggleStatus(Guid id)
+    {
+        var result = await _mediator.Send(new ToggleAcademicYearStatusCommand { Id = id });
+        return Ok(result);
+    }
+
+    /// <summary>
     /// Upload school logo (Admin only)
     /// </summary>
     [HttpPost("school/logo")]

@@ -11,8 +11,11 @@ public class FeeStructure
     /// <summary>Name of the fee structure (e.g., "Regular Monthly 2026")</summary>
     public string Name { get; set; } = string.Empty;
     
+    /// <summary>Academic year Id this structure applies to</summary>
+    public Guid AcademicYearId { get; set; }
+    
     /// <summary>Academic year this structure applies to</summary>
-    public int AcademicYear { get; set; }
+    public AcademicYear? AcademicYear { get; set; }
     
     /// <summary>Payment frequency: monthly, quarterly, yearly</summary>
     public string Frequency { get; set; } = string.Empty;

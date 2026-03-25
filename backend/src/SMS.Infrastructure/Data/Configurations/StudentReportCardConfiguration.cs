@@ -24,8 +24,8 @@ public class StudentReportCardConfiguration : IEntityTypeConfiguration<StudentRe
             .HasColumnName("exam_id")
             .IsRequired();
 
-        builder.Property(src => src.StudentId)
-            .HasColumnName("student_id")
+        builder.Property(src => src.EnrollmentId)
+            .HasColumnName("enrollment_id")
             .IsRequired();
 
         builder.Property(src => src.TotalMarksObtained)
@@ -77,18 +77,18 @@ public class StudentReportCardConfiguration : IEntityTypeConfiguration<StudentRe
             .HasForeignKey(src => src.ExamId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        builder.HasOne(src => src.Student)
+        builder.HasOne(src => src.Enrollment)
             .WithMany()
-            .HasForeignKey(src => src.StudentId)
+            .HasForeignKey(src => src.EnrollmentId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        // Unique constraint: Exam + Student combination (one report card per student per exam)
-        builder.HasIndex(src => new { src.ExamId, src.StudentId })
+        // Unique constraint: Exam + Enrollment combination (one report card per enrollment per exam)
+        builder.HasIndex(src => new { src.ExamId, src.EnrollmentId })
             .IsUnique();
 
         // Indices for common queries
         builder.HasIndex(src => src.ExamId);
-        builder.HasIndex(src => src.StudentId);
+        builder.HasIndex(src => src.EnrollmentId);
         builder.HasIndex(src => src.Pass);
     }
 }

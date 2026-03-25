@@ -46,8 +46,8 @@ public class MarksQueryHandlers
                 throw new InvalidOperationException("Selected section not found in this class");
 
             // Get students only from the selected section
-            var studentSectionsQuery = _context.StudentSections
-                .Where(ss => ss.SectionId == request.SectionId && ss.IsCurrent)
+            var studentSectionsQuery = _context.Enrollments
+                .Where(ss => ss.SectionId == request.SectionId && ss.Status == "Enrolled")
                 .Include(ss => ss.Student)
                 .Select(ss => new { ss.Student, ss.RollNumber, ss.SectionId });
 
@@ -69,12 +69,14 @@ public class MarksQueryHandlers
 
             // Fetch saved marks for all students in this exam
             var savedMarks = await _context.StudentMarks
-                .Where(sm => sm.ExamId == request.ExamId && studentIds.Contains(sm.StudentId))
+                .Where(sm => sm.ExamId == request.ExamId && studentIds.Contains(sm.Enrollment!.StudentId))
+                .Include(sm => sm.Enrollment)
                 .ToListAsync(cancellationToken);
 
             // Group marks by student
             var marksByStudent = savedMarks
-                .GroupBy(sm => sm.StudentId)
+                .Where(sm => sm.Enrollment != null)
+                .GroupBy(sm => sm.Enrollment!.StudentId)
                 .ToDictionary(g => g.Key, g => g.ToDictionary(sm => sm.SubjectId, sm => sm));
 
             return new MarksEntryFormDto
@@ -94,7 +96,7 @@ public class MarksQueryHandlers
                         StudentId = s.Student!.Id,
                         StudentName = $"{s.Student.FirstName} {s.Student.LastName}",
                         RollNumber = (s.RollNumber ?? 0).ToString(),
-                        SectionId = s.SectionId,
+                        SectionId = s.SectionId ?? Guid.Empty,
                         SectionName = section.SectionName,
                         SubjectMarks = subjects
                             .ToDictionary(
@@ -134,7 +136,7 @@ public class MarksQueryHandlers
                 throw new InvalidOperationException($"Student with ID {request.StudentId} not found");
 
             var marks = await _context.StudentMarks
-                .Where(m => m.StudentId == request.StudentId)
+                .Where(m => m.Enrollment!.StudentId == request.StudentId)
                 .Include(m => m.Exam)
                 .Include(m => m.ExamSubject)
                 .GroupBy(m => m.ExamId)
@@ -172,8 +174,8 @@ public class MarksQueryHandlers
             if (classEntity == null)
                 throw new InvalidOperationException($"Class with ID {request.ClassId} not found");
 
-            var students = await _context.StudentSections
-                .Where(ss => ss.SectionId == request.ClassId)
+            var students = await _context.Enrollments
+                .Where(ss => ss.Section != null && ss.Section.ClassId == request.ClassId && ss.Status == "Enrolled")
                 .Include(ss => ss.Student)
                 .Select(ss => new { ss.Student, ss.RollNumber })
                 .ToListAsync(cancellationToken);
@@ -184,7 +186,7 @@ public class MarksQueryHandlers
             {
                 var student = studentData.Student;
                 var marks = await _context.StudentMarks
-                    .Where(m => m.StudentId == student!.Id && m.ExamId == request.ExamId)
+                    .Where(m => m.Enrollment!.StudentId == student!.Id && m.ExamId == request.ExamId)
                     .Include(m => m.Exam)
                     .ToListAsync(cancellationToken);
 

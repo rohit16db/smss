@@ -14,10 +14,12 @@ namespace SMS.Application.Features.Holidays.Handlers;
 public class CreateHolidayCommandHandler : IRequestHandler<CreateHolidayCommand, HolidayDto>
 {
     private readonly IApplicationDbContext _context;
+    private readonly IAcademicYearContext _academicYearContext;
 
-    public CreateHolidayCommandHandler(IApplicationDbContext context)
+    public CreateHolidayCommandHandler(IApplicationDbContext context, IAcademicYearContext academicYearContext)
     {
         _context = context;
+        _academicYearContext = academicYearContext;
     }
 
     public async Task<HolidayDto> Handle(CreateHolidayCommand request, CancellationToken cancellationToken)
@@ -29,7 +31,7 @@ public class CreateHolidayCommandHandler : IRequestHandler<CreateHolidayCommand,
             HolidayDate = DateOnly.FromDateTime(request.HolidayDate),
             Description = request.Description,
             Type = request.Type,
-            AcademicYear = request.AcademicYear,
+            AcademicYearId = Guid.TryParse(request.AcademicYearId, out var ayId) ? ayId : _academicYearContext.RequiredAcademicYearId,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
         };
@@ -44,7 +46,7 @@ public class CreateHolidayCommandHandler : IRequestHandler<CreateHolidayCommand,
             HolidayDate = holiday.HolidayDate.ToDateTime(TimeOnly.MinValue),
             Description = holiday.Description,
             Type = holiday.Type,
-            AcademicYear = holiday.AcademicYear
+            AcademicYearId = holiday.AcademicYearId.ToString()
         };
     }
 }
@@ -55,10 +57,12 @@ public class CreateHolidayCommandHandler : IRequestHandler<CreateHolidayCommand,
 public class UpdateHolidayCommandHandler : IRequestHandler<UpdateHolidayCommand, HolidayDto>
 {
     private readonly IApplicationDbContext _context;
+    private readonly IAcademicYearContext _academicYearContext;
 
-    public UpdateHolidayCommandHandler(IApplicationDbContext context)
+    public UpdateHolidayCommandHandler(IApplicationDbContext context, IAcademicYearContext academicYearContext)
     {
         _context = context;
+        _academicYearContext = academicYearContext;
     }
 
     public async Task<HolidayDto> Handle(UpdateHolidayCommand request, CancellationToken cancellationToken)
@@ -76,7 +80,7 @@ public class UpdateHolidayCommandHandler : IRequestHandler<UpdateHolidayCommand,
         holiday.HolidayDate = DateOnly.FromDateTime(request.HolidayDate);
         holiday.Description = request.Description;
         holiday.Type = request.Type;
-        holiday.AcademicYear = request.AcademicYear;
+        holiday.AcademicYearId = Guid.TryParse(request.AcademicYearId, out var updateAyId) ? updateAyId : _academicYearContext.RequiredAcademicYearId;
         holiday.UpdatedAt = DateTime.UtcNow;
 
         await _context.SaveChangesAsync(cancellationToken);
@@ -88,7 +92,7 @@ public class UpdateHolidayCommandHandler : IRequestHandler<UpdateHolidayCommand,
             HolidayDate = holiday.HolidayDate.ToDateTime(TimeOnly.MinValue),
             Description = holiday.Description,
             Type = holiday.Type,
-            AcademicYear = holiday.AcademicYear
+            AcademicYearId = holiday.AcademicYearId.ToString()
         };
     }
 }

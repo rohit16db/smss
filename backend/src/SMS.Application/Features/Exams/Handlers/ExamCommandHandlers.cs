@@ -13,7 +13,13 @@ public class ExamCommandHandlers
     public class CreateExamCommandHandler : IRequestHandler<CreateExamCommand, ExamDto>
     {
         private readonly IApplicationDbContext _context;
-        public CreateExamCommandHandler(IApplicationDbContext context) => _context = context;
+        private readonly IAcademicYearContext _academicYearContext;
+
+        public CreateExamCommandHandler(IApplicationDbContext context, IAcademicYearContext academicYearContext)
+        {
+            _context = context;
+            _academicYearContext = academicYearContext;
+        }
         
         public async Task<ExamDto> Handle(CreateExamCommand request, CancellationToken cancellationToken)
         {
@@ -49,6 +55,7 @@ public class ExamCommandHandlers
                 TotalMarks = request.TotalMarks,
                 PassMarks = request.PassMarks,
                 Status = ExamStatus.Draft,
+                AcademicYearId = _academicYearContext.RequiredAcademicYearId,
                 CreatedById = request.CreatedById,
                 CreatedAt = DateTime.UtcNow
             };
@@ -97,14 +104,20 @@ public class ExamCommandHandlers
     public class UpdateExamCommandHandler : IRequestHandler<UpdateExamCommand, ExamDto>
     {
         private readonly IApplicationDbContext _context;
-        public UpdateExamCommandHandler(IApplicationDbContext context) => _context = context;
+        private readonly IAcademicYearContext _academicYearContext;
+
+        public UpdateExamCommandHandler(IApplicationDbContext context, IAcademicYearContext academicYearContext)
+        {
+            _context = context;
+            _academicYearContext = academicYearContext;
+        }
         
         public async Task<ExamDto> Handle(UpdateExamCommand request, CancellationToken cancellationToken)
         {
             var exam = await _context.Exams
                 .Include(e => e.ExamSubjects)
                 .Include(e => e.ExamClasses)
-                .FirstOrDefaultAsync(e => e.Id == request.ExamId, cancellationToken);
+                .FirstOrDefaultAsync(e => e.Id == request.ExamId && e.AcademicYearId == _academicYearContext.RequiredAcademicYearId, cancellationToken);
             if (exam == null)
                 throw new InvalidOperationException($"Exam with ID {request.ExamId} not found");
 
@@ -194,11 +207,17 @@ public class ExamCommandHandlers
     public class PublishExamCommandHandler : IRequestHandler<PublishExamCommand, ExamDto>
     {
         private readonly IApplicationDbContext _context;
-        public PublishExamCommandHandler(IApplicationDbContext context) => _context = context;
+        private readonly IAcademicYearContext _academicYearContext;
+
+        public PublishExamCommandHandler(IApplicationDbContext context, IAcademicYearContext academicYearContext)
+        {
+            _context = context;
+            _academicYearContext = academicYearContext;
+        }
         
         public async Task<ExamDto> Handle(PublishExamCommand request, CancellationToken cancellationToken)
         {
-            var exam = await _context.Exams.FirstOrDefaultAsync(e => e.Id == request.ExamId, cancellationToken);
+            var exam = await _context.Exams.FirstOrDefaultAsync(e => e.Id == request.ExamId && e.AcademicYearId == _academicYearContext.RequiredAcademicYearId, cancellationToken);
             if (exam == null)
                 throw new InvalidOperationException($"Exam with ID {request.ExamId} not found");
 
@@ -228,14 +247,20 @@ public class ExamCommandHandlers
     public class DeleteExamCommandHandler : IRequestHandler<DeleteExamCommand, bool>
     {
         private readonly IApplicationDbContext _context;
-        public DeleteExamCommandHandler(IApplicationDbContext context) => _context = context;
+        private readonly IAcademicYearContext _academicYearContext;
+
+        public DeleteExamCommandHandler(IApplicationDbContext context, IAcademicYearContext academicYearContext)
+        {
+            _context = context;
+            _academicYearContext = academicYearContext;
+        }
         
         public async Task<bool> Handle(DeleteExamCommand request, CancellationToken cancellationToken)
         {
             var exam = await _context.Exams
                 .Include(e => e.StudentMarks)
                 .Include(e => e.ExamSubjects)
-                .FirstOrDefaultAsync(e => e.Id == request.ExamId, cancellationToken);
+                .FirstOrDefaultAsync(e => e.Id == request.ExamId && e.AcademicYearId == _academicYearContext.RequiredAcademicYearId, cancellationToken);
             
             if (exam == null)
                 throw new InvalidOperationException($"Exam not found");

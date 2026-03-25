@@ -20,7 +20,7 @@ public class GetAllFeeStructuresQuery : IRequest<PaginatedFeeStructureListDto>
     public int PageSize { get; set; } = 10;
     public string? SearchTerm { get; set; }
     public bool? IsActive { get; set; }
-    public int? AcademicYear { get; set; }
+    public string? AcademicYearId { get; set; }
 }
 
 /// <summary>
@@ -28,7 +28,7 @@ public class GetAllFeeStructuresQuery : IRequest<PaginatedFeeStructureListDto>
 /// </summary>
 public class GetActiveFeeStructuresQuery : IRequest<List<FeeStructureListDto>>
 {
-    public int? AcademicYear { get; set; }
+    public string? AcademicYearId { get; set; }
 }
 
 /// <summary>

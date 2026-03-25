@@ -32,7 +32,7 @@ public class HolidaysController : ControllerBase
     public async Task<IActionResult> GetAllHolidays(
         [FromQuery] int pageNumber = 1,
         [FromQuery] int pageSize = 10,
-        [FromQuery] string? academicYear = null,
+        [FromQuery] string? academicYearId = null,
         [FromQuery] DateTime? startDate = null,
         [FromQuery] DateTime? endDate = null,
         [FromQuery] string? type = null)
@@ -43,7 +43,7 @@ public class HolidaysController : ControllerBase
             {
                 PageNumber = pageNumber,
                 PageSize = pageSize,
-                AcademicYear = academicYear,
+                AcademicYearId = academicYearId,
                 StartDate = startDate,
                 EndDate = endDate,
                 Type = type
@@ -121,7 +121,7 @@ public class HolidaysController : ControllerBase
                 HolidayDate = dto.HolidayDate,
                 Description = dto.Description,
                 Type = dto.Type,
-                AcademicYear = dto.AcademicYear
+                AcademicYearId = dto.AcademicYearId
             };
 
             var result = await _mediator.Send(command);
@@ -151,7 +151,7 @@ public class HolidaysController : ControllerBase
                 HolidayDate = dto.HolidayDate,
                 Description = dto.Description,
                 Type = dto.Type,
-                AcademicYear = dto.AcademicYear
+                AcademicYearId = dto.AcademicYearId
             };
 
             var result = await _mediator.Send(command);

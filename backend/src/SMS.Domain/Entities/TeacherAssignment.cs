@@ -17,6 +17,16 @@ public class TeacherAssignment
     /// <summary>Subject ID (from existing subject entity)</summary>
     public Guid SubjectId { get; set; }
     
+    /// <summary>
+    /// Academic year Id this assignment applies to
+    /// </summary>
+    public Guid AcademicYearId { get; set; }
+    
+    /// <summary>
+    /// Academic year this assignment applies to
+    /// </summary>
+    public AcademicYear? AcademicYear { get; set; }
+    
     /// <summary>Date when assignment started</summary>
     public DateOnly AssignmentDate { get; set; }
     

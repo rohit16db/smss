@@ -43,7 +43,7 @@ public class FeesController : ControllerBase
         [FromQuery] int pageSize = 10,
         [FromQuery] string? searchTerm = null,
         [FromQuery] bool? isActive = null,
-        [FromQuery] int? academicYear = null)
+        [FromQuery] string? academicYearId = null)
     {
         try
         {
@@ -53,7 +53,7 @@ public class FeesController : ControllerBase
                 PageSize = pageSize,
                 SearchTerm = searchTerm,
                 IsActive = isActive,
-                AcademicYear = academicYear
+                AcademicYearId = academicYearId
             };
 
             var result = await _mediator.Send(query);
@@ -73,11 +73,11 @@ public class FeesController : ControllerBase
     /// <returns>List of active fee structures</returns>
     [HttpGet("structures/active")]
     [ProducesResponseType(typeof(List<FeeStructureListDto>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetActiveFeeStructures([FromQuery] int? academicYear = null)
+    public async Task<IActionResult> GetActiveFeeStructures([FromQuery] string? academicYearId = null)
     {
         try
         {
-            var query = new GetActiveFeeStructuresQuery { AcademicYear = academicYear };
+            var query = new GetActiveFeeStructuresQuery { AcademicYearId = academicYearId };
             var result = await _mediator.Send(query);
             return Ok(result);
         }
@@ -130,7 +130,7 @@ public class FeesController : ControllerBase
             var command = new CreateFeeStructureCommand
             {
                 Name = dto.Name,
-                AcademicYear = dto.AcademicYear,
+                AcademicYearId = dto.AcademicYearId,
                 Frequency = dto.Frequency,
                 Categories = dto.Categories,
                 CreatedByUserId = User.GetCurrentUserId().ToString()
@@ -167,7 +167,7 @@ public class FeesController : ControllerBase
             {
                 Id = dto.Id,
                 Name = dto.Name,
-                AcademicYear = dto.AcademicYear,
+                AcademicYearId = dto.AcademicYearId,
                 Frequency = dto.Frequency,
                 IsActive = dto.IsActive,
                 Categories = dto.Categories,

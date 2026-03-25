@@ -1,11 +1,13 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type { AxiosError } from 'axios';
 import { holidayApi, type CreateHolidayDto, type UpdateHolidayDto, type Holiday } from '../services/api';
+import { useAcademicYear } from '../hooks/useAcademicYear';
 
 export function HolidaysPage() {
   const queryClient = useQueryClient();
+  const { academicYears, activeYear } = useAcademicYear();
   const [page, setPage] = useState(1);
   const [pageSize] = useState(10);
   const [academicYearFilter, setAcademicYearFilter] = useState('');
@@ -17,8 +19,15 @@ export function HolidaysPage() {
     holidayDate: '',
     description: '',
     type: '',
-    academicYear: new Date().getFullYear() + '-' + (new Date().getFullYear() + 1),
+    academicYearId: '',
   });
+
+  // Set default academic year when activeYear is loaded or dialog opens
+  useEffect(() => {
+    if (activeYear && !formData.academicYearId && !selectedHoliday) {
+      setFormData(prev => ({ ...prev, academicYearId: activeYear.id }));
+    }
+  }, [activeYear, selectedHoliday]);
 
   // Queries
   const { data: holidaysData, isLoading } = useQuery({
@@ -27,7 +36,7 @@ export function HolidaysPage() {
       holidayApi.getAll({
         pageNumber: page,
         pageSize,
-        academicYear: academicYearFilter || undefined,
+        academicYearId: academicYearFilter || undefined,
         type: typeFilter || undefined,
       }),
   });
@@ -77,7 +86,7 @@ export function HolidaysPage() {
         holidayDate: holiday.holidayDate.split('T')[0], // Extract date part
         description: holiday.description || '',
         type: holiday.type || '',
-        academicYear: holiday.academicYear,
+        academicYearId: holiday.academicYearId,
       });
     } else {
       setSelectedHoliday(null);
@@ -86,7 +95,7 @@ export function HolidaysPage() {
         holidayDate: '',
         description: '',
         type: '',
-        academicYear: new Date().getFullYear() + '-' + (new Date().getFullYear() + 1),
+        academicYearId: activeYear?.id || '',
       });
     }
     setDialogOpen(true);
@@ -100,7 +109,7 @@ export function HolidaysPage() {
       holidayDate: '',
       description: '',
       type: '',
-      academicYear: new Date().getFullYear() + '-' + (new Date().getFullYear() + 1),
+      academicYearId: activeYear?.id || '',
     });
   };
 
@@ -108,15 +117,8 @@ export function HolidaysPage() {
     e.preventDefault();
 
     // Validation
-    if (!formData.name || !formData.holidayDate || !formData.academicYear) {
+    if (!formData.name || !formData.holidayDate || !formData.academicYearId) {
       toast.error('Please fill in all required fields');
-      return;
-    }
-
-    // Validate academic year format
-    const academicYearRegex = /^\d{4}-\d{4}$/;
-    if (!academicYearRegex.test(formData.academicYear)) {
-      toast.error('Academic year must be in format YYYY-YYYY (e.g., 2025-2026)');
       return;
     }
 
@@ -168,16 +170,21 @@ export function HolidaysPage() {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Academic Year
                 </label>
-                <input
-                  type="text"
-                  placeholder="e.g., 2025-2026"
+                <select
                   value={academicYearFilter}
                   onChange={(e) => {
                     setAcademicYearFilter(e.target.value);
                     setPage(1);
                   }}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                />
+                >
+                  <option value="">All Academic Years</option>
+                  {academicYears?.map((year) => (
+                    <option key={year.id} value={year.id}>
+                      {year.name} {year.isActive ? '(Active)' : ''}
+                    </option>
+                  ))}
+                </select>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -257,7 +264,7 @@ export function HolidaysPage() {
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             {holiday.type ? (
-                              <span className="px-3 py-1 text-xs font-semibold rounded-full bg-purple-100 text-purple-800">
+                                <span className="px-3 py-1 text-xs font-semibold rounded-full bg-purple-100 text-purple-800">
                                 {holiday.type}
                               </span>
                             ) : (
@@ -265,7 +272,7 @@ export function HolidaysPage() {
                             )}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <span className="text-sm font-medium text-gray-700">{holiday.academicYear}</span>
+                            <span className="text-sm font-medium text-gray-700">{holiday.academicYearName}</span>
                           </td>
                           <td className="px-6 py-4">
                             <div className="text-sm text-gray-600 max-w-xs truncate">
@@ -328,7 +335,7 @@ export function HolidaysPage() {
                           </div>
                           <div>
                             <span className="text-gray-500 font-medium">Academic Year:</span>
-                            <div className="mt-1 font-semibold text-gray-700">{holiday.academicYear}</div>
+                            <div className="mt-1 font-semibold text-gray-700">{holiday.academicYearName}</div>
                           </div>
                         </div>
 
@@ -441,16 +448,19 @@ export function HolidaysPage() {
                   <label className="block text-sm font-bold text-gray-700 mb-2">
                     Academic Year <span className="text-red-500">*</span>
                   </label>
-                  <input
-                    type="text"
+                  <select
                     required
-                    pattern="\d{4}-\d{4}"
-                    value={formData.academicYear}
-                    onChange={(e) => setFormData({ ...formData, academicYear: e.target.value })}
+                    value={formData.academicYearId}
+                    onChange={(e) => setFormData({ ...formData, academicYearId: e.target.value })}
                     className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition"
-                    placeholder="e.g., 2025-2026"
-                  />
-                  <p className="text-xs text-gray-500 mt-1">Format: YYYY-YYYY</p>
+                  >
+                    <option value="">Select Academic Year</option>
+                    {academicYears?.map((year) => (
+                      <option key={year.id} value={year.id}>
+                        {year.name}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
 

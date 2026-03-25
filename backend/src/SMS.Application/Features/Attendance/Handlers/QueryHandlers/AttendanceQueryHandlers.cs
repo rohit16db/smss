@@ -13,10 +13,12 @@ namespace SMS.Application.Features.Attendance.Handlers.QueryHandlers;
 public class GetStudentAttendanceByIdQueryHandler : IRequestHandler<GetStudentAttendanceByIdQuery, StudentAttendanceDto?>
 {
     private readonly IApplicationDbContext _context;
+    private readonly IAcademicYearContext _academicYearContext;
 
-    public GetStudentAttendanceByIdQueryHandler(IApplicationDbContext context)
+    public GetStudentAttendanceByIdQueryHandler(IApplicationDbContext context, IAcademicYearContext academicYearContext)
     {
         _context = context;
+        _academicYearContext = academicYearContext;
     }
 
     public async Task<StudentAttendanceDto?> Handle(GetStudentAttendanceByIdQuery request, CancellationToken cancellationToken)
@@ -25,6 +27,7 @@ public class GetStudentAttendanceByIdQueryHandler : IRequestHandler<GetStudentAt
             return null;
 
         var attendance = await _context.StudentAttendances
+            .Include(a => a.Enrollment)
             .FirstOrDefaultAsync(a => a.Id == attendanceId, cancellationToken);
 
         if (attendance == null)
@@ -33,8 +36,8 @@ public class GetStudentAttendanceByIdQueryHandler : IRequestHandler<GetStudentAt
         return new StudentAttendanceDto
         {
             Id = attendance.Id.ToString(),
-            StudentId = attendance.StudentId.ToString(),
-            SectionId = attendance.SectionId.ToString(),
+            StudentId = attendance.Enrollment?.StudentId.ToString() ?? "",
+            SectionId = attendance.Enrollment?.SectionId.ToString() ?? "",
             AttendanceDate = attendance.AttendanceDate.ToDateTime(TimeOnly.MinValue),
             Status = attendance.Status,
             Reason = attendance.Reason,
@@ -51,10 +54,12 @@ public class GetStudentAttendanceByIdQueryHandler : IRequestHandler<GetStudentAt
 public class GetStudentAttendanceByDateQueryHandler : IRequestHandler<GetStudentAttendanceByDateQuery, List<StudentAttendanceDto>>
 {
     private readonly IApplicationDbContext _context;
+    private readonly IAcademicYearContext _academicYearContext;
 
-    public GetStudentAttendanceByDateQueryHandler(IApplicationDbContext context)
+    public GetStudentAttendanceByDateQueryHandler(IApplicationDbContext context, IAcademicYearContext academicYearContext)
     {
         _context = context;
+        _academicYearContext = academicYearContext;
     }
 
     public async Task<List<StudentAttendanceDto>> Handle(GetStudentAttendanceByDateQuery request, CancellationToken cancellationToken)
@@ -65,15 +70,16 @@ public class GetStudentAttendanceByDateQueryHandler : IRequestHandler<GetStudent
         var attendanceDate = DateOnly.FromDateTime(request.AttendanceDate);
 
         var attendances = await _context.StudentAttendances
-            .Where(a => a.SectionId == sectionId && a.AttendanceDate == attendanceDate)
-            .OrderBy(a => a.StudentId)
+            .Include(a => a.Enrollment)
+            .Where(a => a.Enrollment.SectionId == sectionId && a.AttendanceDate == attendanceDate && a.Enrollment.AcademicYearId == _academicYearContext.RequiredAcademicYearId)
+            .OrderBy(a => a.Enrollment.StudentId)
             .ToListAsync(cancellationToken);
 
         return attendances.Select(a => new StudentAttendanceDto
         {
             Id = a.Id.ToString(),
-            StudentId = a.StudentId.ToString(),
-            SectionId = a.SectionId.ToString(),
+            StudentId = a.Enrollment?.StudentId.ToString() ?? "",
+            SectionId = a.Enrollment?.SectionId.ToString() ?? "",
             AttendanceDate = a.AttendanceDate.ToDateTime(TimeOnly.MinValue),
             Status = a.Status,
             Reason = a.Reason,
@@ -90,22 +96,26 @@ public class GetStudentAttendanceByDateQueryHandler : IRequestHandler<GetStudent
 public class GetStudentAttendanceHistoryQueryHandler : IRequestHandler<GetStudentAttendanceHistoryQuery, PaginatedStudentAttendanceListDto>
 {
     private readonly IApplicationDbContext _context;
+    private readonly IAcademicYearContext _academicYearContext;
 
-    public GetStudentAttendanceHistoryQueryHandler(IApplicationDbContext context)
+    public GetStudentAttendanceHistoryQueryHandler(IApplicationDbContext context, IAcademicYearContext academicYearContext)
     {
         _context = context;
+        _academicYearContext = academicYearContext;
     }
 
     public async Task<PaginatedStudentAttendanceListDto> Handle(GetStudentAttendanceHistoryQuery request, CancellationToken cancellationToken)
     {
-        var query = _context.StudentAttendances.AsQueryable();
+        var query = _context.StudentAttendances.Include(a => a.Enrollment)
+            .Where(a => a.Enrollment.AcademicYearId == _academicYearContext.RequiredAcademicYearId)
+            .AsQueryable();
 
         // Apply filters
         if (!string.IsNullOrEmpty(request.StudentId) && Guid.TryParse(request.StudentId, out var studentId))
-            query = query.Where(a => a.StudentId == studentId);
+            query = query.Where(a => a.Enrollment.StudentId == studentId);
 
         if (!string.IsNullOrEmpty(request.SectionId) && Guid.TryParse(request.SectionId, out var sectionId))
-            query = query.Where(a => a.SectionId == sectionId);
+            query = query.Where(a => a.Enrollment.SectionId == sectionId);
 
         if (request.StartDate.HasValue)
         {
@@ -131,16 +141,16 @@ public class GetStudentAttendanceHistoryQueryHandler : IRequestHandler<GetStuden
             .Skip((request.PageNumber - 1) * request.PageSize)
             .Take(request.PageSize)
             .Join(
-                _context.Students,
-                attendance => attendance.StudentId,
-                student => student.Id,
-                (attendance, student) => new StudentAttendanceListDto
+                _context.Enrollments.Include(e => e.Student),
+                attendance => attendance.EnrollmentId,
+                enrollment => enrollment.Id,
+                (attendance, enrollment) => new StudentAttendanceListDto
                 {
                     Id = attendance.Id.ToString(),
-                    StudentId = attendance.StudentId.ToString(),
-                    StudentEnrollmentNumber = student.EnrollmentNumber,
-                    StudentName = student.FirstName + " " + student.LastName,
-                    SectionId = attendance.SectionId.ToString(),
+                    StudentId = enrollment.StudentId.ToString(),
+                    StudentEnrollmentNumber = enrollment.Student != null ? enrollment.Student.EnrollmentNumber : "",
+                    StudentName = enrollment.Student != null ? enrollment.Student.FirstName + " " + enrollment.Student.LastName : "",
+                    SectionId = enrollment.SectionId.ToString(),
                     AttendanceDate = attendance.AttendanceDate.ToDateTime(TimeOnly.MinValue),
                     Status = attendance.Status,
                     Reason = attendance.Reason
@@ -163,10 +173,12 @@ public class GetStudentAttendanceHistoryQueryHandler : IRequestHandler<GetStuden
 public class GetStudentAttendanceSummaryQueryHandler : IRequestHandler<GetStudentAttendanceSummaryQuery, AttendanceStatisticsDto>
 {
     private readonly IApplicationDbContext _context;
+    private readonly IAcademicYearContext _academicYearContext;
 
-    public GetStudentAttendanceSummaryQueryHandler(IApplicationDbContext context)
+    public GetStudentAttendanceSummaryQueryHandler(IApplicationDbContext context, IAcademicYearContext academicYearContext)
     {
         _context = context;
+        _academicYearContext = academicYearContext;
     }
 
     public async Task<AttendanceStatisticsDto> Handle(GetStudentAttendanceSummaryQuery request, CancellationToken cancellationToken)
@@ -175,7 +187,8 @@ public class GetStudentAttendanceSummaryQueryHandler : IRequestHandler<GetStuden
             throw new InvalidOperationException($"Invalid student ID format: {request.StudentId}");
 
         var query = _context.StudentAttendances
-            .Where(a => a.StudentId == studentId);
+            .Include(a => a.Enrollment)
+            .Where(a => a.Enrollment.StudentId == studentId && a.Enrollment.AcademicYearId == _academicYearContext.RequiredAcademicYearId);
 
         if (request.StartDate.HasValue)
         {
@@ -407,10 +420,12 @@ public class GetTeacherAttendanceSummaryQueryHandler : IRequestHandler<GetTeache
 public class GetMonthlyAttendanceReportQueryHandler : IRequestHandler<GetMonthlyAttendanceReportQuery, PaginatedMonthlyAttendanceReportDto>
 {
     private readonly IApplicationDbContext _context;
+    private readonly IAcademicYearContext _academicYearContext;
 
-    public GetMonthlyAttendanceReportQueryHandler(IApplicationDbContext context)
+    public GetMonthlyAttendanceReportQueryHandler(IApplicationDbContext context, IAcademicYearContext academicYearContext)
     {
         _context = context;
+        _academicYearContext = academicYearContext;
     }
 
     public async Task<PaginatedMonthlyAttendanceReportDto> Handle(GetMonthlyAttendanceReportQuery request, CancellationToken cancellationToken)
@@ -419,12 +434,12 @@ public class GetMonthlyAttendanceReportQueryHandler : IRequestHandler<GetMonthly
         var endDate = startDate.AddMonths(1).AddDays(-1);
 
         var studentAttendances = await _context.StudentAttendances
-            .Where(a => a.AttendanceDate >= startDate && a.AttendanceDate <= endDate)
+            .Where(a => a.AttendanceDate >= startDate && a.AttendanceDate <= endDate && a.Enrollment.AcademicYearId == _academicYearContext.RequiredAcademicYearId)
             .Join(
-                _context.Students,
-                attendance => attendance.StudentId,
-                student => student.Id,
-                (attendance, student) => new { attendance, student })
+                _context.Enrollments.Include(e => e.Student),
+                attendance => attendance.EnrollmentId,
+                enrollment => enrollment.Id,
+                (attendance, enrollment) => new { attendance, enrollment })
             .ToListAsync(cancellationToken);
 
         var sections = await _context.Sections
@@ -433,11 +448,11 @@ public class GetMonthlyAttendanceReportQueryHandler : IRequestHandler<GetMonthly
         var sectionMap = sections.ToDictionary(s => s.Id.ToString(), s => s.SectionName);
         var reportItems = new List<MonthlyAttendanceReportDto>();
 
-        var studentGroups = studentAttendances.GroupBy(g => new { g.attendance.StudentId, g.attendance.SectionId });
+        var studentGroups = studentAttendances.GroupBy(g => new { g.enrollment.StudentId, g.enrollment.SectionId });
 
         foreach (var group in studentGroups)
         {
-            var student = group.First().student;
+            var student = group.First().enrollment.Student;
             var presentDays = group.Count(a => a.attendance.Status.ToLower() == "present");
             var totalDays = group.Count();
             var percentage = totalDays > 0 ? Math.Round((decimal)presentDays / totalDays * 100, 2) : 0;
@@ -447,8 +462,8 @@ public class GetMonthlyAttendanceReportQueryHandler : IRequestHandler<GetMonthly
             reportItems.Add(new MonthlyAttendanceReportDto
             {
                 StudentId = group.Key.StudentId.ToString(),
-                StudentName = student.FirstName + " " + student.LastName,
-                EnrollmentNumber = student.EnrollmentNumber,
+                StudentName = student != null ? student.FirstName + " " + student.LastName : "",
+                EnrollmentNumber = student != null ? student.EnrollmentNumber : "",
                 SectionId = group.Key.SectionId.ToString(),
                 SectionName = sectionName,
                 Year = request.Year,
@@ -489,10 +504,12 @@ public class GetMonthlyAttendanceReportQueryHandler : IRequestHandler<GetMonthly
 public class GetLowAttendanceAlertsQueryHandler : IRequestHandler<GetLowAttendanceAlertsQuery, List<LowAttendanceAlertDto>>
 {
     private readonly IApplicationDbContext _context;
+    private readonly IAcademicYearContext _academicYearContext;
 
-    public GetLowAttendanceAlertsQueryHandler(IApplicationDbContext context)
+    public GetLowAttendanceAlertsQueryHandler(IApplicationDbContext context, IAcademicYearContext academicYearContext)
     {
         _context = context;
+        _academicYearContext = academicYearContext;
     }
 
     public async Task<List<LowAttendanceAlertDto>> Handle(GetLowAttendanceAlertsQuery request, CancellationToken cancellationToken)
@@ -501,12 +518,12 @@ public class GetLowAttendanceAlertsQueryHandler : IRequestHandler<GetLowAttendan
         var endDate = startDate.AddMonths(1).AddDays(-1);
 
         var attendances = await _context.StudentAttendances
-            .Where(a => a.AttendanceDate >= startDate && a.AttendanceDate <= endDate)
+            .Where(a => a.AttendanceDate >= startDate && a.AttendanceDate <= endDate && a.Enrollment.AcademicYearId == _academicYearContext.RequiredAcademicYearId)
             .Join(
-                _context.Students,
-                attendance => attendance.StudentId,
-                student => student.Id,
-                (attendance, student) => new { attendance, student })
+                _context.Enrollments.Include(e => e.Student),
+                attendance => attendance.EnrollmentId,
+                enrollment => enrollment.Id,
+                (attendance, enrollment) => new { attendance, enrollment })
             .ToListAsync(cancellationToken);
 
         var sections = await _context.Sections
@@ -515,7 +532,7 @@ public class GetLowAttendanceAlertsQueryHandler : IRequestHandler<GetLowAttendan
         var sectionMap = sections.ToDictionary(s => s.Id.ToString(), s => s.SectionName);
         var alerts = new List<LowAttendanceAlertDto>();
 
-        foreach (var group in attendances.GroupBy(a => new { a.attendance.StudentId, a.attendance.SectionId }))
+        foreach (var group in attendances.GroupBy(a => new { a.enrollment.StudentId, a.enrollment.SectionId }))
         {
             var absentCount = group.Count(a => a.attendance.Status.ToLower() == "absent");
             var totalDays = group.Count();
@@ -523,7 +540,7 @@ public class GetLowAttendanceAlertsQueryHandler : IRequestHandler<GetLowAttendan
 
             if (percentage < request.AttendanceThreshold)
             {
-                var student = group.First().student;
+                var student = group.First().enrollment.Student;
                 var lastAbsent = group.Where(a => a.attendance.Status.ToLower() == "absent")
                     .OrderByDescending(a => a.attendance.AttendanceDate).FirstOrDefault();
                 var sectionName = sectionMap.TryGetValue(group.Key.SectionId.ToString(), out var name) ? name : "Unknown";
@@ -531,8 +548,8 @@ public class GetLowAttendanceAlertsQueryHandler : IRequestHandler<GetLowAttendan
                 alerts.Add(new LowAttendanceAlertDto
                 {
                     StudentId = group.Key.StudentId.ToString(),
-                    StudentName = student.FirstName + " " + student.LastName,
-                    EnrollmentNumber = student.EnrollmentNumber,
+                    StudentName = student != null ? student.FirstName + " " + student.LastName : "",
+                    EnrollmentNumber = student != null ? student.EnrollmentNumber : "",
                     SectionId = group.Key.SectionId.ToString(),
                     SectionName = sectionName,
                     AttendancePercentage = percentage,
@@ -554,10 +571,12 @@ public class GetLowAttendanceAlertsQueryHandler : IRequestHandler<GetLowAttendan
 public class GetClassAttendanceSummaryQueryHandler : IRequestHandler<GetClassAttendanceSummaryQuery, List<ClassAttendanceSummaryDto>>
 {
     private readonly IApplicationDbContext _context;
+    private readonly IAcademicYearContext _academicYearContext;
 
-    public GetClassAttendanceSummaryQueryHandler(IApplicationDbContext context)
+    public GetClassAttendanceSummaryQueryHandler(IApplicationDbContext context, IAcademicYearContext academicYearContext)
     {
         _context = context;
+        _academicYearContext = academicYearContext;
     }
 
     public async Task<List<ClassAttendanceSummaryDto>> Handle(GetClassAttendanceSummaryQuery request, CancellationToken cancellationToken)
@@ -566,12 +585,12 @@ public class GetClassAttendanceSummaryQueryHandler : IRequestHandler<GetClassAtt
         var endDate = startDate.AddMonths(1).AddDays(-1);
 
         var studentAttendances = await _context.StudentAttendances
-            .Where(a => a.AttendanceDate >= startDate && a.AttendanceDate <= endDate)
+            .Where(a => a.AttendanceDate >= startDate && a.AttendanceDate <= endDate && a.Enrollment.AcademicYearId == _academicYearContext.RequiredAcademicYearId)
             .Join(
-                _context.Students,
-                attendance => attendance.StudentId,
-                student => student.Id,
-                (attendance, student) => new { attendance, student })
+                _context.Enrollments.Include(e => e.Student),
+                attendance => attendance.EnrollmentId,
+                enrollment => enrollment.Id,
+                (attendance, enrollment) => new { attendance, enrollment })
             .ToListAsync(cancellationToken);
 
         var sections = await _context.Sections.Include(s => s.Class).ToListAsync(cancellationToken);
@@ -579,11 +598,11 @@ public class GetClassAttendanceSummaryQueryHandler : IRequestHandler<GetClassAtt
 
         foreach (var section in sections)
         {
-            var secAttendances = studentAttendances.Where(a => a.attendance.SectionId == section.Id).ToList();
+            var secAttendances = studentAttendances.Where(a => a.enrollment.SectionId == section.Id).ToList();
             if (!secAttendances.Any()) continue;
 
             var percentages = new List<decimal>();
-            foreach (var studentGroup in secAttendances.GroupBy(a => a.attendance.StudentId))
+            foreach (var studentGroup in secAttendances.GroupBy(a => a.enrollment.StudentId))
             {
                 var present = studentGroup.Count(a => a.attendance.Status.ToLower() == "present");
                 var total = studentGroup.Count();

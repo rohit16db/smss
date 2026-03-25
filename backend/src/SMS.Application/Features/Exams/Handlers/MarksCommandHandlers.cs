@@ -12,7 +12,13 @@ public class MarksCommandHandlers
     public class SaveStudentMarksCommandHandler : IRequestHandler<SaveStudentMarksCommand, SaveMarksResponseDto>
     {
         private readonly IApplicationDbContext _context;
-        public SaveStudentMarksCommandHandler(IApplicationDbContext context) => _context = context;
+        private readonly IAcademicYearContext _academicYearContext;
+
+        public SaveStudentMarksCommandHandler(IApplicationDbContext context, IAcademicYearContext academicYearContext)
+        {
+            _context = context;
+            _academicYearContext = academicYearContext;
+        }
         
         public async Task<SaveMarksResponseDto> Handle(SaveStudentMarksCommand request, CancellationToken cancellationToken)
         {
@@ -53,7 +59,7 @@ public class MarksCommandHandlers
 
             foreach (var marksEntry in request.MarksData)
             {
-                var studentMarksCount = await SaveSubjectMarksForStudentAsync(_context, request, marksEntry, cancellationToken);
+                var studentMarksCount = await SaveSubjectMarksForStudentAsync(_context, _academicYearContext, request, marksEntry, cancellationToken);
                 savedCount += studentMarksCount;
 
                 if (studentMarksCount > 0)
@@ -68,6 +74,7 @@ public class MarksCommandHandlers
 
         private static async Task<int> SaveSubjectMarksForStudentAsync(
             IApplicationDbContext context,
+            IAcademicYearContext academicYearContext,
             SaveStudentMarksCommand request, 
             StudentMarksEntryDto marksEntry, 
             CancellationToken cancellationToken)
@@ -78,7 +85,7 @@ public class MarksCommandHandlers
                 {
                     try
                     {
-                    await SaveSubjectMarkAsync(context, request, marksEntry.StudentId, subjectMarkEntry, cancellationToken);
+                    await SaveSubjectMarkAsync(context, academicYearContext, request, marksEntry.StudentId, subjectMarkEntry, cancellationToken);
                     savedCount++;
                 }
                 catch
@@ -92,14 +99,19 @@ public class MarksCommandHandlers
 
         private static async Task SaveSubjectMarkAsync(
             IApplicationDbContext context,
+            IAcademicYearContext academicYearContext,
             SaveStudentMarksCommand request,
             Guid studentId,
             KeyValuePair<Guid, SubjectMarkEntryDto> subjectMarkEntry,
             CancellationToken cancellationToken)
         {
+            var enrollment = await context.Enrollments
+                .FirstOrDefaultAsync(e => e.StudentId == studentId && e.Status == "Enrolled" && e.AcademicYearId == academicYearContext.RequiredAcademicYearId, cancellationToken);
+            if (enrollment == null) return;
+
             var existingMarks = await context.StudentMarks
                 .FirstOrDefaultAsync(m => m.ExamId == request.ExamId && 
-                    m.StudentId == studentId &&
+                    m.EnrollmentId == enrollment.Id &&
                     m.SubjectId == subjectMarkEntry.Key, cancellationToken);
 
             if (existingMarks != null)
@@ -115,7 +127,7 @@ public class MarksCommandHandlers
                 {
                     Id = Guid.NewGuid(),
                     ExamId = request.ExamId,
-                    StudentId = studentId,
+                    EnrollmentId = enrollment.Id,
                     SubjectId = subjectMarkEntry.Key,
                     MarksObtained = subjectMarkEntry.Value.Obtained,
                     IsAbsent = subjectMarkEntry.Value.IsAbsent,
@@ -130,11 +142,13 @@ public class MarksCommandHandlers
     {
         private readonly IApplicationDbContext _context;
         private readonly IMediator _mediator;
+        private readonly IAcademicYearContext _academicYearContext;
         
-        public SubmitMarksCommandHandler(IApplicationDbContext context, IMediator mediator)
+        public SubmitMarksCommandHandler(IApplicationDbContext context, IMediator mediator, IAcademicYearContext academicYearContext)
         {
             _context = context;
             _mediator = mediator;
+            _academicYearContext = academicYearContext;
         }
 
         public async Task<SaveMarksResponseDto> Handle(SubmitMarksCommand request, CancellationToken cancellationToken)
@@ -149,9 +163,9 @@ public class MarksCommandHandlers
             if (section == null)
                 return new SaveMarksResponseDto { Success = false, Message = "Section not found" };
 
-            // Get all students for this specific section
-            var sectionStudents = await _context.StudentSections
-                .Where(ss => ss.SectionId == request.SectionId && ss.IsCurrent)
+            // Get all students for this specific section in the active academic year
+            var sectionStudents = await _context.Enrollments
+                .Where(ss => ss.SectionId == request.SectionId && ss.Status == "Enrolled" && ss.AcademicYearId == _academicYearContext.RequiredAcademicYearId)
                 .Select(ss => ss.StudentId)
                 .ToListAsync(cancellationToken);
 
@@ -192,7 +206,13 @@ public class MarksCommandHandlers
     public class GenerateReportCardCommandHandler : IRequestHandler<GenerateReportCardCommand, Unit>
     {
         private readonly IApplicationDbContext _context;
-        public GenerateReportCardCommandHandler(IApplicationDbContext context) => _context = context;
+        private readonly IAcademicYearContext _academicYearContext;
+
+        public GenerateReportCardCommandHandler(IApplicationDbContext context, IAcademicYearContext academicYearContext)
+        {
+            _context = context;
+            _academicYearContext = academicYearContext;
+        }
         
         public async Task<Unit> Handle(GenerateReportCardCommand request, CancellationToken cancellationToken)
         {
@@ -200,13 +220,13 @@ public class MarksCommandHandlers
             if (exam == null)
                 return Unit.Value;
 
-            var student = await _context.Students.FirstOrDefaultAsync(s => s.Id == request.StudentId, cancellationToken);
-            if (student == null)
+            var enrollment = await _context.Enrollments.FirstOrDefaultAsync(e => e.StudentId == request.StudentId && e.Status == "Enrolled" && e.AcademicYearId == _academicYearContext.RequiredAcademicYearId, cancellationToken);
+            if (enrollment == null)
                 return Unit.Value;
 
             // Get all subject marks for this student in this exam
             var studentMarks = await _context.StudentMarks
-                .Where(m => m.ExamId == request.ExamId && m.StudentId == request.StudentId)
+                .Where(m => m.ExamId == request.ExamId && m.EnrollmentId == enrollment.Id)
                 .ToListAsync(cancellationToken);
 
             if (!studentMarks.Any())
@@ -229,7 +249,7 @@ public class MarksCommandHandlers
 
             // Check if report card already exists
             var existingReportCard = await _context.StudentReportCards
-                .FirstOrDefaultAsync(rc => rc.ExamId == request.ExamId && rc.StudentId == request.StudentId, cancellationToken);
+                .FirstOrDefaultAsync(rc => rc.ExamId == request.ExamId && rc.EnrollmentId == enrollment.Id, cancellationToken);
 
             if (existingReportCard != null)
             {
@@ -248,7 +268,7 @@ public class MarksCommandHandlers
                 {
                     Id = Guid.NewGuid(),
                     ExamId = request.ExamId,
-                    StudentId = request.StudentId,
+                    EnrollmentId = enrollment.Id,
                     TotalMarksObtained = totalMarksObtained,
                     TotalMarks = totalMarks,
                     Percentage = percentage,

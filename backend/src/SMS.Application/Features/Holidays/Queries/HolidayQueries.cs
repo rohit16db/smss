@@ -10,7 +10,7 @@ public class GetAllHolidaysQuery : IRequest<PaginatedHolidayListDto>
 {
     public int PageNumber { get; set; } = 1;
     public int PageSize { get; set; } = 10;
-    public string? AcademicYear { get; set; }
+    public string? AcademicYearId { get; set; }
     public DateTime? StartDate { get; set; }
     public DateTime? EndDate { get; set; }
     public string? Type { get; set; }

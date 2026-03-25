@@ -16,10 +16,12 @@ namespace SMS.Application.Features.Fees.Handlers.CommandHandlers;
 public class CreateFeeStructureCommandHandler : IRequestHandler<CreateFeeStructureCommand, FeeStructureDto>
 {
     private readonly IApplicationDbContext _context;
+    private readonly IAcademicYearContext _academicYearContext;
 
-    public CreateFeeStructureCommandHandler(IApplicationDbContext context)
+    public CreateFeeStructureCommandHandler(IApplicationDbContext context, IAcademicYearContext academicYearContext)
     {
         _context = context;
+        _academicYearContext = academicYearContext;
     }
 
     public async Task<FeeStructureDto> Handle(CreateFeeStructureCommand request, CancellationToken cancellationToken)
@@ -33,7 +35,7 @@ public class CreateFeeStructureCommandHandler : IRequestHandler<CreateFeeStructu
         {
             Id = feeStructureId,
             Name = request.Name,
-            AcademicYear = request.AcademicYear,
+            AcademicYearId = Guid.TryParse(request.AcademicYearId, out var ayId) ? ayId : _academicYearContext.RequiredAcademicYearId,
             Frequency = request.Frequency,
             TotalAmount = totalAmount,
             IsActive = true,
@@ -68,7 +70,7 @@ public class CreateFeeStructureCommandHandler : IRequestHandler<CreateFeeStructu
         {
             Id = feeStructure.Id.ToString(),
             Name = feeStructure.Name,
-            AcademicYear = feeStructure.AcademicYear,
+            AcademicYearId = feeStructure.AcademicYearId.ToString(),
             Frequency = feeStructure.Frequency,
             TotalAmount = feeStructure.TotalAmount,
             IsActive = feeStructure.IsActive,
@@ -89,10 +91,12 @@ public class CreateFeeStructureCommandHandler : IRequestHandler<CreateFeeStructu
 public class UpdateFeeStructureCommandHandler : IRequestHandler<UpdateFeeStructureCommand, FeeStructureDto>
 {
     private readonly IApplicationDbContext _context;
+    private readonly IAcademicYearContext _academicYearContext;
 
-    public UpdateFeeStructureCommandHandler(IApplicationDbContext context)
+    public UpdateFeeStructureCommandHandler(IApplicationDbContext context, IAcademicYearContext academicYearContext)
     {
         _context = context;
+        _academicYearContext = academicYearContext;
     }
 
     public async Task<FeeStructureDto> Handle(UpdateFeeStructureCommand request, CancellationToken cancellationToken)
@@ -107,7 +111,7 @@ public class UpdateFeeStructureCommandHandler : IRequestHandler<UpdateFeeStructu
 
         // Update basic properties
         feeStructure.Name = request.Name;
-        feeStructure.AcademicYear = request.AcademicYear;
+        feeStructure.AcademicYearId = Guid.TryParse(request.AcademicYearId, out var updateAyId) ? updateAyId : _academicYearContext.RequiredAcademicYearId;
         feeStructure.Frequency = request.Frequency;
         feeStructure.IsActive = request.IsActive;
         feeStructure.UpdatedBy = request.UpdatedByUserId;
@@ -146,7 +150,7 @@ public class UpdateFeeStructureCommandHandler : IRequestHandler<UpdateFeeStructu
         {
             Id = feeStructure.Id.ToString(),
             Name = feeStructure.Name,
-            AcademicYear = feeStructure.AcademicYear,
+            AcademicYearId = feeStructure.AcademicYearId.ToString(),
             Frequency = feeStructure.Frequency,
             TotalAmount = feeStructure.TotalAmount,
             IsActive = feeStructure.IsActive,
@@ -236,9 +240,13 @@ public class AssignStudentFeeCommandHandler : IRequestHandler<AssignStudentFeeCo
             .FirstOrDefaultAsync(f => f.Id == feeStructureId, cancellationToken)
             ?? throw new InvalidOperationException($"Fee structure with ID {request.FeeStructureId} not found");
 
+        var enrollment = await _context.Enrollments
+            .FirstOrDefaultAsync(e => e.StudentId == studentId && e.Status == "Enrolled", cancellationToken)
+            ?? throw new InvalidOperationException($"No active enrollment found for student.");
+
         var studentFee = new StudentFee
         {
-            StudentId = studentId,
+            EnrollmentId = enrollment.Id,
             FeeStructureId = feeStructureId,
             StartDate = DateOnly.FromDateTime(request.StartDate),
             EndDate = request.EndDate.HasValue ? DateOnly.FromDateTime(request.EndDate.Value) : null,
@@ -256,7 +264,7 @@ public class AssignStudentFeeCommandHandler : IRequestHandler<AssignStudentFeeCo
         return new StudentFeeDto
         {
             Id = studentFee.Id.ToString(),
-            StudentId = studentFee.StudentId.ToString(),
+            StudentId = student.Id.ToString(),
             StudentName = $"{student.FirstName} {student.LastName}",
             EnrollmentNumber = student.EnrollmentNumber,
             FeeStructureId = studentFee.FeeStructureId.ToString(),
@@ -290,7 +298,8 @@ public class TerminateStudentFeeCommandHandler : IRequestHandler<TerminateStuden
             throw new InvalidOperationException($"Invalid student fee ID format: {request.Id}");
 
         var studentFee = await _context.StudentFees
-            .Include(sf => sf.Student)
+            .Include(sf => sf.Enrollment)
+            .ThenInclude(e => e.Student)
             .Include(sf => sf.FeeStructure)
             .Include(sf => sf.Payments)
             .FirstOrDefaultAsync(sf => sf.Id == studentFeeId, cancellationToken)
@@ -310,9 +319,9 @@ public class TerminateStudentFeeCommandHandler : IRequestHandler<TerminateStuden
         return new StudentFeeDto
         {
             Id = studentFee.Id.ToString(),
-            StudentId = studentFee.StudentId.ToString(),
-            StudentName = studentFee.Student != null ? $"{studentFee.Student.FirstName} {studentFee.Student.LastName}" : "Unknown",
-            EnrollmentNumber = studentFee.Student?.EnrollmentNumber ?? "Unknown",
+            StudentId = studentFee.Enrollment?.StudentId.ToString() ?? "",
+            StudentName = studentFee.Enrollment?.Student != null ? $"{studentFee.Enrollment.Student.FirstName} {studentFee.Enrollment.Student.LastName}" : "Unknown",
+            EnrollmentNumber = studentFee.Enrollment?.Student?.EnrollmentNumber ?? "Unknown",
             FeeStructureId = studentFee.FeeStructureId.ToString(),
             FeeStructureName = studentFee.FeeStructure?.Name ?? "Unknown",
             StartDate = studentFee.StartDate.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc),
@@ -410,13 +419,14 @@ public class BulkAssignStudentFeeCommandHandler : IRequestHandler<BulkAssignStud
             throw new InvalidOperationException($"Fee structure not found or inactive: {request.FeeStructureId}");
 
         // Get all students currently enrolled in the section
-        var studentsInSection = await _context.StudentSections
+        var enrollmentsInSection = await _context.Enrollments
+            .Include(e => e.Student)
             .AsNoTracking()
-            .Where(ss => ss.SectionId == sectionId && ss.IsCurrent)
-            .Select(ss => new { ss.StudentId, StudentName = ss.Student!.FirstName + " " + ss.Student!.LastName })
+            .Where(ss => ss.SectionId == sectionId && ss.Status == "Enrolled")
+            .Select(ss => new { EnrollmentId = ss.Id, StudentId = ss.StudentId, StudentName = ss.Student!.FirstName + " " + ss.Student!.LastName })
             .ToListAsync(cancellationToken);
 
-        if (!studentsInSection.Any())
+        if (!enrollmentsInSection.Any())
             throw new InvalidOperationException($"No students found in section: {request.SectionId}");
 
         var startDateOnly = DateOnly.FromDateTime(request.StartDate);
@@ -434,22 +444,23 @@ public class BulkAssignStudentFeeCommandHandler : IRequestHandler<BulkAssignStud
 
         // Get all existing assignments for this fee structure in this period
         var existingAssignments = await _context.StudentFees
+            .Include(sf => sf.Enrollment)
             .Where(sf => sf.FeeStructureId == feeStructureId &&
-                   studentsInSection.Select(s => s.StudentId).Contains(sf.StudentId) &&
+                   enrollmentsInSection.Select(s => s.EnrollmentId).Contains(sf.EnrollmentId) &&
                    (sf.EndDate == null || sf.EndDate > startDateOnly))
             .ToListAsync(cancellationToken);
 
         var assignmentsToCreate = new List<StudentFee>();
         var assignmentsToUpdate = new List<StudentFee>();
 
-        foreach (var studentData in studentsInSection)
+        foreach (var studentData in enrollmentsInSection)
         {
             try
             {
-                var studentId = studentData.StudentId;
+                var enrollmentId = studentData.EnrollmentId;
                 
                 // Check if student already has an active assignment for this fee structure
-                var existingAssignment = existingAssignments.FirstOrDefault(sf => sf.StudentId == studentId);
+                var existingAssignment = existingAssignments.FirstOrDefault(sf => sf.EnrollmentId == enrollmentId);
 
                 if (existingAssignment != null)
                 {
@@ -471,7 +482,7 @@ public class BulkAssignStudentFeeCommandHandler : IRequestHandler<BulkAssignStud
                 var studentFee = new StudentFee
                 {
                     Id = Guid.NewGuid(),
-                    StudentId = studentId,
+                    EnrollmentId = enrollmentId,
                     FeeStructureId = feeStructureId,
                     StartDate = startDateOnly,
                     EndDate = endDateOnly,

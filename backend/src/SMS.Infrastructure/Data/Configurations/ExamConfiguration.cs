@@ -60,6 +60,10 @@ public class ExamConfiguration : IEntityTypeConfiguration<Exam>
             .HasColumnName("created_at")
             .IsRequired();
 
+        builder.Property(e => e.AcademicYearId)
+            .HasColumnName("academic_year_id")
+            .IsRequired();
+
         builder.Property(e => e.UpdatedAt)
             .HasColumnName("updated_at")
             .IsRequired();
@@ -68,6 +72,11 @@ public class ExamConfiguration : IEntityTypeConfiguration<Exam>
         builder.HasOne(e => e.CreatedBy)
             .WithMany()
             .HasForeignKey(e => e.CreatedById)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasOne(e => e.AcademicYear)
+            .WithMany(ay => ay.Exams)
+            .HasForeignKey(e => e.AcademicYearId)
             .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasMany(e => e.ExamSubjects)
@@ -98,5 +107,6 @@ public class ExamConfiguration : IEntityTypeConfiguration<Exam>
         builder.HasIndex(e => e.Status);
         builder.HasIndex(e => e.StartDate);
         builder.HasIndex(e => e.EndDate);
+        builder.HasIndex(e => e.AcademicYearId);
     }
 }

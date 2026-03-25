@@ -34,7 +34,8 @@ public class GetFeeStructureByIdQueryHandler : IRequestHandler<GetFeeStructureBy
         {
             Id = feeStructure.Id.ToString(),
             Name = feeStructure.Name,
-            AcademicYear = feeStructure.AcademicYear,
+            AcademicYearId = feeStructure.AcademicYearId.ToString(),
+            AcademicYearName = feeStructure.AcademicYear?.Name ?? string.Empty,
             Frequency = feeStructure.Frequency,
             TotalAmount = feeStructure.TotalAmount,
             IsActive = feeStructure.IsActive,
@@ -55,10 +56,12 @@ public class GetFeeStructureByIdQueryHandler : IRequestHandler<GetFeeStructureBy
 public class GetAllFeeStructuresQueryHandler : IRequestHandler<GetAllFeeStructuresQuery, PaginatedFeeStructureListDto>
 {
     private readonly IApplicationDbContext _context;
+    private readonly IAcademicYearContext _academicYearContext;
 
-    public GetAllFeeStructuresQueryHandler(IApplicationDbContext context)
+    public GetAllFeeStructuresQueryHandler(IApplicationDbContext context, IAcademicYearContext academicYearContext)
     {
         _context = context;
+        _academicYearContext = academicYearContext;
     }
 
     public async Task<PaginatedFeeStructureListDto> Handle(GetAllFeeStructuresQuery request, CancellationToken cancellationToken)
@@ -66,11 +69,10 @@ public class GetAllFeeStructuresQueryHandler : IRequestHandler<GetAllFeeStructur
         var query = _context.FeeStructures.AsQueryable();
 
         // Apply filters
-        if (request.IsActive.HasValue)
-            query = query.Where(f => f.IsActive == request.IsActive.Value);
+        query = query.Where(f => f.AcademicYearId == _academicYearContext.RequiredAcademicYearId);
 
-        if (request.AcademicYear.HasValue)
-            query = query.Where(f => f.AcademicYear == request.AcademicYear.Value);
+        if (!string.IsNullOrEmpty(request.AcademicYearId) && Guid.TryParse(request.AcademicYearId, out var ayId))
+            query = query.Where(f => f.AcademicYearId == ayId);
 
         if (!string.IsNullOrWhiteSpace(request.SearchTerm))
         {
@@ -83,6 +85,7 @@ public class GetAllFeeStructuresQueryHandler : IRequestHandler<GetAllFeeStructur
 
         // Apply pagination
         var feeStructures = await query
+            .Include(f => f.AcademicYear)
             .OrderByDescending(f => f.CreatedAt)
             .Skip((request.PageNumber - 1) * request.PageSize)
             .Take(request.PageSize)
@@ -90,7 +93,8 @@ public class GetAllFeeStructuresQueryHandler : IRequestHandler<GetAllFeeStructur
             {
                 Id = f.Id.ToString(),
                 Name = f.Name,
-                AcademicYear = f.AcademicYear,
+                AcademicYearId = f.AcademicYearId.ToString(),
+                AcademicYearName = f.AcademicYear != null ? f.AcademicYear.Name : string.Empty,
                 Frequency = f.Frequency,
                 TotalAmount = f.TotalAmount,
                 IsActive = f.IsActive
@@ -113,27 +117,31 @@ public class GetAllFeeStructuresQueryHandler : IRequestHandler<GetAllFeeStructur
 public class GetActiveFeeStructuresQueryHandler : IRequestHandler<GetActiveFeeStructuresQuery, List<FeeStructureListDto>>
 {
     private readonly IApplicationDbContext _context;
+    private readonly IAcademicYearContext _academicYearContext;
 
-    public GetActiveFeeStructuresQueryHandler(IApplicationDbContext context)
+    public GetActiveFeeStructuresQueryHandler(IApplicationDbContext context, IAcademicYearContext academicYearContext)
     {
         _context = context;
+        _academicYearContext = academicYearContext;
     }
 
     public async Task<List<FeeStructureListDto>> Handle(GetActiveFeeStructuresQuery request, CancellationToken cancellationToken)
     {
         var query = _context.FeeStructures
-            .Where(f => f.IsActive);
+            .Where(f => f.IsActive && f.AcademicYearId == _academicYearContext.RequiredAcademicYearId);
 
-        if (request.AcademicYear.HasValue)
-            query = query.Where(f => f.AcademicYear == request.AcademicYear.Value);
+        if (!string.IsNullOrEmpty(request.AcademicYearId) && Guid.TryParse(request.AcademicYearId, out var ayId))
+            query = query.Where(f => f.AcademicYearId == ayId);
 
         return await query
+            .Include(f => f.AcademicYear)
             .OrderBy(f => f.Name)
             .Select(f => new FeeStructureListDto
             {
                 Id = f.Id.ToString(),
                 Name = f.Name,
-                AcademicYear = f.AcademicYear,
+                AcademicYearId = f.AcademicYearId.ToString(),
+                AcademicYearName = f.AcademicYear != null ? f.AcademicYear.Name : string.Empty,
                 Frequency = f.Frequency,
                 TotalAmount = f.TotalAmount,
                 IsActive = f.IsActive
@@ -160,21 +168,22 @@ public class GetStudentFeesByStudentIdQueryHandler : IRequestHandler<GetStudentF
             return new List<StudentFeeDto>();
 
         var query = _context.StudentFees
-            .Where(sf => sf.StudentId == studentId);
+            .Where(sf => sf.Enrollment.StudentId == studentId);
 
         if (request.IsActive.HasValue)
             query = query.Where(sf => sf.IsActive == request.IsActive.Value);
 
         var studentFees = await query
-            .Include(sf => sf.Student)
+            .Include(sf => sf.Enrollment)
+            .ThenInclude(e => e.Student)
             .Include(sf => sf.FeeStructure)
             .Include(sf => sf.Payments)
             .OrderByDescending(sf => sf.CreatedAt)
             .ToListAsync(cancellationToken);
 
         // Get student's current section
-        var currentSection = await _context.StudentSections
-            .Where(ss => ss.StudentId == studentId && ss.IsCurrent == true)
+        var currentSection = await _context.Enrollments
+            .Where(ss => ss.StudentId == studentId && ss.Status == "Enrolled")
             .Select(ss => new { ss.SectionId, ss.Section!.SectionName })
             .FirstOrDefaultAsync(cancellationToken);
 
@@ -184,9 +193,9 @@ public class GetStudentFeesByStudentIdQueryHandler : IRequestHandler<GetStudentF
             return new StudentFeeDto
             {
                 Id = sf.Id.ToString(),
-                StudentId = sf.StudentId.ToString(),
-                StudentName = sf.Student != null ? $"{sf.Student.FirstName} {sf.Student.LastName}" : "N/A",
-                EnrollmentNumber = sf.Student?.EnrollmentNumber ?? "N/A",
+                StudentId = sf.Enrollment?.StudentId.ToString() ?? "",
+                StudentName = sf.Enrollment?.Student != null ? $"{sf.Enrollment.Student.FirstName} {sf.Enrollment.Student.LastName}" : "N/A",
+                EnrollmentNumber = sf.Enrollment?.Student?.EnrollmentNumber ?? "N/A",
                 FeeStructureId = sf.FeeStructureId.ToString(),
                 FeeStructureName = sf.FeeStructure?.Name ?? string.Empty,
                 StartDate = sf.StartDate.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc),
@@ -227,7 +236,7 @@ public class GetAllStudentFeesQueryHandler : IRequestHandler<GetAllStudentFeesQu
         {
             if (Guid.TryParse(request.StudentId, out var studentId))
             {
-                query = query.Where(sf => sf.StudentId == studentId);
+                query = query.Where(sf => sf.Enrollment.StudentId == studentId);
             }
         }
 
@@ -236,7 +245,8 @@ public class GetAllStudentFeesQueryHandler : IRequestHandler<GetAllStudentFeesQu
 
         // Apply pagination
         var studentFees = await query
-            .Include(sf => sf.Student)
+            .Include(sf => sf.Enrollment)
+            .ThenInclude(e => e.Student)
             .Include(sf => sf.FeeStructure)
             .Include(sf => sf.Payments)
             .OrderByDescending(sf => sf.CreatedAt)
@@ -245,9 +255,9 @@ public class GetAllStudentFeesQueryHandler : IRequestHandler<GetAllStudentFeesQu
             .ToListAsync(cancellationToken);
 
         // Get current sections for all students in this result set
-        var studentIds = studentFees.Select(sf => sf.StudentId).Distinct().ToList();
-        var studentSections = await _context.StudentSections
-            .Where(ss => studentIds.Contains(ss.StudentId) && ss.IsCurrent == true)
+        var studentIds = studentFees.Where(sf => sf.Enrollment != null).Select(sf => sf.Enrollment!.StudentId).Distinct().ToList();
+        var studentSections = await _context.Enrollments
+            .Where(ss => studentIds.Contains(ss.StudentId) && ss.Status == "Enrolled")
             .Select(ss => new { ss.StudentId, ss.SectionId, ss.Section!.SectionName })
             .ToListAsync(cancellationToken);
 
@@ -258,13 +268,13 @@ public class GetAllStudentFeesQueryHandler : IRequestHandler<GetAllStudentFeesQu
             Items = studentFees.Select(sf =>
             {
                 var paidAmount = sf.Payments?.Sum(p => p.AmountPaid) ?? 0;
-                var sectionInfo = sectionMap.ContainsKey(sf.StudentId) ? sectionMap[sf.StudentId] : null;
+                var sectionInfo = sf.Enrollment != null && sectionMap.ContainsKey(sf.Enrollment.StudentId) ? sectionMap[sf.Enrollment.StudentId] : null;
                 return new StudentFeeDto
                 {
                     Id = sf.Id.ToString(),
-                    StudentId = sf.StudentId.ToString(),
-                    StudentName = sf.Student != null ? $"{sf.Student.FirstName} {sf.Student.LastName}" : "N/A",
-                    EnrollmentNumber = sf.Student?.EnrollmentNumber ?? "N/A",
+                    StudentId = sf.Enrollment?.StudentId.ToString() ?? "",
+                    StudentName = sf.Enrollment?.Student != null ? $"{sf.Enrollment.Student.FirstName} {sf.Enrollment.Student.LastName}" : "N/A",
+                    EnrollmentNumber = sf.Enrollment?.Student?.EnrollmentNumber ?? "N/A",
                     FeeStructureId = sf.FeeStructureId.ToString(),
                     FeeStructureName = sf.FeeStructure?.Name ?? string.Empty,
                     StartDate = sf.StartDate.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc),
@@ -303,7 +313,8 @@ public class GetStudentFeeByIdQueryHandler : IRequestHandler<GetStudentFeeByIdQu
             return null;
 
         var studentFee = await _context.StudentFees
-            .Include(sf => sf.Student)
+            .Include(sf => sf.Enrollment)
+            .ThenInclude(e => e.Student)
             .Include(sf => sf.FeeStructure)
             .Include(sf => sf.Payments)
             .FirstOrDefaultAsync(sf => sf.Id == studentFeeId, cancellationToken);
@@ -312,8 +323,8 @@ public class GetStudentFeeByIdQueryHandler : IRequestHandler<GetStudentFeeByIdQu
             return null;
 
         // Get student's current section
-        var currentSection = await _context.StudentSections
-            .Where(ss => ss.StudentId == studentFee.StudentId && ss.IsCurrent == true)
+        var currentSection = await _context.Enrollments
+            .Where(ss => studentFee.Enrollment != null && ss.StudentId == studentFee.Enrollment.StudentId && ss.Status == "Enrolled")
             .Select(ss => new { ss.SectionId, ss.Section!.SectionName })
             .FirstOrDefaultAsync(cancellationToken);
 
@@ -321,9 +332,9 @@ public class GetStudentFeeByIdQueryHandler : IRequestHandler<GetStudentFeeByIdQu
         return new StudentFeeDto
         {
             Id = studentFee.Id.ToString(),
-            StudentId = studentFee.StudentId.ToString(),
-            StudentName = studentFee.Student != null ? $"{studentFee.Student.FirstName} {studentFee.Student.LastName}" : "N/A",
-            EnrollmentNumber = studentFee.Student?.EnrollmentNumber ?? "N/A",
+            StudentId = studentFee.Enrollment?.StudentId.ToString() ?? "",
+            StudentName = studentFee.Enrollment?.Student != null ? $"{studentFee.Enrollment.Student.FirstName} {studentFee.Enrollment.Student.LastName}" : "N/A",
+            EnrollmentNumber = studentFee.Enrollment?.Student?.EnrollmentNumber ?? "N/A",
             FeeStructureId = studentFee.FeeStructureId.ToString(),
             FeeStructureName = studentFee.FeeStructure?.Name ?? string.Empty,
             StartDate = studentFee.StartDate.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc),
@@ -446,25 +457,26 @@ public class GetFeesBySectionQueryHandler : IRequestHandler<GetFeesBySectionQuer
             return new List<StudentFeeDto>();
 
         // Get all students in this section
-        var studentsInSection = await _context.StudentSections
-            .Where(ss => ss.SectionId == sectionId && ss.IsCurrent == true)
-            .Select(ss => ss.StudentId)
+        var enrollmentsInSection = await _context.Enrollments
+            .Where(ss => ss.SectionId == sectionId && ss.Status == "Enrolled")
+            .Select(ss => ss.Id)
             .ToListAsync(cancellationToken);
 
-        if (!studentsInSection.Any())
+        if (!enrollmentsInSection.Any())
             return new List<StudentFeeDto>();
 
         var query = _context.StudentFees
-            .Where(sf => studentsInSection.Contains(sf.StudentId));
+            .Where(sf => enrollmentsInSection.Contains(sf.EnrollmentId));
 
         if (request.IsActive.HasValue)
             query = query.Where(sf => sf.IsActive == request.IsActive.Value);
 
         var studentFees = await query
-            .Include(sf => sf.Student)
+            .Include(sf => sf.Enrollment)
+            .ThenInclude(e => e.Student)
             .Include(sf => sf.FeeStructure)
             .Include(sf => sf.Payments)
-            .OrderBy(sf => sf.Student!.EnrollmentNumber)
+            .OrderBy(sf => sf.Enrollment!.Student!.EnrollmentNumber)
             .ToListAsync(cancellationToken);
 
         // Get section name for context
@@ -477,9 +489,9 @@ public class GetFeesBySectionQueryHandler : IRequestHandler<GetFeesBySectionQuer
             return new StudentFeeDto
             {
                 Id = sf.Id.ToString(),
-                StudentId = sf.StudentId.ToString(),
-                StudentName = sf.Student != null ? $"{sf.Student.FirstName} {sf.Student.LastName}" : "N/A",
-                EnrollmentNumber = sf.Student?.EnrollmentNumber ?? "N/A",
+                StudentId = sf.Enrollment?.StudentId.ToString() ?? "",
+                StudentName = sf.Enrollment?.Student != null ? $"{sf.Enrollment.Student.FirstName} {sf.Enrollment.Student.LastName}" : "N/A",
+                EnrollmentNumber = sf.Enrollment?.Student?.EnrollmentNumber ?? "N/A",
                 FeeStructureId = sf.FeeStructureId.ToString(),
                 FeeStructureName = sf.FeeStructure?.Name ?? string.Empty,
                 StartDate = sf.StartDate.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc),
@@ -519,19 +531,18 @@ public class GetFeeReportQueryHandler : IRequestHandler<GetFeeReportQuery, Pagin
         {
             if (Guid.TryParse(request.StudentId, out var studentId))
             {
-                query = query.Where(sf => sf.StudentId == studentId);
+                query = query.Where(sf => sf.Enrollment.StudentId == studentId);
             }
         }
 
-        // Filter by section
         if (!string.IsNullOrWhiteSpace(request.SectionId) && Guid.TryParse(request.SectionId, out var sectionIdGuid))
         {
-            var studentsInSection = await _context.StudentSections
-                .Where(ss => ss.SectionId == sectionIdGuid && ss.IsCurrent == true)
-                .Select(ss => ss.StudentId)
+            var enrollmentsInSection = await _context.Enrollments
+                .Where(ss => ss.SectionId == sectionIdGuid && ss.Status == "Enrolled")
+                .Select(ss => ss.Id)
                 .ToListAsync(cancellationToken);
 
-            query = query.Where(sf => studentsInSection.Contains(sf.StudentId));
+            query = query.Where(sf => enrollmentsInSection.Contains(sf.EnrollmentId));
         }
 
         // Filter by date range
@@ -549,16 +560,17 @@ public class GetFeeReportQueryHandler : IRequestHandler<GetFeeReportQuery, Pagin
 
         // Get all student fees with includes
         var allStudentFees = await query
-            .Include(sf => sf.Student)
+            .Include(sf => sf.Enrollment)
+            .ThenInclude(e => e.Student)
             .Include(sf => sf.FeeStructure)
             .Include(sf => sf.Payments)
-            .OrderBy(sf => sf.Student!.EnrollmentNumber)
+            .OrderBy(sf => sf.Enrollment!.Student!.EnrollmentNumber)
             .ToListAsync(cancellationToken);
 
         // Get current sections for all students
-        var studentIds = allStudentFees.Select(sf => sf.StudentId).Distinct().ToList();
-        var studentSections = await _context.StudentSections
-            .Where(ss => studentIds.Contains(ss.StudentId) && ss.IsCurrent == true)
+        var studentIds = allStudentFees.Where(sf => sf.Enrollment != null).Select(sf => sf.Enrollment!.StudentId).Distinct().ToList();
+        var studentSections = await _context.Enrollments
+            .Where(ss => studentIds.Contains(ss.StudentId) && ss.Status == "Enrolled")
             .Select(ss => new { ss.StudentId, ss.SectionId, ss.Section!.SectionName })
             .ToListAsync(cancellationToken);
 
@@ -573,17 +585,16 @@ public class GetFeeReportQueryHandler : IRequestHandler<GetFeeReportQuery, Pagin
                 ? sf.Payments.Max(p => p.PaymentDate).ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc)
                 : (DateTime?)null;
 
-            // Calculate status
             var status = CalculateStatus(sf.TotalAmount, paidAmount, balanceAmount, sf.StartDate);
 
-            var sectionInfo = sectionMap.ContainsKey(sf.StudentId) ? sectionMap[sf.StudentId] : null;
+            var sectionInfo = sf.Enrollment != null && sectionMap.ContainsKey(sf.Enrollment.StudentId) ? sectionMap[sf.Enrollment.StudentId] : null;
 
             return new FeeReportDto
             {
                 Id = sf.Id.ToString(),
-                StudentId = sf.StudentId.ToString(),
-                StudentName = sf.Student != null ? $"{sf.Student.FirstName} {sf.Student.LastName}" : "N/A",
-                EnrollmentNumber = sf.Student?.EnrollmentNumber ?? "N/A",
+                StudentId = sf.Enrollment?.StudentId.ToString() ?? "",
+                StudentName = sf.Enrollment?.Student != null ? $"{sf.Enrollment.Student.FirstName} {sf.Enrollment.Student.LastName}" : "N/A",
+                EnrollmentNumber = sf.Enrollment?.Student?.EnrollmentNumber ?? "N/A",
                 SectionId = sectionInfo?.SectionId.ToString(),
                 SectionName = sectionInfo?.SectionName,
                 FeeStructureId = sf.FeeStructureId.ToString(),
@@ -688,9 +699,11 @@ public class GetFeeReceiptDataQueryHandler : IRequestHandler<GetFeeReceiptDataQu
         // Get the payment with related student fee, student, structure, and section
         var payment = await _context.FeePayments
             .Include(p => p.StudentFee)
-            .ThenInclude(sf => sf!.Student)
-            .ThenInclude(s => s!.StudentSections)
-            .ThenInclude(ss => ss.Section)
+            .ThenInclude(sf => sf!.Enrollment)
+            .ThenInclude(e => e!.Student)
+            .Include(p => p.StudentFee)
+            .ThenInclude(sf => sf!.Enrollment)
+            .ThenInclude(e => e!.Section)
             .ThenInclude(s => s!.Class)
             .Include(p => p.StudentFee)
             .ThenInclude(sf => sf!.FeeStructure)
@@ -700,16 +713,14 @@ public class GetFeeReceiptDataQueryHandler : IRequestHandler<GetFeeReceiptDataQu
             return null;
 
         var studentFee = payment.StudentFee;
-        var student = studentFee.Student;
+        var student = studentFee.Enrollment?.Student;
         var feeStructure = studentFee.FeeStructure;
 
         if (student == null || feeStructure == null)
             return null;
 
         // Get student's current section info
-        var studentSection = student.StudentSections?
-            .Where(ss => ss.IsCurrent)
-            .FirstOrDefault();
+        var studentSection = studentFee.Enrollment;
 
         // Get total paid for this student fee (all payments)
         var totalPaid = await _context.FeePayments

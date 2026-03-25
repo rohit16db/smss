@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { feeApi, studentApi, classApi, type CreateFeeStructureDto, type FeeStructure, type CreateStudentFeeDto, type StudentFee, type CreateFeePaymentDto, type Student, type BulkAssignStudentFeeDto, type SectionListDto } from '../services/api';
 import { formatDate } from '../utils/dateFormat';
 import type { AxiosError } from 'axios';
+import { useAcademicYear } from '../hooks/useAcademicYear';
 
 type TabType = 'structures' | 'assignments' | 'payments';
 
@@ -77,13 +78,22 @@ function FeeStructuresTab() {
   const [searchTerm, setSearchTerm] = useState('');
   const [openDialog, setOpenDialog] = useState(false);
   const [selectedStructure, setSelectedStructure] = useState<FeeStructure | null>(null);
+  const { activeYear, academicYears } = useAcademicYear();
+
   const [formData, setFormData] = useState<CreateFeeStructureDto>({
     name: '',
-    academicYear: new Date().getFullYear().toString(),
+    academicYearId: activeYear?.id || '',
     frequency: 'Annual',
     totalAmount: 0,
     categories: [{ category: 'Tuition', amount: 0 }],
   });
+
+  // Default academicYearId when activeYear changes
+  useEffect(() => {
+    if (activeYear && !selectedStructure) {
+      setFormData(prev => ({ ...prev, academicYearId: activeYear.id }));
+    }
+  }, [activeYear, selectedStructure]);
 
   const { data, isLoading } = useQuery({
     queryKey: ['feeStructures', page + 1, rowsPerPage, searchTerm],
@@ -135,7 +145,7 @@ function FeeStructuresTab() {
       setSelectedStructure(structure);
       setFormData({
         name: structure.name,
-        academicYear: structure.academicYear,
+        academicYearId: structure.academicYearId,
         frequency: structure.frequency,
         totalAmount: structure.totalAmount,
         categories: structure.categories.map(c => ({ category: c.category, amount: c.amount })),
@@ -144,7 +154,7 @@ function FeeStructuresTab() {
       setSelectedStructure(null);
       setFormData({
         name: '',
-        academicYear: new Date().getFullYear().toString(),
+        academicYearId: activeYear?.id || '',
         frequency: 'Annual',
         totalAmount: 0,
         categories: [{ category: 'Tuition', amount: 0 }],
@@ -263,7 +273,7 @@ function FeeStructuresTab() {
                     <td className="px-6 py-4">
                       <div className="text-sm font-medium text-gray-900">{structure.name}</div>
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-500">{structure.academicYear}</td>
+                    <td className="px-6 py-4 text-sm text-gray-500">{structure.academicYearName}</td>
                     <td className="px-6 py-4 text-sm text-gray-500">{structure.frequency}</td>
                     <td className="px-6 py-4">
                       <div className="text-sm font-semibold text-green-600">₹{structure.totalAmount.toFixed(2)}</div>
@@ -337,7 +347,17 @@ function FeeStructuresTab() {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Academic Year <span className="text-red-500">*</span></label>
-                    <input type="text" value={formData.academicYear} onChange={(e) => setFormData({ ...formData, academicYear: e.target.value })} required className="input-field" placeholder="2024" />
+                    <select
+                      value={formData.academicYearId}
+                      onChange={(e) => setFormData({ ...formData, academicYearId: e.target.value })}
+                      required
+                      className="input-field"
+                    >
+                      <option value="">Select Session</option>
+                      {academicYears?.map(ay => (
+                        <option key={ay.id} value={ay.id}>{ay.name}</option>
+                      ))}
+                    </select>
                   </div>
                 </div>
 
@@ -406,8 +426,6 @@ function StudentFeesTab() {
   const [terminateFeeId, setTerminateFeeId] = useState<string | null>(null);
   const [terminateEndDate, setTerminateEndDate] = useState('');
   const [selectedSectionId, setSelectedSectionId] = useState(''); // Section filter
-  const [structures, setStructures] = useState<FeeStructure[]>([]);
-  const [sections, setSections] = useState<(SectionListDto & { className?: string })[]>([]);
   const [studentSearch, setStudentSearch] = useState('');
   const [showStudentDropdown, setShowStudentDropdown] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
@@ -605,17 +623,11 @@ function StudentFeesTab() {
   };
 
   const totalPages = Math.ceil((data?.totalCount || 0) / rowsPerPage);
+  
+  // Derive structures and sections from query data
+  const structures = structuresQuery.data?.items || [];
+  const sections = sectionsQuery.data || [];
   const structureMap = new Map(structures.map(s => [s.id, s.name]));
-
-  // Update structures when query data arrives
-  if (structuresQuery.data && structures.length === 0) {
-    setStructures(structuresQuery.data.items);
-  }
-
-  // Update sections when query data arrives
-  if (sectionsQuery.data && sections.length === 0) {
-    setSections(sectionsQuery.data);
-  }
 
   return (
     <div className="animate-slide-up">
@@ -865,7 +877,7 @@ function StudentFeesTab() {
                     <option value="">Select a fee structure</option>
                     {structures.map((structure) => (
                       <option key={structure.id} value={structure.id}>
-                        {structure.name} - {structure.academicYear} (₹{structure.totalAmount.toFixed(2)})
+                        {structure.name} - {structure.academicYearName} (₹{structure.totalAmount.toFixed(2)})
                       </option>
                     ))}
                   </select>
@@ -1105,7 +1117,6 @@ function PaymentsTab() {
   const [page, setPage] = useState(0);
   const [rowsPerPage] = useState(10);
   const [openDialog, setOpenDialog] = useState(false);
-  const [studentFees, setStudentFees] = useState<StudentFee[]>([]);
   const [studentSearch, setStudentSearch] = useState('');
   const [showStudentDropdown, setShowStudentDropdown] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
@@ -1244,10 +1255,8 @@ function PaymentsTab() {
 
   const totalPages = Math.ceil((data?.totalCount || 0) / rowsPerPage);
 
-  // Update student fees when query data arrives
-  if (studentFeesQuery.data && studentFees.length === 0) {
-    setStudentFees(studentFeesQuery.data.items);
-  }
+  // Derive student fees from query data
+  const studentFees = studentFeesQuery.data?.items || [];
 
   // Helper function to get fee structure name by student fee ID
   const getFeeName = (studentFeeId: string) => {

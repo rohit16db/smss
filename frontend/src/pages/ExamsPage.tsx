@@ -8,6 +8,7 @@ import { useExams, useCreateExam, usePublishExam, useDeleteExam, useUpdateExam }
 import { useNavigate, Outlet, useLocation } from "react-router-dom";
 import { api } from "../services/api";
 import { formatDate } from "../utils/dateFormat";
+import { useAcademicYear } from "../hooks/useAcademicYear";
 import "../styles/pages.css";
 
 interface SubjectSelection {
@@ -51,6 +52,7 @@ export const ExamsPage: React.FC = () => {
   const [classes, setClasses] = useState<ClassOption[]>([]);
   const [subjects, setSubjects] = useState<SubjectOption[]>([]);
   const [loadingClassesSubjects, setLoadingClassesSubjects] = useState(false);
+  const { activeYear } = useAcademicYear();
   const [formData, setFormData] = useState<CreateExamFormData>({
     name: "",
     description: "",
@@ -334,9 +336,9 @@ export const ExamsPage: React.FC = () => {
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
               <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent">
-                Exams Management
+                Exams Management - {activeYear?.name || "Loading..."}
               </h1>
-              <p className="text-gray-600 mt-2">Create and manage exams and results</p>
+              <p className="text-gray-600 mt-2">Create and manage exams and results for the current session</p>
             </div>
             <button
               className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:shadow-lg hover:scale-105 transition-all duration-300 font-medium whitespace-nowrap"

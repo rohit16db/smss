@@ -10,9 +10,9 @@ namespace SMS.Infrastructure.Repositories;
 /// </summary>
 public interface IReportCardRepository
 {
-    Task<StudentReportCard?> GetByIdAsync(Guid examId, Guid studentId, CancellationToken cancellationToken = default);
+    Task<StudentReportCard?> GetByIdAsync(Guid examId, Guid enrollmentId, CancellationToken cancellationToken = default);
     Task<List<StudentReportCard>> GetByExamAsync(Guid examId, CancellationToken cancellationToken = default);
-    Task<List<StudentReportCard>> GetByStudentAsync(Guid studentId, CancellationToken cancellationToken = default);
+    Task<List<StudentReportCard>> GetByStudentAsync(Guid enrollmentId, CancellationToken cancellationToken = default);
     Task<StudentReportCard> CreateAsync(StudentReportCard reportCard, CancellationToken cancellationToken = default);
     Task<StudentReportCard> UpdateAsync(StudentReportCard reportCard, CancellationToken cancellationToken = default);
 }
@@ -26,27 +26,27 @@ public class ReportCardRepository : IReportCardRepository
         _context = context;
     }
 
-    public async Task<StudentReportCard?> GetByIdAsync(Guid examId, Guid studentId, CancellationToken cancellationToken = default)
+    public async Task<StudentReportCard?> GetByIdAsync(Guid examId, Guid enrollmentId, CancellationToken cancellationToken = default)
     {
         return await _context.StudentReportCards
             .Include(src => src.Exam)
-            .Include(src => src.Student)
-            .FirstOrDefaultAsync(src => src.ExamId == examId && src.StudentId == studentId, cancellationToken);
+            .Include(src => src.Enrollment)
+            .FirstOrDefaultAsync(src => src.ExamId == examId && src.EnrollmentId == enrollmentId, cancellationToken);
     }
 
     public async Task<List<StudentReportCard>> GetByExamAsync(Guid examId, CancellationToken cancellationToken = default)
     {
         return await _context.StudentReportCards
             .Where(src => src.ExamId == examId)
-            .Include(src => src.Student)
+            .Include(src => src.Enrollment)
             .OrderBy(src => src.ClassPosition)
             .ToListAsync(cancellationToken);
     }
 
-    public async Task<List<StudentReportCard>> GetByStudentAsync(Guid studentId, CancellationToken cancellationToken = default)
+    public async Task<List<StudentReportCard>> GetByStudentAsync(Guid enrollmentId, CancellationToken cancellationToken = default)
     {
         return await _context.StudentReportCards
-            .Where(src => src.StudentId == studentId)
+            .Where(src => src.EnrollmentId == enrollmentId)
             .Include(src => src.Exam)
             .OrderByDescending(src => src.GeneratedAt)
             .ToListAsync(cancellationToken);

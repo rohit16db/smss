@@ -27,6 +27,8 @@ import { MarksPage } from './pages/MarksPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { ReportCardsPage } from './pages/ReportCardsPage';
 import { ReportCardDetailPage } from './pages/ReportCardDetailPage';
+import { StudentPromotionPage } from './pages/StudentPromotionPage';
+import { AcademicYearManagementPage } from './pages/AcademicYearManagementPage';
 import { PerformanceAnalyticsPage } from './pages/PerformanceAnalyticsPage';
 import { SalaryStructurePage } from './pages/SalaryStructurePage';
 import { TeacherSalaryAssignmentPage } from './pages/TeacherSalaryAssignmentPage';
@@ -84,6 +86,14 @@ function App() {
                   element={
                     <ProtectedRoute allowedRoles={["Admin", "Clerk"]}>
                       <StudentsPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="students/promote"
+                  element={
+                    <ProtectedRoute allowedRoles={["Admin", "Clerk"]}>
+                      <StudentPromotionPage />
                     </ProtectedRoute>
                   }
                 />
@@ -285,6 +295,14 @@ function App() {
                   element={
                     <ProtectedRoute allowedRoles={["Admin"]}>
                       <HolidaysPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="admin/academic-years"
+                  element={
+                    <ProtectedRoute allowedRoles={["Admin"]}>
+                      <AcademicYearManagementPage />
                     </ProtectedRoute>
                   }
                 />

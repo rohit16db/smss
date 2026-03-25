@@ -315,8 +315,8 @@ public class GetAllStudentsQueryHandler : IRequestHandler<GetAllStudentsQuery, P
     public async Task<PagedResult<StudentDto>> Handle(GetAllStudentsQuery request, CancellationToken cancellationToken)
     {
         var query = _context.Students
-            .Include(s => s.StudentSections
-                .Where(ss => ss.IsCurrent))
+            .Include(s => s.Enrollments
+                .Where(ss => ss.Status == "Enrolled"))
                 .ThenInclude(ss => ss.Section)
                 .ThenInclude(sec => sec.Class)
             .AsQueryable();
@@ -363,7 +363,7 @@ public class GetAllStudentsQueryHandler : IRequestHandler<GetAllStudentsQuery, P
 
     private static StudentDto MapToDto(Student student)
     {
-        var currentSection = student.StudentSections?.FirstOrDefault(ss => ss.IsCurrent);
+        var currentSection = student.Enrollments?.FirstOrDefault(ss => ss.Status == "Enrolled");
         
         return new StudentDto
         {

@@ -7,7 +7,7 @@ namespace SMS.Domain.Entities;
 public class StudentMarks : BaseEntity
 {
     public Guid ExamId { get; set; }
-    public Guid StudentId { get; set; }
+    public Guid EnrollmentId { get; set; }
     public Guid SubjectId { get; set; }
     public decimal? MarksObtained { get; set; }
     public bool IsAbsent { get; set; } = false;
@@ -15,6 +15,6 @@ public class StudentMarks : BaseEntity
 
     // Navigation properties
     public virtual Exam? Exam { get; set; }
-    public virtual Student? Student { get; set; }
+    public virtual Enrollment? Enrollment { get; set; }
     public virtual ExamSubject? ExamSubject { get; set; }
 }

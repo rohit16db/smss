@@ -17,9 +17,9 @@ public class CreateHolidayCommandValidator : AbstractValidator<CreateHolidayComm
         RuleFor(x => x.HolidayDate)
             .NotEmpty().WithMessage("Holiday date is required");
 
-        RuleFor(x => x.AcademicYear)
-            .NotEmpty().WithMessage("Academic year is required")
-            .Matches(@"^\d{4}-\d{4}$").WithMessage("Academic year must be in format YYYY-YYYY (e.g., 2025-2026)");
+        RuleFor(x => x.AcademicYearId)
+            // .NotEmpty().WithMessage("Academic year ID is required") // Optional now since it can be taken from context
+            .Must(id => string.IsNullOrEmpty(id) || Guid.TryParse(id, out _)).WithMessage("Academic year ID must be a valid GUID");
 
         RuleFor(x => x.Description)
             .MaximumLength(500).WithMessage("Description cannot exceed 500 characters")
@@ -48,9 +48,8 @@ public class UpdateHolidayCommandValidator : AbstractValidator<UpdateHolidayComm
         RuleFor(x => x.HolidayDate)
             .NotEmpty().WithMessage("Holiday date is required");
 
-        RuleFor(x => x.AcademicYear)
-            .NotEmpty().WithMessage("Academic year is required")
-            .Matches(@"^\d{4}-\d{4}$").WithMessage("Academic year must be in format YYYY-YYYY (e.g., 2025-2026)");
+        RuleFor(x => x.AcademicYearId)
+            .Must(id => string.IsNullOrEmpty(id) || Guid.TryParse(id, out _)).WithMessage("Academic year ID must be a valid GUID");
 
         RuleFor(x => x.Description)
             .MaximumLength(500).WithMessage("Description cannot exceed 500 characters")

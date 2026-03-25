@@ -17,8 +17,8 @@ public class StudentFeeConfiguration : IEntityTypeConfiguration<StudentFee>
             .HasColumnName("id")
             .HasDefaultValueSql("gen_random_uuid()");
         
-        builder.Property(sf => sf.StudentId)
-            .HasColumnName("student_id")
+        builder.Property(sf => sf.EnrollmentId)
+            .HasColumnName("enrollment_id")
             .IsRequired();
         
         builder.Property(sf => sf.FeeStructureId)
@@ -58,9 +58,9 @@ public class StudentFeeConfiguration : IEntityTypeConfiguration<StudentFee>
             .HasMaxLength(100);
         
         // Foreign keys
-        builder.HasOne(sf => sf.Student)
+        builder.HasOne(sf => sf.Enrollment)
             .WithMany()
-            .HasForeignKey(sf => sf.StudentId)
+            .HasForeignKey(sf => sf.EnrollmentId)
             .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasOne(sf => sf.FeeStructure)
@@ -74,7 +74,7 @@ public class StudentFeeConfiguration : IEntityTypeConfiguration<StudentFee>
             .OnDelete(DeleteBehavior.Restrict);
         
         // Indexes
-        builder.HasIndex(sf => sf.StudentId);
+        builder.HasIndex(sf => sf.EnrollmentId);
         builder.HasIndex(sf => sf.FeeStructureId);
         builder.HasIndex(sf => new { sf.StartDate, sf.EndDate });
         

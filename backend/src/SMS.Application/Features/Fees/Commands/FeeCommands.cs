@@ -9,7 +9,7 @@ namespace SMS.Application.Features.Fees.Commands;
 public class CreateFeeStructureCommand : IRequest<FeeStructureDto>
 {
     public required string Name { get; set; }
-    public required int AcademicYear { get; set; }
+    public required string AcademicYearId { get; set; }
     public required string Frequency { get; set; }
     public required List<FeeStructureCategoryDto> Categories { get; set; }
     public required string CreatedByUserId { get; set; }
@@ -22,7 +22,7 @@ public class UpdateFeeStructureCommand : IRequest<FeeStructureDto>
 {
     public required string Id { get; set; }
     public required string Name { get; set; }
-    public required int AcademicYear { get; set; }
+    public required string AcademicYearId { get; set; }
     public required string Frequency { get; set; }
     public required bool IsActive { get; set; }
     public required List<FeeStructureCategoryDto> Categories { get; set; }

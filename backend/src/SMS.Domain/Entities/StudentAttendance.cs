@@ -8,11 +8,8 @@ public class StudentAttendance
 {
     public Guid Id { get; set; }
     
-    /// <summary>Student ID (from Phase 2)</summary>
-    public Guid StudentId { get; set; }
-    
-    /// <summary>Section ID - attendance is tracked at section level</summary>
-    public Guid SectionId { get; set; }
+    /// <summary>Enrollment ID - associates attendance securely to current academic year</summary>
+    public Guid EnrollmentId { get; set; }
     
     /// <summary>Date of attendance</summary>
     public DateOnly AttendanceDate { get; set; }
@@ -36,5 +33,5 @@ public class StudentAttendance
     public string? UpdatedBy { get; set; }
     
     // Navigation property
-    public Section? Section { get; set; }
+    public Enrollment? Enrollment { get; set; }
 }

@@ -20,9 +20,7 @@ public class ClassConfiguration : IEntityTypeConfiguration<Class>
             .IsRequired()
             .HasMaxLength(100);
 
-        builder.Property(c => c.AcademicYear)
-            .HasColumnName("academic_year")
-            .HasMaxLength(50);
+
 
         builder.Property(c => c.IsActive)
             .HasColumnName("is_active")
@@ -50,7 +48,7 @@ public class ClassConfiguration : IEntityTypeConfiguration<Class>
 
         // Indexes
         builder.HasIndex(c => c.IsActive);
-        builder.HasIndex(c => new { c.Name, c.AcademicYear })
+        builder.HasIndex(c => c.Name)
             .IsUnique();
     }
 }
