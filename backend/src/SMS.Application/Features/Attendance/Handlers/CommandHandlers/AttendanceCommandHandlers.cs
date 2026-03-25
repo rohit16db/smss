@@ -13,10 +13,12 @@ namespace SMS.Application.Features.Attendance.Handlers.CommandHandlers;
 public class MarkStudentAttendanceCommandHandler : IRequestHandler<MarkStudentAttendanceCommand, StudentAttendanceDto>
 {
     private readonly IApplicationDbContext _context;
+    private readonly IAcademicYearContext _academicYearContext;
 
-    public MarkStudentAttendanceCommandHandler(IApplicationDbContext context)
+    public MarkStudentAttendanceCommandHandler(IApplicationDbContext context, IAcademicYearContext academicYearContext)
     {
         _context = context;
+        _academicYearContext = academicYearContext;
     }
 
     public async Task<StudentAttendanceDto> Handle(MarkStudentAttendanceCommand request, CancellationToken cancellationToken)
@@ -27,21 +29,19 @@ public class MarkStudentAttendanceCommandHandler : IRequestHandler<MarkStudentAt
         if (!Guid.TryParse(request.CreatedByUserId, out var markedByUserId))
             throw new InvalidOperationException($"Invalid user ID format: {request.CreatedByUserId}");
 
-        // Auto-detect section from student's current enrollment
-        var currentSection = await _context.StudentSections
-            .Where(ss => ss.StudentId == studentId && ss.IsCurrent == true)
-            .Select(ss => ss.SectionId)
+        // Auto-detect section from student's active enrollment for the current academic year
+        var enrollment = await _context.Enrollments
+            .Where(ss => ss.StudentId == studentId && ss.Status == "Enrolled" && ss.AcademicYearId == _academicYearContext.RequiredAcademicYearId)
             .FirstOrDefaultAsync(cancellationToken);
 
-        if (currentSection == Guid.Empty || currentSection == default)
+        if (enrollment == null)
             throw new InvalidOperationException($"Student {request.StudentId} is not enrolled in any active section. Please enroll the student in a section before marking attendance.");
 
         var attendanceDate = DateOnly.FromDateTime(request.AttendanceDate);
 
         // Check if attendance already exists for this student on this date
         var existingAttendance = await _context.StudentAttendances
-            .FirstOrDefaultAsync(a => a.StudentId == studentId && 
-                                     a.SectionId == currentSection && 
+            .FirstOrDefaultAsync(a => a.EnrollmentId == enrollment.Id && 
                                      a.AttendanceDate == attendanceDate, 
                                 cancellationToken);
 
@@ -51,8 +51,7 @@ public class MarkStudentAttendanceCommandHandler : IRequestHandler<MarkStudentAt
         var attendance = new StudentAttendance
         {
             Id = Guid.NewGuid(),
-            StudentId = studentId,
-            SectionId = currentSection,  // Auto-detected from enrollment
+            EnrollmentId = enrollment.Id,
             AttendanceDate = attendanceDate,
             Status = request.Status.ToLower(),
             Reason = request.Reason,
@@ -68,8 +67,8 @@ public class MarkStudentAttendanceCommandHandler : IRequestHandler<MarkStudentAt
         return new StudentAttendanceDto
         {
             Id = attendance.Id.ToString(),
-            StudentId = attendance.StudentId.ToString(),
-            SectionId = attendance.SectionId.ToString(),
+            StudentId = enrollment.StudentId.ToString(),
+            SectionId = enrollment.SectionId.ToString(),
             AttendanceDate = attendance.AttendanceDate.ToDateTime(TimeOnly.MinValue),
             Status = attendance.Status,
             Reason = attendance.Reason,
@@ -86,10 +85,12 @@ public class MarkStudentAttendanceCommandHandler : IRequestHandler<MarkStudentAt
 public class UpdateStudentAttendanceCommandHandler : IRequestHandler<UpdateStudentAttendanceCommand, StudentAttendanceDto>
 {
     private readonly IApplicationDbContext _context;
+    private readonly IAcademicYearContext _academicYearContext;
 
-    public UpdateStudentAttendanceCommandHandler(IApplicationDbContext context)
+    public UpdateStudentAttendanceCommandHandler(IApplicationDbContext context, IAcademicYearContext academicYearContext)
     {
         _context = context;
+        _academicYearContext = academicYearContext;
     }
 
     public async Task<StudentAttendanceDto> Handle(UpdateStudentAttendanceCommand request, CancellationToken cancellationToken)
@@ -98,7 +99,8 @@ public class UpdateStudentAttendanceCommandHandler : IRequestHandler<UpdateStude
             throw new InvalidOperationException($"Invalid attendance ID format: {request.Id}");
 
         var attendance = await _context.StudentAttendances
-            .FirstOrDefaultAsync(a => a.Id == attendanceId, cancellationToken)
+            .Include(a => a.Enrollment)
+            .FirstOrDefaultAsync(a => a.Id == attendanceId && a.Enrollment.AcademicYearId == _academicYearContext.RequiredAcademicYearId, cancellationToken)
             ?? throw new InvalidOperationException($"Student attendance with ID {request.Id} not found");
 
         attendance.Status = request.Status.ToLower();
@@ -111,8 +113,8 @@ public class UpdateStudentAttendanceCommandHandler : IRequestHandler<UpdateStude
         return new StudentAttendanceDto
         {
             Id = attendance.Id.ToString(),
-            StudentId = attendance.StudentId.ToString(),
-            SectionId = attendance.SectionId.ToString(),
+            StudentId = attendance.Enrollment?.StudentId.ToString() ?? "",
+            SectionId = attendance.Enrollment?.SectionId.ToString() ?? "",
             AttendanceDate = attendance.AttendanceDate.ToDateTime(TimeOnly.MinValue),
             Status = attendance.Status,
             Reason = attendance.Reason,
@@ -129,10 +131,12 @@ public class UpdateStudentAttendanceCommandHandler : IRequestHandler<UpdateStude
 public class DeleteStudentAttendanceCommandHandler : IRequestHandler<DeleteStudentAttendanceCommand, bool>
 {
     private readonly IApplicationDbContext _context;
+    private readonly IAcademicYearContext _academicYearContext;
 
-    public DeleteStudentAttendanceCommandHandler(IApplicationDbContext context)
+    public DeleteStudentAttendanceCommandHandler(IApplicationDbContext context, IAcademicYearContext academicYearContext)
     {
         _context = context;
+        _academicYearContext = academicYearContext;
     }
 
     public async Task<bool> Handle(DeleteStudentAttendanceCommand request, CancellationToken cancellationToken)
@@ -141,7 +145,8 @@ public class DeleteStudentAttendanceCommandHandler : IRequestHandler<DeleteStude
             throw new InvalidOperationException($"Invalid attendance ID format: {request.Id}");
 
         var attendance = await _context.StudentAttendances
-            .FirstOrDefaultAsync(a => a.Id == attendanceId, cancellationToken)
+            .Include(a => a.Enrollment)
+            .FirstOrDefaultAsync(a => a.Id == attendanceId && a.Enrollment.AcademicYearId == _academicYearContext.RequiredAcademicYearId, cancellationToken)
             ?? throw new InvalidOperationException($"Student attendance with ID {request.Id} not found");
 
         _context.StudentAttendances.Remove(attendance);

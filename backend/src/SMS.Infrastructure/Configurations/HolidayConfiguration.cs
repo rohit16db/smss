@@ -34,10 +34,15 @@ public class HolidayConfiguration : IEntityTypeConfiguration<Holiday>
             .HasColumnName("type")
             .HasMaxLength(50);
         
-        builder.Property(h => h.AcademicYear)
-            .HasColumnName("academic_year")
-            .HasMaxLength(20)
+        builder.Property(h => h.AcademicYearId)
+            .HasColumnName("academic_year_id")
             .IsRequired();
+
+        // Relationships
+        builder.HasOne(h => h.AcademicYear)
+            .WithMany(ay => ay.Holidays)
+            .HasForeignKey(h => h.AcademicYearId)
+            .OnDelete(DeleteBehavior.Restrict);
         
         // Audit trail
         builder.Property(h => h.CreatedAt)
@@ -56,12 +61,12 @@ public class HolidayConfiguration : IEntityTypeConfiguration<Holiday>
         
         // Indexes
         builder.HasIndex(h => h.HolidayDate);
-        builder.HasIndex(h => h.AcademicYear);
+        builder.HasIndex(h => h.AcademicYearId);
         builder.HasIndex(h => h.Type);
-        builder.HasIndex(h => new { h.AcademicYear, h.HolidayDate });
+        builder.HasIndex(h => new { h.AcademicYearId, h.HolidayDate });
         
         // Unique constraint: No duplicate holiday on same date for same academic year
-        builder.HasIndex(h => new { h.HolidayDate, h.AcademicYear })
+        builder.HasIndex(h => new { h.HolidayDate, h.AcademicYearId })
             .IsUnique();
     }
 }

@@ -24,7 +24,7 @@ public class Student : BaseEntity
     public string? ImagePath { get; set; }
 
     /// <summary>
-    /// Student's enrollment in sections (tracks current and historical sections)
+    /// Student's enrollment history across academic years
     /// </summary>
-    public ICollection<StudentSection> StudentSections { get; set; } = new List<StudentSection>();
+    public ICollection<Enrollment> Enrollments { get; set; } = new List<Enrollment>();
 }

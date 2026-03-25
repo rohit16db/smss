@@ -9,7 +9,7 @@ namespace SMS.Application.Features.Classes.Commands;
 public class CreateClassCommand : IRequest<ClassDto>
 {
     public string Name { get; set; } = string.Empty;
-    public string? AcademicYear { get; set; }
+    public string? AcademicYearId { get; set; }
 }
 
 /// <summary>
@@ -19,7 +19,7 @@ public class UpdateClassCommand : IRequest<ClassDto>
 {
     public string Id { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;
-    public string? AcademicYear { get; set; }
+    public string? AcademicYearId { get; set; }
     public bool IsActive { get; set; }
 }
 

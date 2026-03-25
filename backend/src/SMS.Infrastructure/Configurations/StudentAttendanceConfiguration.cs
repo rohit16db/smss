@@ -17,12 +17,8 @@ public class StudentAttendanceConfiguration : IEntityTypeConfiguration<StudentAt
             .HasColumnName("id")
             .HasDefaultValueSql("gen_random_uuid()");
         
-        builder.Property(sa => sa.StudentId)
-            .HasColumnName("student_id")
-            .IsRequired();
-        
-        builder.Property(sa => sa.SectionId)
-            .HasColumnName("section_id")
+        builder.Property(sa => sa.EnrollmentId)
+            .HasColumnName("enrollment_id")
             .IsRequired();
         
         builder.Property(sa => sa.AttendanceDate)
@@ -60,21 +56,20 @@ public class StudentAttendanceConfiguration : IEntityTypeConfiguration<StudentAt
             .HasMaxLength(100);
         
         // Indexes
-        builder.HasIndex(sa => sa.StudentId);
-        builder.HasIndex(sa => sa.SectionId);
+        builder.HasIndex(sa => sa.EnrollmentId);
         builder.HasIndex(sa => sa.AttendanceDate);
         builder.HasIndex(sa => sa.Status);
-        builder.HasIndex(sa => new { sa.StudentId, sa.AttendanceDate })
+        builder.HasIndex(sa => new { sa.EnrollmentId, sa.AttendanceDate })
             .IncludeProperties(sa => new { sa.Status });
         
-        // Unique constraint: No duplicate attendance for same student on same date in same section
-        builder.HasIndex(sa => new { sa.StudentId, sa.SectionId, sa.AttendanceDate })
+        // Unique constraint: No duplicate attendance for same student on same date
+        builder.HasIndex(sa => new { sa.EnrollmentId, sa.AttendanceDate })
             .IsUnique();
         
         // Foreign key
-        builder.HasOne(sa => sa.Section)
+        builder.HasOne(sa => sa.Enrollment)
             .WithMany()
-            .HasForeignKey(sa => sa.SectionId)
+            .HasForeignKey(sa => sa.EnrollmentId)
             .OnDelete(DeleteBehavior.Restrict);
         
         // Check constraint: Status must be valid

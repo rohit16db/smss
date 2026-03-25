@@ -16,11 +16,19 @@ api.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+    
+    // Add active academic year ID from localStorage
+    const academicYearId = localStorage.getItem('selectedAcademicYearId');
+    if (academicYearId) {
+      config.headers['X-Academic-Year-Id'] = academicYearId;
+    }
+
     console.log('API Request:', {
       baseURL: config.baseURL,
       url: config.url,
       fullURL: `${config.baseURL}${config.url}`,
       hasAuth: !!token,
+      academicYearId: academicYearId,
     });
     return config;
   },
@@ -292,7 +300,8 @@ export const teacherApi = {
 export type FeeStructure = {
   id: string;
   name: string;
-  academicYear: string;
+  academicYearId: string;
+  academicYearName: string;
   frequency: string;
   totalAmount: number;
   isActive: boolean;
@@ -307,7 +316,7 @@ export type FeeCategory = {
 
 export type CreateFeeStructureDto = {
   name: string;
-  academicYear: string;
+  academicYearId: string;
   frequency: string;
   totalAmount: number;
   categories: { category: string; amount: number }[];
@@ -966,7 +975,8 @@ export type Holiday = {
   holidayDate: string; // Date string in ISO format
   description?: string;
   type?: string;
-  academicYear: string; // Format: YYYY-YYYY
+  academicYearId: string; // Guid
+  academicYearName?: string;
   createdAt: string;
   updatedAt: string;
   createdBy?: string;
@@ -978,7 +988,7 @@ export type CreateHolidayDto = {
   holidayDate: string; // Date string in ISO format
   description?: string;
   type?: string;
-  academicYear: string; // Format: YYYY-YYYY
+  academicYearId: string; // Guid
 };
 
 export type UpdateHolidayDto = {
@@ -986,7 +996,7 @@ export type UpdateHolidayDto = {
   holidayDate: string;
   description?: string;
   type?: string;
-  academicYear: string;
+  academicYearId: string;
 };
 
 export type PaginatedHolidayListDto = {
@@ -1002,7 +1012,7 @@ export const holidayApi = {
   getAll: async (params?: {
     pageNumber?: number;
     pageSize?: number;
-    academicYear?: string;
+    academicYearId?: string;
     startDate?: string;
     endDate?: string;
     type?: string;
@@ -1307,6 +1317,14 @@ export type SchoolDto = {
   currencySymbol: string;
 };
 
+export type AcademicYearDto = {
+  id: string;
+  name: string;
+  startDate: string;
+  endDate: string;
+  isActive: boolean;
+};
+
 // School/Settings API
 export const settingsApi = {
   getSchoolSettings: async (): Promise<SchoolDto> => {
@@ -1325,6 +1343,51 @@ export const settingsApi = {
     const response = await api.post<SchoolDto>('/v1/settings/school/logo', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     });
+    return response.data;
+  },
+
+  getAcademicYears: async (): Promise<AcademicYearDto[]> => {
+    const response = await api.get<AcademicYearDto[]>('/v1/settings/academic-years');
+    return response.data;
+  },
+
+  getActiveAcademicYear: async (): Promise<AcademicYearDto> => {
+    const response = await api.get<AcademicYearDto>('/v1/settings/academic-years/active');
+    return response.data;
+  },
+
+  createAcademicYear: async (data: Omit<AcademicYearDto, 'id'>): Promise<AcademicYearDto> => {
+    const response = await api.post<AcademicYearDto>('/v1/settings/academic-years', data);
+    return response.data;
+  },
+
+  toggleAcademicYearStatus: async (id: string): Promise<boolean> => {
+    const response = await api.patch<boolean>(`/v1/settings/academic-years/${id}/toggle-status`);
+    return response.data;
+  },
+};
+
+// Promotion Types
+export type PromoteStudentsDto = {
+  sourceAcademicYearId: string;
+  targetAcademicYearId: string;
+  studentIds: string[];
+  targetClassId: string;
+  targetSectionId?: string;
+  markSourceAsPromoted?: boolean;
+};
+
+export type PromotionResultDto = {
+  success: boolean;
+  message: string;
+  promotedCount: number;
+  errors: string[];
+};
+
+// Promotion API
+export const promotionApi = {
+  promoteBulk: async (data: PromoteStudentsDto) => {
+    const response = await api.post<PromotionResultDto>('/v1/promotions/bulk', data);
     return response.data;
   },
 };

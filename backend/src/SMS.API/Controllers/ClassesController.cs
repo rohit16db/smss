@@ -69,7 +69,7 @@ public class ClassesController : ControllerBase
         var command = new CreateClassCommand
         {
             Name = dto.Name,
-            AcademicYear = dto.AcademicYear
+            AcademicYearId = dto.AcademicYearId
         };
 
         var result = await _mediator.Send(command);
@@ -88,7 +88,7 @@ public class ClassesController : ControllerBase
         {
             Id = id,
             Name = dto.Name,
-            AcademicYear = dto.AcademicYear,
+            AcademicYearId = dto.AcademicYearId,
             IsActive = dto.IsActive
         };
 

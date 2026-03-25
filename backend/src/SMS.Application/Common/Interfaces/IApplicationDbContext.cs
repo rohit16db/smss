@@ -15,8 +15,8 @@ public interface IApplicationDbContext
     // Phase 2: Class & Section Management
     DbSet<Class> Classes { get; }
     DbSet<Section> Sections { get; }
-    DbSet<StudentSection> StudentSections { get; }
-    
+    DbSet<AcademicYear> AcademicYears { get; }
+    DbSet<Enrollment> Enrollments { get; }    
     // Phase 3: Teacher Management
     DbSet<Teacher> Teachers { get; }
     DbSet<TeacherAssignment> TeacherAssignments { get; }

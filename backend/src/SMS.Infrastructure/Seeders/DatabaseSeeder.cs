@@ -99,6 +99,23 @@ namespace SMS.Infrastructure.Seeders
                 await context.SaveChangesAsync();
                 
                 Console.WriteLine("✓ Seeded school configuration successfully!");
+
+                // Seed Default Academic Year
+                var academicYear = new AcademicYear
+                {
+                    Id = Guid.NewGuid(),
+                    Name = "2024-2025",
+                    StartDate = new DateTime(2024, 4, 1, 0, 0, 0, DateTimeKind.Utc),
+                    EndDate = new DateTime(2025, 3, 31, 23, 59, 59, DateTimeKind.Utc),
+                    IsActive = true,
+                    CreatedAt = DateTime.UtcNow,
+                    CreatedBy = "system"
+                };
+
+                await context.AcademicYears.AddAsync(academicYear);
+                await context.SaveChangesAsync();
+                Console.WriteLine("✓ Seeded default academic year successfully!");
+
                 Console.WriteLine("Database seeding completed!");
             }
             catch (Exception ex)

@@ -15,9 +15,11 @@ public class Exam : BaseEntity
     public decimal TotalMarks { get; set; } = 100;
     public decimal PassMarks { get; set; } = 40;
     public ExamStatus Status { get; set; } = ExamStatus.Draft;
+    public Guid AcademicYearId { get; set; }
     public Guid CreatedById { get; set; }
 
     // Navigation properties
+    public virtual AcademicYear? AcademicYear { get; set; }
     public virtual User? CreatedBy { get; set; }
     public virtual ICollection<ExamSubject> ExamSubjects { get; set; } = new List<ExamSubject>();
     public virtual ICollection<ExamClass> ExamClasses { get; set; } = new List<ExamClass>();

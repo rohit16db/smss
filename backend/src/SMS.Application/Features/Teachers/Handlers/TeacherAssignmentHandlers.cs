@@ -14,10 +14,12 @@ namespace SMS.Application.Features.Teachers.Handlers;
 public class CreateTeacherAssignmentHandler : IRequestHandler<CreateTeacherAssignmentCommand, TeacherAssignmentDto>
 {
     private readonly IApplicationDbContext _context;
+    private readonly IAcademicYearContext _academicYearContext;
 
-    public CreateTeacherAssignmentHandler(IApplicationDbContext context)
+    public CreateTeacherAssignmentHandler(IApplicationDbContext context, IAcademicYearContext academicYearContext)
     {
         _context = context;
+        _academicYearContext = academicYearContext;
     }
 
     public async Task<TeacherAssignmentDto> Handle(CreateTeacherAssignmentCommand request, CancellationToken cancellationToken)
@@ -40,16 +42,17 @@ public class CreateTeacherAssignmentHandler : IRequestHandler<CreateTeacherAssig
         if (subject == null)
             throw new KeyNotFoundException($"Subject with ID {request.SubjectId} not found");
 
-        // Check for duplicate active assignment
+        // Check for duplicate active assignment in the current academic year
         var duplicateExists = await _context.TeacherAssignments
             .AnyAsync(ta => ta.TeacherId == request.TeacherId 
                 && ta.ClassId == request.ClassId 
                 && ta.SubjectId == request.SubjectId 
+                && ta.AcademicYearId == _academicYearContext.RequiredAcademicYearId
                 && ta.RemovalDate == null, cancellationToken);
 
         if (duplicateExists)
             throw new InvalidOperationException(
-                $"Teacher is already assigned to this class and subject combination");
+                $"Teacher is already assigned to this class and subject combination in the current session");
 
         var assignment = new TeacherAssignment
         {
@@ -57,6 +60,7 @@ public class CreateTeacherAssignmentHandler : IRequestHandler<CreateTeacherAssig
             TeacherId = request.TeacherId,
             ClassId = request.ClassId,
             SubjectId = request.SubjectId,
+            AcademicYearId = _academicYearContext.RequiredAcademicYearId,
             AssignmentDate = request.AssignmentDate ?? DateOnly.FromDateTime(DateTime.UtcNow),
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
@@ -118,17 +122,19 @@ public class RemoveTeacherAssignmentHandler : IRequestHandler<RemoveTeacherAssig
 public class GetTeacherAssignmentsHandler : IRequestHandler<GetTeacherAssignmentsQuery, List<TeacherAssignmentDto>>
 {
     private readonly IApplicationDbContext _context;
+    private readonly IAcademicYearContext _academicYearContext;
 
-    public GetTeacherAssignmentsHandler(IApplicationDbContext context)
+    public GetTeacherAssignmentsHandler(IApplicationDbContext context, IAcademicYearContext academicYearContext)
     {
         _context = context;
+        _academicYearContext = academicYearContext;
     }
 
     public async Task<List<TeacherAssignmentDto>> Handle(GetTeacherAssignmentsQuery request, CancellationToken cancellationToken)
     {
         var query = _context.TeacherAssignments
             .Include(ta => ta.Teacher)
-            .Where(ta => ta.TeacherId == request.TeacherId);
+            .Where(ta => ta.TeacherId == request.TeacherId && ta.AcademicYearId == _academicYearContext.RequiredAcademicYearId);
 
         if (request.ActiveOnly == true)
         {

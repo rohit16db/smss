@@ -1,6 +1,8 @@
 import { useNavigate } from 'react-router-dom';
 import { useState, useRef, useEffect } from 'react';
 import { authService } from '../../services/authService';
+import { settingsApi, type AcademicYearDto } from '../../services/api';
+import toast from 'react-hot-toast';
 
 interface HeaderProps {
   onMenuClick?: () => void;
@@ -41,6 +43,7 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
   const [mobilePayrollOpen, setMobilePayrollOpen] = useState(false);
   const [mobileReportsOpen, setMobileReportsOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [sessionMenuOpen, setSessionMenuOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState<StoredUser | null>(null);
   
   const academicTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -48,6 +51,39 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
   const payrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const reportsTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const userMenuTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const sessionMenuTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+  const [academicYears, setAcademicYears] = useState<AcademicYearDto[]>([]);
+  const [selectedYearId, setSelectedYearId] = useState<string>(localStorage.getItem('selectedAcademicYearId') || '');
+
+  useEffect(() => {
+    const fetchYears = async () => {
+      try {
+        const years = await settingsApi.getAcademicYears();
+        setAcademicYears(years);
+        
+        if (!localStorage.getItem('selectedAcademicYearId')) {
+          const activeYear = years.find(y => y.isActive);
+          if (activeYear) {
+            setSelectedYearId(activeYear.id);
+            localStorage.setItem('selectedAcademicYearId', activeYear.id);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to fetch academic years', error);
+      }
+    };
+    fetchYears();
+  }, []);
+
+  const handleYearChange = (id: string) => {
+    setSelectedYearId(id);
+    localStorage.setItem('selectedAcademicYearId', id);
+    toast.success('Academic year switched. Reloading...');
+    setTimeout(() => {
+      window.location.reload();
+    }, 500);
+  };
 
   useEffect(() => {
     const readUser = () => {
@@ -144,6 +180,17 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
     setUserMenuOpen(true);
   };
 
+  const handleSessionMenuMouseLeave = () => {
+    sessionMenuTimeoutRef.current = setTimeout(() => {
+      setSessionMenuOpen(false);
+    }, 150);
+  };
+
+  const handleSessionMenuMouseEnter = () => {
+    if (sessionMenuTimeoutRef.current) clearTimeout(sessionMenuTimeoutRef.current);
+    setSessionMenuOpen(true);
+  };
+
   const handleLogout = async () => {
     try {
       await authService.logout();
@@ -160,8 +207,8 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
   
   return (
     <header className="bg-gradient-to-r from-blue-600 to-blue-700 shadow-lg sticky top-0 z-50">
-      <nav className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="flex h-16 items-center justify-between">
+      <nav className="px-4 lg:px-12">
+        <div className="flex h-16 items-center justify-between gap-2">
           {/* Logo and Brand */}
           <div className="flex items-center">
             <button
@@ -251,6 +298,14 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
                         className="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-colors flex items-center gap-2"
                       >
                         🏖️ Holidays
+                      </button>
+                    )}
+                    {(isAdmin || isClerk) && (
+                      <button
+                        onClick={() => navigate('/students/promote')}
+                        className="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-colors flex items-center gap-2"
+                      >
+                        🔄 Student Promotion
                       </button>
                     )}
                   </div>
@@ -419,6 +474,70 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
             )}
           </div>
 
+            {/* Academic Year Selector */}
+            <div 
+              className="relative"
+              onMouseEnter={handleSessionMenuMouseEnter}
+              onMouseLeave={handleSessionMenuMouseLeave}
+            >
+              <button className="flex items-center gap-2 bg-white/10 hover:bg-white/20 px-4 py-2 rounded-xl border border-white/20 shadow-lg backdrop-blur-sm transition-all group">
+                <div className="flex flex-col items-start">
+                  <span className="text-[9px] uppercase font-black text-blue-100 tracking-[0.2em] leading-none mb-1">Current Session</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-white text-sm font-bold truncate max-w-[120px]">
+                      {academicYears.find(y => y.id === selectedYearId)?.name || 'Select Session'}
+                    </span>
+                    <svg className={`w-4 h-4 text-blue-200 transition-transform duration-300 ${sessionMenuOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
+                </div>
+              </button>
+              
+              {sessionMenuOpen && (
+                <div className="absolute top-full right-0 mt-2 w-64 bg-white rounded-2xl shadow-2xl border border-gray-100 py-3 animate-fadeIn overflow-hidden z-50">
+                  <div className="px-4 pb-2 mb-2 border-b border-gray-100">
+                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Select Academic Year</span>
+                  </div>
+                  <div className="max-h-64 overflow-y-auto custom-scrollbar">
+                    {academicYears.length > 0 ? (
+                      academicYears.map((year) => (
+                        <button
+                          key={year.id}
+                          onClick={() => {
+                            handleYearChange(year.id);
+                            setSessionMenuOpen(false);
+                          }}
+                          className={`w-full text-left px-4 py-3 flex items-center justify-between transition-all group ${
+                            selectedYearId === year.id 
+                              ? 'bg-blue-50 text-blue-700' 
+                              : 'hover:bg-gray-50 text-gray-700'
+                          }`}
+                        >
+                          <div className="flex flex-col">
+                            <span className="font-bold flex items-center gap-2">
+                              {year.name}
+                              {year.isActive && (
+                                <span className="px-1.5 py-0.5 rounded-md bg-green-100 text-green-700 text-[9px] font-black uppercase tracking-tighter">Active</span>
+                              )}
+                            </span>
+                            <span className="text-[10px] text-gray-400 font-medium">
+                              {year.isActive ? 'Current primary session' : 'Previous/Future session'}
+                            </span>
+                          </div>
+                          {selectedYearId === year.id && (
+                            <div className="w-2 h-2 rounded-full bg-blue-600 shadow-sm shadow-blue-200"></div>
+                          )}
+                        </button>
+                      ))
+                    ) : (
+                      <div className="px-4 py-3 text-sm text-gray-500 italic">No years found...</div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
           {/* User Profile Dropdown */}
           <div 
             className="hidden lg:block relative"
@@ -448,6 +567,15 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
                 <hr className="my-1 border-gray-200" />
                 {isAdmin && (
                   <>
+                    <button
+                      onClick={() => {
+                        navigate('/admin/academic-years');
+                        setUserMenuOpen(false);
+                      }}
+                      className="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-colors flex items-center gap-2"
+                    >
+                      📅 Academic Years
+                    </button>
                     <button
                       onClick={() => {
                         navigate('/admin/settings');
@@ -501,6 +629,27 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
         {/* Mobile Navigation */}
         {mobileMenuOpen && (
           <div className="lg:hidden pb-4 animate-fade-in">
+            <div className="flex flex-col space-y-2 px-4 mb-4">
+              <div className="bg-blue-800/40 rounded-xl p-3 border border-blue-400/20 shadow-inner">
+                <p className="text-[10px] font-black text-blue-200 uppercase tracking-widest mb-2">Current Session</p>
+                <div className="flex flex-wrap gap-2">
+                  {academicYears.map((year) => (
+                    <button
+                      key={year.id}
+                      onClick={() => handleYearChange(year.id)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                        selectedYearId === year.id
+                          ? 'bg-white text-blue-700 shadow-md'
+                          : 'bg-blue-700/50 text-blue-100 hover:bg-blue-700/70'
+                      }`}
+                    >
+                      {year.name}
+                      {year.isActive && selectedYearId !== year.id && ' 📍'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
             <div className="flex flex-col space-y-2">
               {/* Academic Section */}
               {canViewAcademic && (
@@ -807,15 +956,26 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
               {/* Account Section */}
               <div className="border-t border-blue-700 pt-2 space-y-1">
                 {isAdmin && (
-                  <button
-                    onClick={() => {
-                      navigate('/admin/settings');
-                      setMobileMenuOpen(false);
-                    }}
-                    className="w-full px-4 py-2 rounded-lg text-white hover:bg-blue-700 transition-colors duration-200 text-left"
-                  >
-                    ⚙️ Settings
-                  </button>
+                  <>
+                    <button
+                      onClick={() => {
+                        navigate('/admin/academic-years');
+                        setMobileMenuOpen(false);
+                      }}
+                      className="w-full px-4 py-2 rounded-lg text-white hover:bg-blue-700 transition-colors duration-200 text-left"
+                    >
+                      📅 Academic Years
+                    </button>
+                    <button
+                      onClick={() => {
+                        navigate('/admin/settings');
+                        setMobileMenuOpen(false);
+                      }}
+                      className="w-full px-4 py-2 rounded-lg text-white hover:bg-blue-700 transition-colors duration-200 text-left"
+                    >
+                      ⚙️ Settings
+                    </button>
+                  </>
                 )}
                 <button
                   onClick={() => {

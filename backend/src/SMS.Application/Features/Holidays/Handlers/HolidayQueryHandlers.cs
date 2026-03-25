@@ -13,10 +13,12 @@ namespace SMS.Application.Features.Holidays.Handlers;
 public class GetAllHolidaysQueryHandler : IRequestHandler<GetAllHolidaysQuery, PaginatedHolidayListDto>
 {
     private readonly IApplicationDbContext _context;
+    private readonly IAcademicYearContext _academicYearContext;
 
-    public GetAllHolidaysQueryHandler(IApplicationDbContext context)
+    public GetAllHolidaysQueryHandler(IApplicationDbContext context, IAcademicYearContext academicYearContext)
     {
         _context = context;
+        _academicYearContext = academicYearContext;
     }
 
     public async Task<PaginatedHolidayListDto> Handle(GetAllHolidaysQuery request, CancellationToken cancellationToken)
@@ -24,8 +26,10 @@ public class GetAllHolidaysQueryHandler : IRequestHandler<GetAllHolidaysQuery, P
         var query = _context.Holidays.AsQueryable();
 
         // Apply filters
-        if (!string.IsNullOrEmpty(request.AcademicYear))
-            query = query.Where(h => h.AcademicYear == request.AcademicYear);
+        query = query.Where(h => h.AcademicYearId == _academicYearContext.RequiredAcademicYearId);
+
+        if (!string.IsNullOrEmpty(request.AcademicYearId) && Guid.TryParse(request.AcademicYearId, out var ayId))
+            query = query.Where(h => h.AcademicYearId == ayId);
 
         if (request.StartDate.HasValue)
         {
@@ -57,7 +61,8 @@ public class GetAllHolidaysQueryHandler : IRequestHandler<GetAllHolidaysQuery, P
                 HolidayDate = h.HolidayDate.ToDateTime(TimeOnly.MinValue),
                 Description = h.Description,
                 Type = h.Type,
-                AcademicYear = h.AcademicYear
+                AcademicYearId = h.AcademicYearId.ToString(),
+                AcademicYearName = h.AcademicYear != null ? h.AcademicYear.Name : null
             })
             .ToListAsync(cancellationToken);
 
@@ -101,7 +106,8 @@ public class GetHolidayByIdQueryHandler : IRequestHandler<GetHolidayByIdQuery, H
             HolidayDate = holiday.HolidayDate.ToDateTime(TimeOnly.MinValue),
             Description = holiday.Description,
             Type = holiday.Type,
-            AcademicYear = holiday.AcademicYear
+            AcademicYearId = holiday.AcademicYearId.ToString(),
+            AcademicYearName = holiday.AcademicYear != null ? holiday.AcademicYear.Name : null
         };
     }
 }
@@ -112,10 +118,12 @@ public class GetHolidayByIdQueryHandler : IRequestHandler<GetHolidayByIdQuery, H
 public class GetHolidaysByMonthQueryHandler : IRequestHandler<GetHolidaysByMonthQuery, List<HolidayDto>>
 {
     private readonly IApplicationDbContext _context;
+    private readonly IAcademicYearContext _academicYearContext;
 
-    public GetHolidaysByMonthQueryHandler(IApplicationDbContext context)
+    public GetHolidaysByMonthQueryHandler(IApplicationDbContext context, IAcademicYearContext academicYearContext)
     {
         _context = context;
+        _academicYearContext = academicYearContext;
     }
 
     public async Task<List<HolidayDto>> Handle(GetHolidaysByMonthQuery request, CancellationToken cancellationToken)
@@ -124,7 +132,8 @@ public class GetHolidaysByMonthQueryHandler : IRequestHandler<GetHolidaysByMonth
         var endDate = startDate.AddMonths(1).AddDays(-1);
 
         var holidays = await _context.Holidays
-            .Where(h => h.HolidayDate >= startDate && h.HolidayDate <= endDate)
+            .Where(h => h.AcademicYearId == _academicYearContext.RequiredAcademicYearId &&
+                        h.HolidayDate >= startDate && h.HolidayDate <= endDate)
             .OrderBy(h => h.HolidayDate)
             .Select(h => new HolidayDto
             {
@@ -133,7 +142,8 @@ public class GetHolidaysByMonthQueryHandler : IRequestHandler<GetHolidaysByMonth
                 HolidayDate = h.HolidayDate.ToDateTime(TimeOnly.MinValue),
                 Description = h.Description,
                 Type = h.Type,
-                AcademicYear = h.AcademicYear
+                AcademicYearId = h.AcademicYearId.ToString(),
+                AcademicYearName = h.AcademicYear != null ? h.AcademicYear.Name : null
             })
             .ToListAsync(cancellationToken);
 

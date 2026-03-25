@@ -12,7 +12,7 @@ public class CreateHolidayCommand : IRequest<HolidayDto>
     public DateTime HolidayDate { get; set; }
     public string? Description { get; set; }
     public string? Type { get; set; }
-    public string AcademicYear { get; set; } = string.Empty;
+    public string AcademicYearId { get; set; } = string.Empty;
 }
 
 /// <summary>
@@ -25,7 +25,7 @@ public class UpdateHolidayCommand : IRequest<HolidayDto>
     public DateTime HolidayDate { get; set; }
     public string? Description { get; set; }
     public string? Type { get; set; }
-    public string AcademicYear { get; set; } = string.Empty;
+    public string AcademicYearId { get; set; } = string.Empty;
 }
 
 /// <summary>

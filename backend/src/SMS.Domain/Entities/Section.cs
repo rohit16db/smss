@@ -27,7 +27,7 @@ public class Section : BaseEntity
     public Class? Class { get; set; }
 
     /// <summary>
-    /// Students enrolled in this section
+    /// Enrollments linked to this section
     /// </summary>
-    public ICollection<StudentSection> StudentSections { get; set; } = new List<StudentSection>();
+    public ICollection<Enrollment> Enrollments { get; set; } = new List<Enrollment>();
 }

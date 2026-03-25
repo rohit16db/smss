@@ -22,9 +22,14 @@ public class FeeStructureConfiguration : IEntityTypeConfiguration<FeeStructure>
             .HasMaxLength(100)
             .IsRequired();
         
-        builder.Property(fs => fs.AcademicYear)
-            .HasColumnName("academic_year")
+        builder.Property(fs => fs.AcademicYearId)
+            .HasColumnName("academic_year_id")
             .IsRequired();
+
+        builder.HasOne(fs => fs.AcademicYear)
+            .WithMany(ay => ay.FeeStructures)
+            .HasForeignKey(fs => fs.AcademicYearId)
+            .OnDelete(DeleteBehavior.Restrict);
         
         builder.Property(fs => fs.Frequency)
             .HasColumnName("frequency")
@@ -67,7 +72,7 @@ public class FeeStructureConfiguration : IEntityTypeConfiguration<FeeStructure>
             .OnDelete(DeleteBehavior.Restrict);
         
         // Indexes
-        builder.HasIndex(fs => fs.AcademicYear);
+        builder.HasIndex(fs => fs.AcademicYearId);
         builder.HasIndex(fs => fs.IsActive);
     }
 }

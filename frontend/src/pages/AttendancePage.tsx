@@ -2,9 +2,11 @@ import { useState, useRef, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { attendanceApi, studentApi, teacherApi, holidayApi, type CreateStudentAttendanceDto, type CreateTeacherAttendanceDto, type StudentAttendance, type TeacherAttendance, type Student, type Teacher } from '../services/api';
+import { useAcademicYear } from '../hooks/useAcademicYear';
 
 export function AttendancePage() {
   const queryClient = useQueryClient();
+  const { activeYear } = useAcademicYear();
   const [activeTab, setActiveTab] = useState<'student' | 'teacher'>('student');
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
@@ -568,8 +570,8 @@ export function AttendancePage() {
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-2">📊 Attendance Management</h1>
-          <p className="text-gray-600 mt-1">Track student and teacher attendance records</p>
+          <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-2">📊 Attendance Management - {activeYear?.name || "Loading..."}</h1>
+          <p className="text-gray-600 mt-1">Track student and teacher attendance records for the current session</p>
         </div>
 
         {/* Tabs */}

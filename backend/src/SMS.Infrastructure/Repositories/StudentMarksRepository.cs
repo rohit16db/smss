@@ -10,9 +10,9 @@ namespace SMS.Infrastructure.Repositories;
 /// </summary>
 public interface IStudentMarksRepository
 {
-    Task<StudentMarks?> GetSingleAsync(Guid examId, Guid studentId, Guid subjectId, CancellationToken cancellationToken = default);
+    Task<StudentMarks?> GetSingleAsync(Guid examId, Guid enrollmentId, Guid subjectId, CancellationToken cancellationToken = default);
     Task<List<StudentMarks>> GetByExamAndClassAsync(Guid examId, Guid classId, CancellationToken cancellationToken = default);
-    Task<List<StudentMarks>> GetByStudentAndExamAsync(Guid studentId, Guid examId, CancellationToken cancellationToken = default);
+    Task<List<StudentMarks>> GetByStudentAndExamAsync(Guid enrollmentId, Guid examId, CancellationToken cancellationToken = default);
     Task SaveAsync(List<StudentMarks> marks, CancellationToken cancellationToken = default);
     Task<StudentMarks> UpdateAsync(StudentMarks marks, CancellationToken cancellationToken = default);
 }
@@ -26,31 +26,31 @@ public class StudentMarksRepository : IStudentMarksRepository
         _context = context;
     }
 
-    public async Task<StudentMarks?> GetSingleAsync(Guid examId, Guid studentId, Guid subjectId, CancellationToken cancellationToken = default)
+    public async Task<StudentMarks?> GetSingleAsync(Guid examId, Guid enrollmentId, Guid subjectId, CancellationToken cancellationToken = default)
     {
         return await _context.StudentMarks
-            .FirstOrDefaultAsync(sm => sm.ExamId == examId && sm.StudentId == studentId && sm.SubjectId == subjectId, cancellationToken);
+            .FirstOrDefaultAsync(sm => sm.ExamId == examId && sm.EnrollmentId == enrollmentId && sm.SubjectId == subjectId, cancellationToken);
     }
 
     public async Task<List<StudentMarks>> GetByExamAndClassAsync(Guid examId, Guid classId, CancellationToken cancellationToken = default)
     {
-        var studentIds = await _context.StudentSections
-            .Where(ss => ss.Section!.ClassId == classId)
+        var studentIds = await _context.Enrollments
+            .Where(ss => ss.Section != null && ss.Section.ClassId == classId && ss.Status == "Enrolled")
             .Select(ss => ss.StudentId)
             .ToListAsync(cancellationToken);
 
         return await _context.StudentMarks
-            .Where(sm => sm.ExamId == examId && studentIds.Contains(sm.StudentId))
+            .Where(sm => sm.ExamId == examId && studentIds.Contains(sm.Enrollment!.StudentId))
+            .Include(sm => sm.Enrollment)
             .Include(sm => sm.ExamSubject)
             .ThenInclude(es => es!.Subject)
-            .OrderBy(sm => sm.Student!.FirstName)
             .ToListAsync(cancellationToken);
     }
 
-    public async Task<List<StudentMarks>> GetByStudentAndExamAsync(Guid studentId, Guid examId, CancellationToken cancellationToken = default)
+    public async Task<List<StudentMarks>> GetByStudentAndExamAsync(Guid enrollmentId, Guid examId, CancellationToken cancellationToken = default)
     {
         return await _context.StudentMarks
-            .Where(sm => sm.StudentId == studentId && sm.ExamId == examId)
+            .Where(sm => sm.EnrollmentId == enrollmentId && sm.ExamId == examId)
             .Include(sm => sm.ExamSubject)
             .ThenInclude(es => es!.Subject)
             .ToListAsync(cancellationToken);
@@ -61,7 +61,7 @@ public class StudentMarksRepository : IStudentMarksRepository
         foreach (var mark in marks)
         {
             var existing = await _context.StudentMarks
-                .FirstOrDefaultAsync(sm => sm.ExamId == mark.ExamId && sm.StudentId == mark.StudentId && sm.SubjectId == mark.SubjectId, cancellationToken);
+                .FirstOrDefaultAsync(sm => sm.ExamId == mark.ExamId && sm.EnrollmentId == mark.EnrollmentId && sm.SubjectId == mark.SubjectId, cancellationToken);
 
             if (existing != null)
             {

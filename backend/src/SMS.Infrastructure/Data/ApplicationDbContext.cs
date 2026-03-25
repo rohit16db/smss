@@ -21,8 +21,8 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     // Phase 2: Class & Section Management
     public DbSet<Class> Classes => Set<Class>();
     public DbSet<Section> Sections => Set<Section>();
-    public DbSet<StudentSection> StudentSections => Set<StudentSection>();
-    
+    public DbSet<AcademicYear> AcademicYears => Set<AcademicYear>();
+    public DbSet<Enrollment> Enrollments => Set<Enrollment>();    
     // Phase 3: Teacher Management
     public DbSet<Teacher> Teachers => Set<Teacher>();
     public DbSet<TeacherAssignment> TeacherAssignments => Set<TeacherAssignment>();

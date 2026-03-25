@@ -18,10 +18,10 @@ public class RollNumberService : IRollNumberService
 
     public async Task AssignSequentialRollNumbersAsync(Guid sectionId, CancellationToken cancellationToken = default)
     {
-        // Get all current student sections for the section, ordered by joined date
-        var studentSections = await _context.StudentSections
-            .Where(ss => ss.SectionId == sectionId && ss.IsCurrent)
-            .OrderBy(ss => ss.JoinedDate)
+        // Get all current enrollments for the section, ordered by joined date
+        var studentSections = await _context.Enrollments
+            .Where(ss => ss.SectionId == sectionId && ss.Status == "Enrolled")
+            .OrderBy(ss => ss.EnrollmentDate)
             .ToListAsync(cancellationToken);
 
         // Assign sequential roll numbers starting from 1
@@ -37,17 +37,17 @@ public class RollNumberService : IRollNumberService
 
     public async Task UpdateRollNumberAsync(Guid studentSectionId, int rollNumber, CancellationToken cancellationToken = default)
     {
-        var studentSection = await _context.StudentSections
+        var studentSection = await _context.Enrollments
             .FirstOrDefaultAsync(ss => ss.Id == studentSectionId, cancellationToken)
-            ?? throw new InvalidOperationException($"StudentSection with Id {studentSectionId} not found");
+            ?? throw new InvalidOperationException($"Enrollment with Id {studentSectionId} not found");
 
         // Check if roll number already exists in the same section
-        var existingWithRollNumber = await _context.StudentSections
+        var existingWithRollNumber = await _context.Enrollments
             .FirstOrDefaultAsync(
                 ss => ss.SectionId == studentSection.SectionId
                     && ss.RollNumber == rollNumber
                     && ss.Id != studentSectionId
-                    && ss.IsCurrent,
+                    && ss.Status == "Enrolled",
                 cancellationToken);
 
         if (existingWithRollNumber != null)
@@ -62,8 +62,8 @@ public class RollNumberService : IRollNumberService
 
     public async Task<int> GetNextAvailableRollNumberAsync(Guid sectionId, CancellationToken cancellationToken = default)
     {
-        var maxRollNumber = await _context.StudentSections
-            .Where(ss => ss.SectionId == sectionId && ss.IsCurrent)
+        var maxRollNumber = await _context.Enrollments
+            .Where(ss => ss.SectionId == sectionId && ss.Status == "Enrolled")
             .MaxAsync(ss => (int?)ss.RollNumber, cancellationToken) ?? 0;
 
         return maxRollNumber + 1;
@@ -71,18 +71,18 @@ public class RollNumberService : IRollNumberService
 
     public async Task<List<StudentSectionForRollManagement>> GetStudentsWithRollNumbersAsync(Guid sectionId, CancellationToken cancellationToken = default)
     {
-        var studentSections = await _context.StudentSections
-            .Where(ss => ss.SectionId == sectionId && ss.IsCurrent)
+        var studentSections = await _context.Enrollments
+            .Where(ss => ss.SectionId == sectionId && ss.Status == "Enrolled")
             .Include(ss => ss.Student)
             .OrderBy(ss => ss.RollNumber ?? int.MaxValue)
-            .ThenBy(ss => ss.JoinedDate)
+            .ThenBy(ss => ss.EnrollmentDate)
             .Select(ss => new StudentSectionForRollManagement
             {
                 StudentSectionId = ss.Id.ToString(),
                 StudentId = ss.Student!.Id.ToString(),
                 StudentName = $"{ss.Student.FirstName} {ss.Student.LastName}",
                 CurrentRollNumber = ss.RollNumber,
-                JoinedDate = ss.JoinedDate
+                JoinedDate = ss.EnrollmentDate
             })
             .ToListAsync(cancellationToken);
 
@@ -98,8 +98,8 @@ public class RollNumberService : IRollNumberService
         }
 
         // Get all student sections to update
-        var studentSections = await _context.StudentSections
-            .Where(ss => sectionId == ss.SectionId && ss.IsCurrent && rollNumberUpdates.Keys.Contains(ss.Id))
+        var studentSections = await _context.Enrollments
+            .Where(ss => sectionId == ss.SectionId && ss.Status == "Enrolled" && rollNumberUpdates.Keys.Contains(ss.Id))
             .ToListAsync(cancellationToken);
 
         // Update roll numbers

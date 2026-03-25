@@ -13,10 +13,12 @@ namespace SMS.Application.Features.Classes.Handlers.CommandHandlers;
 public class CreateClassCommandHandler : IRequestHandler<CreateClassCommand, ClassDto>
 {
     private readonly IApplicationDbContext _context;
+    private readonly IAcademicYearContext _academicYearContext;
 
-    public CreateClassCommandHandler(IApplicationDbContext context)
+    public CreateClassCommandHandler(IApplicationDbContext context, IAcademicYearContext academicYearContext)
     {
         _context = context;
+        _academicYearContext = academicYearContext;
     }
 
     public async Task<ClassDto> Handle(CreateClassCommand request, CancellationToken cancellationToken)
@@ -24,7 +26,6 @@ public class CreateClassCommandHandler : IRequestHandler<CreateClassCommand, Cla
         var classEntity = new Class
         {
             Name = request.Name,
-            AcademicYear = request.AcademicYear,
             IsActive = true
         };
 
@@ -35,7 +36,7 @@ public class CreateClassCommandHandler : IRequestHandler<CreateClassCommand, Cla
         {
             Id = classEntity.Id.ToString(),
             Name = classEntity.Name,
-            AcademicYear = classEntity.AcademicYear,
+            AcademicYearId = _academicYearContext.AcademicYearId?.ToString() ?? "",
             IsActive = classEntity.IsActive,
             Sections = new(),
             CreatedAt = classEntity.CreatedAt,
@@ -50,10 +51,12 @@ public class CreateClassCommandHandler : IRequestHandler<CreateClassCommand, Cla
 public class UpdateClassCommandHandler : IRequestHandler<UpdateClassCommand, ClassDto>
 {
     private readonly IApplicationDbContext _context;
+    private readonly IAcademicYearContext _academicYearContext;
 
-    public UpdateClassCommandHandler(IApplicationDbContext context)
+    public UpdateClassCommandHandler(IApplicationDbContext context, IAcademicYearContext academicYearContext)
     {
         _context = context;
+        _academicYearContext = academicYearContext;
     }
 
     public async Task<ClassDto> Handle(UpdateClassCommand request, CancellationToken cancellationToken)
@@ -69,7 +72,6 @@ public class UpdateClassCommandHandler : IRequestHandler<UpdateClassCommand, Cla
             throw new Exception($"Class with ID {request.Id} not found");
 
         classEntity.Name = request.Name;
-        classEntity.AcademicYear = request.AcademicYear;
         classEntity.IsActive = request.IsActive;
 
         await _context.SaveChangesAsync(cancellationToken);
@@ -78,7 +80,7 @@ public class UpdateClassCommandHandler : IRequestHandler<UpdateClassCommand, Cla
         {
             Id = classEntity.Id.ToString(),
             Name = classEntity.Name,
-            AcademicYear = classEntity.AcademicYear,
+            AcademicYearId = _academicYearContext.AcademicYearId?.ToString() ?? "",
             IsActive = classEntity.IsActive,
             Sections = classEntity.Sections.Select(s => new SectionDto
             {
@@ -244,10 +246,12 @@ public class DeleteSectionCommandHandler : IRequestHandler<DeleteSectionCommand,
 public class MoveStudentSectionCommandHandler : IRequestHandler<MoveStudentSectionCommand, StudentSectionDto>
 {
     private readonly IApplicationDbContext _context;
+    private readonly IAcademicYearContext _academicYearContext;
 
-    public MoveStudentSectionCommandHandler(IApplicationDbContext context)
+    public MoveStudentSectionCommandHandler(IApplicationDbContext context, IAcademicYearContext academicYearContext)
     {
         _context = context;
+        _academicYearContext = academicYearContext;
     }
 
     public async Task<StudentSectionDto> Handle(MoveStudentSectionCommand request, CancellationToken cancellationToken)
@@ -270,39 +274,40 @@ public class MoveStudentSectionCommandHandler : IRequestHandler<MoveStudentSecti
             throw new Exception($"Section with ID {request.NewSectionId} not found");
 
         // Mark old current section as not current and set left date
-        var oldCurrentSection = await _context.StudentSections
-            .FirstOrDefaultAsync(ss => ss.StudentId == studentId && ss.IsCurrent, cancellationToken);
+        var oldEnrollment = await _context.Enrollments
+            .FirstOrDefaultAsync(ss => ss.StudentId == studentId && ss.Status == "Enrolled", cancellationToken);
 
-        if (oldCurrentSection != null)
+        if (oldEnrollment != null)
         {
-            oldCurrentSection.IsCurrent = false;
-            oldCurrentSection.LeftDate = DateTime.UtcNow;
+            oldEnrollment.Status = "Transferred";
         }
 
         // Create new enrollment record
-        var newStudentSection = new StudentSection
+        var newEnrollment = new Enrollment
         {
             StudentId = studentId,
             SectionId = newSectionId,
-            JoinedDate = DateTime.UtcNow,
-            IsCurrent = true
+            ClassId = section.ClassId,
+            EnrollmentDate = DateTime.UtcNow,
+            Status = "Enrolled",
+            AcademicYearId = _academicYearContext.RequiredAcademicYearId
         };
 
-        _context.StudentSections.Add(newStudentSection);
+        _context.Enrollments.Add(newEnrollment);
         await _context.SaveChangesAsync(cancellationToken);
 
         return new StudentSectionDto
         {
-            Id = newStudentSection.Id.ToString(),
-            StudentId = newStudentSection.StudentId.ToString(),
+            Id = newEnrollment.Id.ToString(),
+            StudentId = newEnrollment.StudentId.ToString(),
             StudentName = $"{student.FirstName} {student.LastName}",
-            SectionId = newStudentSection.SectionId.ToString(),
+            SectionId = newEnrollment.SectionId.ToString(),
             SectionName = section.SectionName,
             ClassName = section.Class?.Name ?? "",
-            JoinedDate = newStudentSection.JoinedDate,
-            LeftDate = newStudentSection.LeftDate,
-            IsCurrent = newStudentSection.IsCurrent,
-            RollNumber = newStudentSection.RollNumber
+            JoinedDate = newEnrollment.EnrollmentDate,
+            LeftDate = null,
+            IsCurrent = true,
+            RollNumber = newEnrollment.RollNumber
         };
     }
 }

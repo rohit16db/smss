@@ -11,10 +11,6 @@ public class Class : BaseEntity
     /// </summary>
     public string Name { get; set; } = string.Empty;
 
-    /// <summary>
-    /// Academic year (e.g., "2024-2025")
-    /// </summary>
-    public string? AcademicYear { get; set; }
 
     /// <summary>
     /// Whether the class is active
@@ -25,4 +21,9 @@ public class Class : BaseEntity
     /// Sections within this class
     /// </summary>
     public ICollection<Section> Sections { get; set; } = new List<Section>();
+
+    /// <summary>
+    /// Enrollments linked to this class
+    /// </summary>
+    public ICollection<Enrollment> Enrollments { get; set; } = new List<Enrollment>();
 }

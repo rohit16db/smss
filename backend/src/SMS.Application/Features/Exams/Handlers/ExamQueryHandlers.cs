@@ -11,11 +11,19 @@ public class ExamQueryHandlers
     public class GetExamsQueryHandler : IRequestHandler<GetExamsQuery, PaginatedResult<ExamDto>>
     {
         private readonly IApplicationDbContext _context;
-        public GetExamsQueryHandler(IApplicationDbContext context) => _context = context;
+        private readonly IAcademicYearContext _academicYearContext;
+
+        public GetExamsQueryHandler(IApplicationDbContext context, IAcademicYearContext academicYearContext)
+        {
+            _context = context;
+            _academicYearContext = academicYearContext;
+        }
         
         public async Task<PaginatedResult<ExamDto>> Handle(GetExamsQuery request, CancellationToken cancellationToken)
         {
-            var query = _context.Exams.AsQueryable();
+            var query = _context.Exams
+                .Where(e => e.AcademicYearId == _academicYearContext.RequiredAcademicYearId)
+                .AsQueryable();
 
             // Apply filters if provided
             if (!string.IsNullOrEmpty(request.Status))
@@ -57,7 +65,13 @@ public class ExamQueryHandlers
     public class GetExamByIdQueryHandler : IRequestHandler<GetExamByIdQuery, ExamDetailDto>
     {
         private readonly IApplicationDbContext _context;
-        public GetExamByIdQueryHandler(IApplicationDbContext context) => _context = context;
+        private readonly IAcademicYearContext _academicYearContext;
+
+        public GetExamByIdQueryHandler(IApplicationDbContext context, IAcademicYearContext academicYearContext)
+        {
+            _context = context;
+            _academicYearContext = academicYearContext;
+        }
         
         public async Task<ExamDetailDto> Handle(GetExamByIdQuery request, CancellationToken cancellationToken)
         {
@@ -79,9 +93,9 @@ public class ExamQueryHandlers
                 .Select(s => new { s.ClassId, s.Id })
                 .ToListAsync(cancellationToken);
 
-            // Step 2: Get count of current students for each section
-            var studentCountsBySection = await _context.StudentSections
-                .Where(ss => ss.IsCurrent) // Only current students
+            // Step 2: Get count of current students for each section in the active academic year
+            var studentCountsBySection = await _context.Enrollments
+                .Where(ss => ss.Status == "Enrolled" && ss.AcademicYearId == _academicYearContext.RequiredAcademicYearId) 
                 .GroupBy(ss => ss.SectionId)
                 .Select(g => new { SectionId = g.Key, Count = g.Count() })
                 .ToListAsync(cancellationToken);

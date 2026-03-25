@@ -15,7 +15,7 @@ public class FeeStructureCategoryDto
 public class CreateFeeStructureDto
 {
     public required string Name { get; set; }
-    public required int AcademicYear { get; set; }
+    public required string AcademicYearId { get; set; }
     public required string Frequency { get; set; }
     public required List<FeeStructureCategoryDto> Categories { get; set; }
 }
@@ -27,7 +27,7 @@ public class UpdateFeeStructureDto
 {
     public required string Id { get; set; }
     public required string Name { get; set; }
-    public required int AcademicYear { get; set; }
+    public required string AcademicYearId { get; set; }
     public required string Frequency { get; set; }
     public required bool IsActive { get; set; }
     public required List<FeeStructureCategoryDto> Categories { get; set; }
@@ -40,7 +40,8 @@ public class FeeStructureDto
 {
     public string Id { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;
-    public int AcademicYear { get; set; }
+    public string AcademicYearId { get; set; } = string.Empty;
+    public string AcademicYearName { get; set; } = string.Empty;
     public string Frequency { get; set; } = string.Empty;
     public decimal TotalAmount { get; set; }
     public bool IsActive { get; set; }
@@ -56,7 +57,8 @@ public class FeeStructureListDto
 {
     public string Id { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;
-    public int AcademicYear { get; set; }
+    public string AcademicYearId { get; set; } = string.Empty;
+    public string AcademicYearName { get; set; } = string.Empty;
     public string Frequency { get; set; } = string.Empty;
     public decimal TotalAmount { get; set; }
     public bool IsActive { get; set; }

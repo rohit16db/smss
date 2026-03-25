@@ -12,10 +12,12 @@ namespace SMS.Application.Features.Classes.Handlers.QueryHandlers;
 public class GetAllClassesQueryHandler : IRequestHandler<GetAllClassesQuery, PaginatedClassListDto>
 {
     private readonly IApplicationDbContext _context;
+    private readonly IAcademicYearContext _academicYearContext;
 
-    public GetAllClassesQueryHandler(IApplicationDbContext context)
+    public GetAllClassesQueryHandler(IApplicationDbContext context, IAcademicYearContext academicYearContext)
     {
         _context = context;
+        _academicYearContext = academicYearContext;
     }
 
     public async Task<PaginatedClassListDto> Handle(GetAllClassesQuery request, CancellationToken cancellationToken)
@@ -25,8 +27,7 @@ public class GetAllClassesQueryHandler : IRequestHandler<GetAllClassesQuery, Pag
         // Apply search filter
         if (!string.IsNullOrEmpty(request.SearchTerm))
         {
-            query = query.Where(c => c.Name.Contains(request.SearchTerm) || 
-                                     (c.AcademicYear != null && c.AcademicYear.Contains(request.SearchTerm)));
+            query = query.Where(c => c.Name.Contains(request.SearchTerm));
         }
 
         // Apply active filter
@@ -46,7 +47,7 @@ public class GetAllClassesQueryHandler : IRequestHandler<GetAllClassesQuery, Pag
             {
                 Id = c.Id.ToString(),
                 Name = c.Name,
-                AcademicYear = c.AcademicYear,
+                AcademicYearId = _academicYearContext.AcademicYearId.HasValue ? _academicYearContext.AcademicYearId.Value.ToString() : "",
                 IsActive = c.IsActive,
                 SectionCount = c.Sections.Count
             })
@@ -68,10 +69,12 @@ public class GetAllClassesQueryHandler : IRequestHandler<GetAllClassesQuery, Pag
 public class GetClassByIdQueryHandler : IRequestHandler<GetClassByIdQuery, ClassDto?>
 {
     private readonly IApplicationDbContext _context;
+    private readonly IAcademicYearContext _academicYearContext;
 
-    public GetClassByIdQueryHandler(IApplicationDbContext context)
+    public GetClassByIdQueryHandler(IApplicationDbContext context, IAcademicYearContext academicYearContext)
     {
         _context = context;
+        _academicYearContext = academicYearContext;
     }
 
     public async Task<ClassDto?> Handle(GetClassByIdQuery request, CancellationToken cancellationToken)
@@ -81,7 +84,7 @@ public class GetClassByIdQueryHandler : IRequestHandler<GetClassByIdQuery, Class
 
         var classEntity = await _context.Classes
             .Include(c => c.Sections)
-                .ThenInclude(s => s.StudentSections)
+                .ThenInclude(s => s.Enrollments)
             .FirstOrDefaultAsync(c => c.Id == classId, cancellationToken);
 
         if (classEntity == null)
@@ -91,7 +94,7 @@ public class GetClassByIdQueryHandler : IRequestHandler<GetClassByIdQuery, Class
         {
             Id = classEntity.Id.ToString(),
             Name = classEntity.Name,
-            AcademicYear = classEntity.AcademicYear,
+            AcademicYearId = _academicYearContext.AcademicYearId.HasValue ? _academicYearContext.AcademicYearId.Value.ToString() : "",
             IsActive = classEntity.IsActive,
             Sections = classEntity.Sections.Select(s => new SectionDto
             {
@@ -99,7 +102,7 @@ public class GetClassByIdQueryHandler : IRequestHandler<GetClassByIdQuery, Class
                 ClassId = s.ClassId.ToString(),
                 SectionName = s.SectionName,
                 IsActive = s.IsActive,
-                StudentCount = s.StudentSections.Count(ss => ss.IsCurrent),
+                StudentCount = s.Enrollments.Count(e => e.Status == "Enrolled" && e.AcademicYearId == _academicYearContext.RequiredAcademicYearId),
                 CreatedAt = s.CreatedAt,
                 UpdatedAt = s.UpdatedAt
             }).ToList(),
@@ -115,10 +118,12 @@ public class GetClassByIdQueryHandler : IRequestHandler<GetClassByIdQuery, Class
 public class GetSectionsByClassIdQueryHandler : IRequestHandler<GetSectionsByClassIdQuery, List<SectionListDto>>
 {
     private readonly IApplicationDbContext _context;
+    private readonly IAcademicYearContext _academicYearContext;
 
-    public GetSectionsByClassIdQueryHandler(IApplicationDbContext context)
+    public GetSectionsByClassIdQueryHandler(IApplicationDbContext context, IAcademicYearContext academicYearContext)
     {
         _context = context;
+        _academicYearContext = academicYearContext;
     }
 
     public async Task<List<SectionListDto>> Handle(GetSectionsByClassIdQuery request, CancellationToken cancellationToken)
@@ -134,7 +139,7 @@ public class GetSectionsByClassIdQueryHandler : IRequestHandler<GetSectionsByCla
                 Id = s.Id.ToString(),
                 SectionName = s.SectionName,
                 IsActive = s.IsActive,
-                StudentCount = s.StudentSections.Count(ss => ss.IsCurrent)
+                StudentCount = s.Enrollments.Count(e => e.Status == "Enrolled" && e.AcademicYearId == _academicYearContext.RequiredAcademicYearId)
             })
             .ToListAsync(cancellationToken);
 
@@ -148,10 +153,12 @@ public class GetSectionsByClassIdQueryHandler : IRequestHandler<GetSectionsByCla
 public class GetSectionByIdQueryHandler : IRequestHandler<GetSectionByIdQuery, SectionDto?>
 {
     private readonly IApplicationDbContext _context;
+    private readonly IAcademicYearContext _academicYearContext;
 
-    public GetSectionByIdQueryHandler(IApplicationDbContext context)
+    public GetSectionByIdQueryHandler(IApplicationDbContext context, IAcademicYearContext academicYearContext)
     {
         _context = context;
+        _academicYearContext = academicYearContext;
     }
 
     public async Task<SectionDto?> Handle(GetSectionByIdQuery request, CancellationToken cancellationToken)
@@ -166,8 +173,8 @@ public class GetSectionByIdQueryHandler : IRequestHandler<GetSectionByIdQuery, S
             return null;
 
         // Get student count
-        var studentCount = await _context.StudentSections
-            .CountAsync(ss => ss.SectionId == sectionId && ss.IsCurrent, cancellationToken);
+        var studentCount = await _context.Enrollments
+            .CountAsync(ss => ss.SectionId == sectionId && ss.Status == "Enrolled" && ss.AcademicYearId == _academicYearContext.RequiredAcademicYearId, cancellationToken);
 
         return new SectionDto
         {
@@ -188,10 +195,12 @@ public class GetSectionByIdQueryHandler : IRequestHandler<GetSectionByIdQuery, S
 public class GetStudentSectionHistoryQueryHandler : IRequestHandler<GetStudentSectionHistoryQuery, StudentSectionHistoryDto>
 {
     private readonly IApplicationDbContext _context;
+    private readonly IAcademicYearContext _academicYearContext;
 
-    public GetStudentSectionHistoryQueryHandler(IApplicationDbContext context)
+    public GetStudentSectionHistoryQueryHandler(IApplicationDbContext context, IAcademicYearContext academicYearContext)
     {
         _context = context;
+        _academicYearContext = academicYearContext;
     }
 
     public async Task<StudentSectionHistoryDto> Handle(GetStudentSectionHistoryQuery request, CancellationToken cancellationToken)
@@ -199,12 +208,12 @@ public class GetStudentSectionHistoryQueryHandler : IRequestHandler<GetStudentSe
         if (!Guid.TryParse(request.StudentId, out var studentId))
             return new StudentSectionHistoryDto { Items = new(), TotalCount = 0 };
 
-        var studentSections = await _context.StudentSections
+        var studentSections = await _context.Enrollments
             .Where(ss => ss.StudentId == studentId)
             .Include(ss => ss.Section)
             .ThenInclude(s => s.Class)
             .Include(ss => ss.Student)
-            .OrderByDescending(ss => ss.JoinedDate)
+            .OrderByDescending(ss => ss.EnrollmentDate)
             .Select(ss => new StudentSectionDto
             {
                 Id = ss.Id.ToString(),
@@ -213,9 +222,9 @@ public class GetStudentSectionHistoryQueryHandler : IRequestHandler<GetStudentSe
                 SectionId = ss.SectionId.ToString(),
                 SectionName = ss.Section != null ? ss.Section.SectionName : "",
                 ClassName = ss.Section != null && ss.Section.Class != null ? ss.Section.Class.Name : "",
-                JoinedDate = ss.JoinedDate,
-                LeftDate = ss.LeftDate,
-                IsCurrent = ss.IsCurrent,
+                JoinedDate = ss.EnrollmentDate,
+                LeftDate = null,
+                IsCurrent = ss.Status == "Enrolled",
                 RollNumber = ss.RollNumber
             })
             .ToListAsync(cancellationToken);
@@ -234,10 +243,12 @@ public class GetStudentSectionHistoryQueryHandler : IRequestHandler<GetStudentSe
 public class GetStudentCurrentSectionQueryHandler : IRequestHandler<GetStudentCurrentSectionQuery, StudentSectionDto?>
 {
     private readonly IApplicationDbContext _context;
+    private readonly IAcademicYearContext _academicYearContext;
 
-    public GetStudentCurrentSectionQueryHandler(IApplicationDbContext context)
+    public GetStudentCurrentSectionQueryHandler(IApplicationDbContext context, IAcademicYearContext academicYearContext)
     {
         _context = context;
+        _academicYearContext = academicYearContext;
     }
 
     public async Task<StudentSectionDto?> Handle(GetStudentCurrentSectionQuery request, CancellationToken cancellationToken)
@@ -245,8 +256,8 @@ public class GetStudentCurrentSectionQueryHandler : IRequestHandler<GetStudentCu
         if (!Guid.TryParse(request.StudentId, out var studentId))
             return null;
 
-        var studentSection = await _context.StudentSections
-            .Where(ss => ss.StudentId == studentId && ss.IsCurrent)
+        var studentSection = await _context.Enrollments
+            .Where(ss => ss.StudentId == studentId && ss.Status == "Enrolled" && ss.AcademicYearId == _academicYearContext.RequiredAcademicYearId)
             .Include(ss => ss.Section)
             .ThenInclude(s => s.Class)
             .Include(ss => ss.Student)
@@ -263,9 +274,9 @@ public class GetStudentCurrentSectionQueryHandler : IRequestHandler<GetStudentCu
             SectionId = studentSection.SectionId.ToString(),
             SectionName = studentSection.Section != null ? studentSection.Section.SectionName : "",
             ClassName = studentSection.Section != null && studentSection.Section.Class != null ? studentSection.Section.Class.Name : "",
-            JoinedDate = studentSection.JoinedDate,
-            LeftDate = studentSection.LeftDate,
-            IsCurrent = studentSection.IsCurrent,
+            JoinedDate = studentSection.EnrollmentDate,
+            LeftDate = null,
+            IsCurrent = studentSection.Status == "Enrolled",
             RollNumber = studentSection.RollNumber
         };
     }
@@ -277,10 +288,12 @@ public class GetStudentCurrentSectionQueryHandler : IRequestHandler<GetStudentCu
 public class GetStudentsWithRollNumbersQueryHandler : IRequestHandler<GetStudentsWithRollNumbersQuery, List<StudentSectionDto>>
 {
     private readonly IApplicationDbContext _context;
+    private readonly IAcademicYearContext _academicYearContext;
 
-    public GetStudentsWithRollNumbersQueryHandler(IApplicationDbContext context)
+    public GetStudentsWithRollNumbersQueryHandler(IApplicationDbContext context, IAcademicYearContext academicYearContext)
     {
         _context = context;
+        _academicYearContext = academicYearContext;
     }
 
     public async Task<List<StudentSectionDto>> Handle(GetStudentsWithRollNumbersQuery request, CancellationToken cancellationToken)
@@ -288,13 +301,13 @@ public class GetStudentsWithRollNumbersQueryHandler : IRequestHandler<GetStudent
         if (!Guid.TryParse(request.SectionId, out var sectionId))
             return new();
 
-        var studentSections = await _context.StudentSections
-            .Where(ss => ss.SectionId == sectionId && ss.IsCurrent)
+        var studentSections = await _context.Enrollments
+            .Where(ss => ss.SectionId == sectionId && ss.Status == "Enrolled" && ss.AcademicYearId == _academicYearContext.RequiredAcademicYearId)
             .Include(ss => ss.Section)
             .ThenInclude(s => s.Class)
             .Include(ss => ss.Student)
             .OrderBy(ss => ss.RollNumber ?? int.MaxValue)
-            .ThenBy(ss => ss.JoinedDate)
+            .ThenBy(ss => ss.EnrollmentDate)
             .Select(ss => new StudentSectionDto
             {
                 Id = ss.Id.ToString(),
@@ -304,9 +317,9 @@ public class GetStudentsWithRollNumbersQueryHandler : IRequestHandler<GetStudent
                 SectionId = ss.SectionId.ToString(),
                 SectionName = ss.Section != null ? ss.Section.SectionName : "",
                 ClassName = ss.Section != null && ss.Section.Class != null ? ss.Section.Class.Name : "",
-                JoinedDate = ss.JoinedDate,
-                LeftDate = ss.LeftDate,
-                IsCurrent = ss.IsCurrent,
+                JoinedDate = ss.EnrollmentDate,
+                LeftDate = null,
+                IsCurrent = ss.Status == "Enrolled",
                 RollNumber = ss.RollNumber
             })
             .ToListAsync(cancellationToken);

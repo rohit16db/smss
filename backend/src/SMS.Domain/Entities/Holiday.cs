@@ -26,7 +26,12 @@ public class Holiday : BaseEntity
     public string? Type { get; set; }
 
     /// <summary>
-    /// Academic year for the holiday (e.g., "2025-2026")
+    /// Academic year Id for the holiday
     /// </summary>
-    public string AcademicYear { get; set; } = string.Empty;
+    public Guid AcademicYearId { get; set; }
+
+    /// <summary>
+    /// Navigation property to the academic year
+    /// </summary>
+    public virtual AcademicYear? AcademicYear { get; set; }
 }

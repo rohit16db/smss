@@ -6,8 +6,8 @@ namespace SMS.Domain.Entities;
 /// </summary>
 public class StudentFee : BaseEntity
 {
-    /// <summary>Student ID (from Phase 2)</summary>
-    public Guid StudentId { get; set; }
+    /// <summary>Enrollment ID (links to Academic Year, Student, Class, Section)</summary>
+    public Guid EnrollmentId { get; set; }
     
     public Guid FeeStructureId { get; set; }
     
@@ -24,7 +24,7 @@ public class StudentFee : BaseEntity
     public bool IsActive { get; set; } = true;
     
     // Navigation properties
-    public Student? Student { get; set; }
+    public Enrollment? Enrollment { get; set; }
     public FeeStructure? FeeStructure { get; set; }
     public ICollection<FeePayment> Payments { get; set; } = new List<FeePayment>();
 }

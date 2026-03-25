@@ -24,8 +24,8 @@ public class StudentMarksConfiguration : IEntityTypeConfiguration<StudentMarks>
             .HasColumnName("exam_id")
             .IsRequired();
 
-        builder.Property(sm => sm.StudentId)
-            .HasColumnName("student_id")
+        builder.Property(sm => sm.EnrollmentId)
+            .HasColumnName("enrollment_id")
             .IsRequired();
 
         builder.Property(sm => sm.SubjectId)
@@ -59,9 +59,9 @@ public class StudentMarksConfiguration : IEntityTypeConfiguration<StudentMarks>
             .HasForeignKey(sm => sm.ExamId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        builder.HasOne(sm => sm.Student)
+        builder.HasOne(sm => sm.Enrollment)
             .WithMany()
-            .HasForeignKey(sm => sm.StudentId)
+            .HasForeignKey(sm => sm.EnrollmentId)
             .OnDelete(DeleteBehavior.Cascade);
 
         builder.HasOne(sm => sm.ExamSubject)
@@ -70,12 +70,12 @@ public class StudentMarksConfiguration : IEntityTypeConfiguration<StudentMarks>
             .HasPrincipalKey(es => new { es.ExamId, es.SubjectId })
             .OnDelete(DeleteBehavior.Restrict);
 
-        // Unique constraint: Exam + Student + Subject combination
-        builder.HasIndex(sm => new { sm.ExamId, sm.StudentId, sm.SubjectId })
+        // Unique constraint: Exam + Enrollment + Subject combination
+        builder.HasIndex(sm => new { sm.ExamId, sm.EnrollmentId, sm.SubjectId })
             .IsUnique();
 
         // Indices for common queries
         builder.HasIndex(sm => sm.ExamId);
-        builder.HasIndex(sm => sm.StudentId);
+        builder.HasIndex(sm => sm.EnrollmentId);
     }
 }

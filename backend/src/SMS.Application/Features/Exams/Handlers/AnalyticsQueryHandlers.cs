@@ -22,16 +22,16 @@ public class AnalyticsQueryHandlers
         {
             var exam = await _context.Exams
                 .Include(e => e.StudentReportCards)
-                .ThenInclude(rc => rc.Student)
+                .ThenInclude(rc => rc.Enrollment).ThenInclude(e => e!.Student)
                 .FirstOrDefaultAsync(e => e.Id == request.ExamId, cancellationToken);
 
             if (exam == null)
                 throw new InvalidOperationException($"Exam with ID {request.ExamId} not found");
 
             // Load all student sections at once to avoid N+1 queries
-            var studentIds = exam.StudentReportCards.Select(rc => rc.StudentId).Distinct().ToList();
-            var studentSectionsQuery = _context.StudentSections
-                .Where(ss => studentIds.Contains(ss.StudentId) && ss.IsCurrent);
+            var studentIds = exam.StudentReportCards.Select(rc => rc.Enrollment!.StudentId).Distinct().ToList();
+            var studentSectionsQuery = _context.Enrollments
+                .Where(ss => studentIds.Contains(ss.StudentId) && ss.Status == "Enrolled");
 
             // Filter by class if provided
             if (request.ClassId.HasValue)
@@ -44,7 +44,7 @@ public class AnalyticsQueryHandlers
             // Filter report cards to only include students in the selected class (if classId provided)
             var filteredStudentIds = studentSections.Select(ss => ss.StudentId).ToList();
             var reportCards = request.ClassId.HasValue
-                ? exam.StudentReportCards.Where(rc => filteredStudentIds.Contains(rc.StudentId)).ToList()
+                ? exam.StudentReportCards.Where(rc => filteredStudentIds.Contains(rc.Enrollment!.StudentId)).ToList()
                 : exam.StudentReportCards.ToList();
 
             var totalStudents = reportCards.Count;
@@ -71,9 +71,9 @@ public class AnalyticsQueryHandlers
                 .Take(5)
                 .Select(rc => new StudentPerformanceDto
                 {
-                    StudentId = rc.StudentId,
-                    StudentName = rc.Student != null ? $"{rc.Student.FirstName} {rc.Student.LastName}" : "Unknown Student",
-                    RollNumber = studentSections.FirstOrDefault(ss => ss.StudentId == rc.StudentId)?.RollNumber?.ToString() ?? "",
+                    StudentId = rc.Enrollment!.StudentId,
+                    StudentName = rc.Enrollment.Student != null ? $"{rc.Enrollment.Student.FirstName} {rc.Enrollment.Student.LastName}" : "Unknown Student",
+                    RollNumber = studentSections.FirstOrDefault(ss => ss.StudentId == rc.Enrollment.StudentId)?.RollNumber?.ToString() ?? "",
                     MarksObtained = rc.TotalMarksObtained,
                     Percentage = rc.Percentage,
                     Grade = rc.OverallGrade,
@@ -87,9 +87,9 @@ public class AnalyticsQueryHandlers
                 .Take(5)
                 .Select(rc => new StudentPerformanceDto
                 {
-                    StudentId = rc.StudentId,
-                    StudentName = rc.Student != null ? $"{rc.Student.FirstName} {rc.Student.LastName}" : "Unknown Student",
-                    RollNumber = studentSections.FirstOrDefault(ss => ss.StudentId == rc.StudentId)?.RollNumber?.ToString() ?? "",
+                    StudentId = rc.Enrollment!.StudentId,
+                    StudentName = rc.Enrollment.Student != null ? $"{rc.Enrollment.Student.FirstName} {rc.Enrollment.Student.LastName}" : "Unknown Student",
+                    RollNumber = studentSections.FirstOrDefault(ss => ss.StudentId == rc.Enrollment.StudentId)?.RollNumber?.ToString() ?? "",
                     MarksObtained = rc.TotalMarksObtained,
                     Percentage = rc.Percentage,
                     Grade = rc.OverallGrade,
@@ -99,7 +99,8 @@ public class AnalyticsQueryHandlers
 
             // Subject-wise analysis - Load student marks and group by subject
             var studentMarks = await _context.StudentMarks
-                .Where(m => m.ExamId == request.ExamId && studentIds.Contains(m.StudentId))
+                .Include(m => m.Enrollment)
+                .Where(m => m.ExamId == request.ExamId && studentIds.Contains(m.Enrollment!.StudentId))
                 .Include(m => m.ExamSubject)
                 .ThenInclude(es => es.Subject)
                 .ToListAsync(cancellationToken);
@@ -108,7 +109,7 @@ public class AnalyticsQueryHandlers
             if (request.ClassId.HasValue)
             {
                 studentMarks = studentMarks
-                    .Where(m => filteredStudentIds.Contains(m.StudentId))
+                    .Where(m => filteredStudentIds.Contains(m.Enrollment!.StudentId))
                     .ToList();
             }
 
@@ -175,13 +176,13 @@ public class AnalyticsQueryHandlers
                 .Select(s => s.Id)
                 .ToListAsync(cancellationToken);
 
-            var studentIds = await _context.StudentSections
-                .Where(ss => sectionIds.Contains(ss.SectionId) && ss.IsCurrent)
+            var studentIds = await _context.Enrollments
+                .Where(ss => ss.SectionId.HasValue && sectionIds.Contains(ss.SectionId.Value) && ss.Status == "Enrolled")
                 .Select(ss => ss.StudentId)
                 .ToListAsync(cancellationToken);
 
             var reportCards = await _context.StudentReportCards
-                .Where(rc => rc.ExamId == request.ExamId && studentIds.Contains(rc.StudentId))
+                .Where(rc => rc.ExamId == request.ExamId && studentIds.Contains(rc.Enrollment!.StudentId))
                 .ToListAsync(cancellationToken);
 
             var totalStudents = studentIds.Count;
@@ -191,7 +192,8 @@ public class AnalyticsQueryHandlers
 
             // Subject-wise analysis
             var studentMarksForClass = await _context.StudentMarks
-                .Where(m => m.ExamId == request.ExamId && studentIds.Contains(m.StudentId))
+                .Include(m => m.Enrollment)
+                .Where(m => m.ExamId == request.ExamId && studentIds.Contains(m.Enrollment!.StudentId))
                 .Include(m => m.ExamSubject)
                 .ThenInclude(es => es.Subject)
                 .ToListAsync(cancellationToken);
@@ -258,13 +260,13 @@ public class AnalyticsQueryHandlers
                 throw new InvalidOperationException($"Student with ID {request.StudentId} not found");
 
             // Get current student section to get roll number and class info
-            var studentSection = await _context.StudentSections
-                .Where(ss => ss.StudentId == request.StudentId && ss.IsCurrent)
+            var studentSection = await _context.Enrollments
+                .Where(ss => ss.StudentId == request.StudentId && ss.Status == "Enrolled")
                 .Include(ss => ss.Section)
                 .FirstOrDefaultAsync(cancellationToken);
 
             var reportCards = await _context.StudentReportCards
-                .Where(rc => rc.StudentId == request.StudentId)
+                .Where(rc => rc.Enrollment!.StudentId == request.StudentId)
                 .Include(rc => rc.Exam)
                 .OrderBy(rc => rc.Exam!.StartDate)
                 .ToListAsync(cancellationToken);
@@ -322,13 +324,13 @@ public class AnalyticsQueryHandlers
                     .Select(s => s.Id)
                     .ToListAsync(cancellationToken);
 
-                var studentIds = await _context.StudentSections
-                    .Where(ss => sectionIds.Contains(ss.SectionId) && ss.IsCurrent)
+                var studentIds = await _context.Enrollments
+                    .Where(ss => ss.SectionId.HasValue && sectionIds.Contains(ss.SectionId.Value) && ss.Status == "Enrolled")
                     .Select(ss => ss.StudentId)
                     .ToListAsync(cancellationToken);
 
                 var reportCards = await _context.StudentReportCards
-                    .Where(rc => rc.ExamId == request.ExamId && studentIds.Contains(rc.StudentId))
+                    .Where(rc => rc.ExamId == request.ExamId && studentIds.Contains(rc.Enrollment!.StudentId))
                     .ToListAsync(cancellationToken);
 
                 var totalStudents = studentIds.Count;
@@ -369,8 +371,9 @@ public class AnalyticsQueryHandlers
             // Build query for report cards
             var reportCardsQuery = _context.StudentReportCards
                 .Include(rc => rc.Exam)
-                .Include(rc => rc.Student)
-                .ThenInclude(s => s.StudentSections)
+                .Include(rc => rc.Enrollment)
+                .ThenInclude(e => e!.Student)
+                .ThenInclude(s => s!.Enrollments)
                 .ThenInclude(ss => ss.Section)
                 .Where(rc => rc.ExamId == request.ExamId);
 
@@ -378,9 +381,9 @@ public class AnalyticsQueryHandlers
             if (request.ClassId.HasValue)
             {
                 reportCardsQuery = reportCardsQuery.Where(rc =>
-                    rc.Student != null && rc.Student.StudentSections != null && rc.Student.StudentSections.Any(ss =>
+                    rc.Enrollment != null && rc.Enrollment.Student != null && rc.Enrollment.Student.Enrollments != null && rc.Enrollment.Student.Enrollments.Any(ss =>
                         ss.Section != null && ss.Section.ClassId == request.ClassId &&
-                        rc.Exam != null && (ss.LeftDate == null || ss.LeftDate > rc.Exam.StartDate)));
+                        rc.Exam != null));
             }
 
             var reportCards = await reportCardsQuery.ToListAsync(cancellationToken);
@@ -423,8 +426,8 @@ public class AnalyticsQueryHandlers
 
         public async Task<ExamComparisonAnalysisDto> Handle(GetExamComparisonQuery request, CancellationToken cancellationToken)
         {
-            var studentIds = await _context.StudentSections
-                .Where(ss => ss.SectionId == request.ClassId)
+            var studentIds = await _context.Enrollments
+                .Where(ss => ss.SectionId == request.ClassId && ss.Status == "Enrolled")
                 .Select(ss => ss.StudentId)
                 .ToListAsync(cancellationToken);
 
@@ -438,7 +441,7 @@ public class AnalyticsQueryHandlers
             foreach (var exam in exams)
             {
                 var reportCards = await _context.StudentReportCards
-                    .Where(rc => rc.ExamId == exam.Id && studentIds.Contains(rc.StudentId))
+                    .Where(rc => rc.ExamId == exam.Id && studentIds.Contains(rc.Enrollment!.StudentId))
                     .ToListAsync(cancellationToken);
 
                 var totalStudents = studentIds.Count;
@@ -529,15 +532,15 @@ public class AnalyticsQueryHandlers
 
             var reportCards = await _context.StudentReportCards
                 .Where(rc => rc.ExamId == request.ExamId)
-                .Include(rc => rc.Student)
+                .Include(rc => rc.Enrollment).ThenInclude(e => e!.Student)
                 .ToListAsync(cancellationToken);
 
             var studentDetails = reportCards
                 .Select(rc => new StudentPerformanceDto
                 {
-                    StudentId = rc.StudentId,
-                    StudentName = $"{rc.Student!.FirstName} {rc.Student.LastName}",
-                    RollNumber = _context.StudentSections.Where(ss => ss.StudentId == rc.StudentId && ss.IsCurrent).Select(ss => (ss.RollNumber ?? 0).ToString()).FirstOrDefault() ?? "",
+                    StudentId = rc.Enrollment!.StudentId,
+                    StudentName = $"{rc.Enrollment.Student!.FirstName} {rc.Enrollment.Student.LastName}",
+                    RollNumber = _context.Enrollments.Where(ss => ss.StudentId == rc.Enrollment.StudentId && ss.Status == "Enrolled").Select(ss => (ss.RollNumber ?? 0).ToString()).FirstOrDefault() ?? "",
                     MarksObtained = rc.TotalMarksObtained,
                     Percentage = rc.Percentage,
                     Grade = rc.OverallGrade,

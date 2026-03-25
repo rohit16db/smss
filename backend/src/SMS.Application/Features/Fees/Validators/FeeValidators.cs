@@ -15,9 +15,9 @@ public class CreateFeeStructureCommandValidator : AbstractValidator<CreateFeeStr
             .NotEmpty().WithMessage("Fee structure name is required")
             .MaximumLength(200).WithMessage("Name must not exceed 200 characters");
 
-        RuleFor(x => x.AcademicYear)
-            .GreaterThan(2000).WithMessage("Academic year must be after 2000")
-            .LessThan(2100).WithMessage("Academic year must be before 2100");
+        RuleFor(x => x.AcademicYearId)
+            .NotEmpty().WithMessage("Academic year ID is required")
+            .Must(id => string.IsNullOrEmpty(id) || Guid.TryParse(id, out _)).WithMessage("Academic year ID must be a valid GUID");
 
         RuleFor(x => x.Frequency)
             .NotEmpty().WithMessage("Frequency is required")
@@ -58,9 +58,9 @@ public class UpdateFeeStructureCommandValidator : AbstractValidator<UpdateFeeStr
             .NotEmpty().WithMessage("Fee structure name is required")
             .MaximumLength(200).WithMessage("Name must not exceed 200 characters");
 
-        RuleFor(x => x.AcademicYear)
-            .GreaterThan(2000).WithMessage("Academic year must be after 2000")
-            .LessThan(2100).WithMessage("Academic year must be before 2100");
+        RuleFor(x => x.AcademicYearId)
+            .NotEmpty().WithMessage("Academic year ID is required")
+            .Must(id => string.IsNullOrEmpty(id) || Guid.TryParse(id, out _)).WithMessage("Academic year ID must be a valid GUID");
 
         RuleFor(x => x.Frequency)
             .NotEmpty().WithMessage("Frequency is required")

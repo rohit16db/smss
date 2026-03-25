@@ -6,7 +6,7 @@ namespace SMS.Application.Features.Classes.DTOs;
 public class CreateClassDto
 {
     public string Name { get; set; } = string.Empty;
-    public string? AcademicYear { get; set; }
+    public string? AcademicYearId { get; set; }
 }
 
 /// <summary>
@@ -15,7 +15,7 @@ public class CreateClassDto
 public class UpdateClassDto
 {
     public string Name { get; set; } = string.Empty;
-    public string? AcademicYear { get; set; }
+    public string? AcademicYearId { get; set; }
     public bool IsActive { get; set; }
 }
 
@@ -26,7 +26,7 @@ public class ClassDto
 {
     public string Id { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;
-    public string? AcademicYear { get; set; }
+    public string? AcademicYearId { get; set; }
     public bool IsActive { get; set; }
     public List<SectionDto> Sections { get; set; } = new();
     public DateTime CreatedAt { get; set; }
@@ -40,7 +40,7 @@ public class ClassListDto
 {
     public string Id { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;
-    public string? AcademicYear { get; set; }
+    public string? AcademicYearId { get; set; }
     public bool IsActive { get; set; }
     public int SectionCount { get; set; }
 }

@@ -44,7 +44,7 @@ public class GetFeeCollectionSummaryQueryHandler : IRequestHandler<GetFeeCollect
         var collectionRate = totalExpected > 0 ? (totalCollected / totalExpected) * 100 : 0;
 
         // Get student statistics
-        var feesByStudent = fees.GroupBy(f => f.StudentId).ToList();
+        var feesByStudent = fees.GroupBy(f => f.EnrollmentId).ToList();
         var paidStudents = feesByStudent.Count(g => g.Sum(f => f.TotalAmount) <= payments.Where(p => g.Any(f => f.Id == p.StudentFeeId)).Sum(p => p.AmountPaid));
         var allStudents = feesByStudent.Count;
         var dueStudents = feesByStudent.Count(g => g.Sum(f => f.TotalAmount) > payments.Where(p => g.Any(f => f.Id == p.StudentFeeId)).Sum(p => p.AmountPaid));
@@ -253,9 +253,10 @@ public class GetOutstandingFeesQueryHandler : IRequestHandler<GetOutstandingFees
     public async Task<IEnumerable<OutstandingFeeDto>> Handle(GetOutstandingFeesQuery request, CancellationToken cancellationToken)
     {
         var unpaidFees = await _context.StudentFees
-            .Include(f => f.Student)
-            .ThenInclude(s => s!.StudentSections)
-            .ThenInclude(ss => ss.Section)
+            .Include(f => f.Enrollment)
+            .ThenInclude(e => e!.Student)
+            .Include(f => f.Enrollment)
+            .ThenInclude(e => e!.Section)
             .ThenInclude(s => s!.Class)
             .Include(f => f.Payments)
             .ToListAsync(cancellationToken);
@@ -282,15 +283,15 @@ public class GetOutstandingFeesQueryHandler : IRequestHandler<GetOutstandingFees
                 }
 
                 // Get current section for the student
-                var currentSection = f.Student?.StudentSections?.FirstOrDefault(ss => ss.IsCurrent);
+                var currentSection = f.Enrollment;
                 var className = currentSection?.Section?.Class?.Name ?? "N/A";
                 var sectionName = currentSection?.Section?.SectionName ?? "N/A";
                 var classSection = $"{className} - {sectionName}";
 
                 return new OutstandingFeeDto
                 {
-                    StudentId = f.StudentId.ToString(),
-                    StudentInfo = $"{f.Student?.FirstName} {f.Student?.LastName}",
+                    StudentId = f.Enrollment?.StudentId.ToString() ?? "",
+                    StudentInfo = $"{f.Enrollment?.Student?.FirstName} {f.Enrollment?.Student?.LastName}",
                     ClassSection = classSection,
                     DueAmount = outstanding,
                     DaysOverdue = lastPaymentDate.HasValue ? (DateTime.UtcNow.Date - lastPaymentDate.Value.ToDateTime(TimeOnly.MinValue).Date).Days : 0,
@@ -348,7 +349,7 @@ public class GetStudentPaymentHistoryQueryHandler : IRequestHandler<GetStudentPa
             return new List<StudentPaymentHistoryDto>();
 
         var studentFees = await _context.StudentFees
-            .Where(f => f.StudentId == studentGuid)
+            .Where(f => f.Enrollment != null && f.Enrollment.StudentId == studentGuid)
             .Include(f => f.Payments)
             .OrderBy(f => f.StartDate)
             .ToListAsync(cancellationToken);
