@@ -52,6 +52,10 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<StudentMarks> StudentMarks => Set<StudentMarks>();
     public DbSet<GradeConfiguration> GradeConfigurations => Set<GradeConfiguration>();
     public DbSet<StudentReportCard> StudentReportCards => Set<StudentReportCard>();
+
+    // Phase 10: Timetable Management
+    public DbSet<TimeSlot> TimeSlots => Set<TimeSlot>();
+    public DbSet<TimetableEntry> TimetableEntries => Set<TimetableEntry>();
     
     // School Configuration
     public DbSet<School> Schools => Set<School>();

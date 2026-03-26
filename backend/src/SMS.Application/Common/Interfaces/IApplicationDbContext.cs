@@ -46,6 +46,10 @@ public interface IApplicationDbContext
     DbSet<StudentMarks> StudentMarks { get; }
     DbSet<GradeConfiguration> GradeConfigurations { get; }
     DbSet<StudentReportCard> StudentReportCards { get; }
+
+    // Phase 10: Timetable Management
+    DbSet<TimeSlot> TimeSlots { get; }
+    DbSet<TimetableEntry> TimetableEntries { get; }
     
     // School Configuration
     DbSet<School> Schools { get; }
