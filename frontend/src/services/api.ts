@@ -1391,3 +1391,91 @@ export const promotionApi = {
     return response.data;
   },
 };
+
+// Timetable Types
+export type TimeSlot = {
+  id: string;
+  dayOfWeek: number; // 0=Sunday, 1=Monday...
+  startTime: string; // "HH:mm:ss"
+  endTime: string;
+  name: string;
+  isBreak: boolean;
+  academicYearId: string;
+};
+
+export type CreateTimeSlotDto = Omit<TimeSlot, 'id'>;
+
+export type TimetableEntry = {
+  id: string;
+  timeSlotId: string;
+  timeSlotName: string;
+  startTime: string;
+  endTime: string;
+  dayOfWeek: number;
+  sectionId: string;
+  sectionName: string;
+  className: string;
+  subjectId: string;
+  subjectName: string;
+  teacherId: string;
+  teacherName: string;
+  roomNumber?: string;
+  academicYearId: string;
+};
+
+export type CreateTimetableEntryDto = {
+  timeSlotId: string;
+  sectionId: string;
+  subjectId: string;
+  teacherId: string;
+  roomNumber?: string;
+  academicYearId: string;
+};
+
+// Timetable API
+export const timetableApi = {
+  // TimeSlots
+  getTimeSlots: async (academicYearId: string) => {
+    const response = await api.get<TimeSlot[]>(`/timetable/timeslots/${academicYearId}`);
+    return response.data;
+  },
+
+  createTimeSlot: async (data: CreateTimeSlotDto) => {
+    const response = await api.post<string>(`/timetable/timeslots`, data);
+    return response.data;
+  },
+
+  updateTimeSlot: async (id: string, data: CreateTimeSlotDto) => {
+    const response = await api.put<boolean>(`/timetable/timeslots/${id}`, data);
+    return response.data;
+  },
+
+  deleteTimeSlot: async (id: string) => {
+    await api.delete(`/timetable/timeslots/${id}`);
+  },
+
+  // Timetable Entries
+  getSectionTimetable: async (sectionId: string, academicYearId: string) => {
+    const response = await api.get<TimetableEntry[]>(`/timetable/entries/section/${sectionId}/${academicYearId}`);
+    return response.data;
+  },
+
+  getTeacherTimetable: async (teacherId: string, academicYearId: string) => {
+    const response = await api.get<TimetableEntry[]>(`/timetable/entries/teacher/${teacherId}/${academicYearId}`);
+    return response.data;
+  },
+
+  createEntry: async (data: CreateTimetableEntryDto) => {
+    const response = await api.post<string>(`/timetable/entries`, data);
+    return response.data;
+  },
+
+  updateEntry: async (id: string, data: CreateTimetableEntryDto) => {
+    const response = await api.put<boolean>(`/timetable/entries/${id}`, data);
+    return response.data;
+  },
+
+  deleteEntry: async (id: string) => {
+    await api.delete(`/timetable/entries/${id}`);
+  },
+};

@@ -22,6 +22,7 @@ import { ClassManagementPage } from './pages/ClassManagementPage';
 import { SubjectManagementPage } from './pages/SubjectManagementPage';
 import { RollNumberManagementPage } from './pages/RollNumberManagementPage';
 import { HolidaysPage } from './pages/HolidaysPage';
+import { TimetablePage } from './pages/TimetablePage';
 import { ExamsPage } from './pages/ExamsPage';
 import { MarksPage } from './pages/MarksPage';
 import { SettingsPage } from './pages/SettingsPage';
@@ -295,6 +296,14 @@ function App() {
                   element={
                     <ProtectedRoute allowedRoles={["Admin"]}>
                       <HolidaysPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="timetable"
+                  element={
+                    <ProtectedRoute allowedRoles={["Admin", "Clerk", "Teacher"]}>
+                      <TimetablePage />
                     </ProtectedRoute>
                   }
                 />

@@ -284,6 +284,12 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
                     >
                       📝 Exams
                     </button>
+                    <button
+                      onClick={() => navigate('/timetable')}
+                      className="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-colors flex items-center gap-2"
+                    >
+                      📅 Timetable
+                    </button>
                     {(isAdmin || isClerk) && (
                       <button
                         onClick={() => navigate('/roll-numbers')}
@@ -714,6 +720,15 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
                         className="w-full px-4 py-2 rounded-lg text-white hover:bg-blue-700 transition-colors duration-200 text-left"
                       >
                         📝 Exams
+                      </button>
+                      <button
+                        onClick={() => {
+                          navigate('/timetable');
+                          setMobileMenuOpen(false);
+                        }}
+                        className="w-full px-4 py-2 rounded-lg text-white hover:bg-blue-700 transition-colors duration-200 text-left"
+                      >
+                        📅 Timetable
                       </button>
                       {(isAdmin || isClerk) && (
                         <button
