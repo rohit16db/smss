@@ -110,6 +110,91 @@ namespace SMS.Infrastructure.Migrations
                     b.ToTable("classes", (string)null);
                 });
 
+            modelBuilder.Entity("SMS.Domain.Entities.Department", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasDefaultValueSql("gen_random_uuid()");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("now() at time zone 'UTC'");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<Guid?>("HeadOfDepartmentId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("HeadOfDepartmentId");
+
+                    b.HasIndex("Name")
+                        .IsUnique();
+
+                    b.ToTable("Departments", (string)null);
+                });
+
+            modelBuilder.Entity("SMS.Domain.Entities.EducationalQualification", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("text");
+
+                    b.Property<string>("DegreeName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("GradeOrPercentage")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Institution")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("StaffId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("text");
+
+                    b.Property<int>("YearOfPassing")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("StaffId");
+
+                    b.ToTable("EducationalQualifications");
+                });
+
             modelBuilder.Entity("SMS.Domain.Entities.Enrollment", b =>
                 {
                     b.Property<Guid>("Id")
@@ -196,6 +281,9 @@ namespace SMS.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("text");
 
                     b.Property<Guid>("CreatedById")
                         .HasColumnType("uuid")
@@ -720,14 +808,14 @@ namespace SMS.Infrastructure.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)");
 
+                    b.Property<Guid>("StaffId")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("Status")
                         .IsRequired()
                         .ValueGeneratedOnAdd()
                         .HasColumnType("text")
                         .HasDefaultValue("Pending");
-
-                    b.Property<Guid>("TeacherId")
-                        .HasColumnType("uuid");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -736,9 +824,9 @@ namespace SMS.Infrastructure.Migrations
 
                     b.HasIndex("CreatedAt");
 
-                    b.HasIndex("Status");
+                    b.HasIndex("StaffId");
 
-                    b.HasIndex("TeacherId");
+                    b.HasIndex("Status");
 
                     b.HasIndex("PeriodStartDate", "PeriodEndDate");
 
@@ -829,7 +917,7 @@ namespace SMS.Infrastructure.Migrations
                         .HasColumnType("numeric(18,2)")
                         .HasDefaultValue(0m);
 
-                    b.Property<DateTime?>("UpdatedAt")
+                    b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("UpdatedBy")
@@ -1013,6 +1101,246 @@ namespace SMS.Infrastructure.Migrations
                         .IsUnique();
 
                     b.ToTable("sections", (string)null);
+                });
+
+            modelBuilder.Entity("SMS.Domain.Entities.Staff", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id")
+                        .HasDefaultValueSql("gen_random_uuid()");
+
+                    b.Property<decimal>("BasicSalary")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("basic_salary");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("CreatedBy")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("created_by");
+
+                    b.Property<Guid?>("DepartmentId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("department_id");
+
+                    b.Property<string>("Designation")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("designation");
+
+                    b.Property<int>("ExperienceYears")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("experience_years");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true)
+                        .HasColumnName("is_active");
+
+                    b.Property<DateOnly>("JoiningDate")
+                        .HasColumnType("date")
+                        .HasColumnName("joining_date");
+
+                    b.Property<int>("RoleType")
+                        .HasColumnType("integer")
+                        .HasColumnName("role_type");
+
+                    b.Property<DateOnly?>("SalaryStructureEffectiveDate")
+                        .HasColumnType("date")
+                        .HasColumnName("salary_structure_effective_date");
+
+                    b.Property<Guid?>("SalaryStructureId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("salary_structure_id");
+
+                    b.Property<Guid?>("SalaryStructureId1")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("updated_by");
+
+                    b.Property<Guid>("UserProfileId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_profile_id");
+
+                    b.Property<Guid?>("UserProfileId1")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DepartmentId");
+
+                    b.HasIndex("IsActive");
+
+                    b.HasIndex("JoiningDate");
+
+                    b.HasIndex("SalaryStructureId");
+
+                    b.HasIndex("SalaryStructureId1");
+
+                    b.HasIndex("UserProfileId");
+
+                    b.HasIndex("UserProfileId1");
+
+                    b.ToTable("staff", (string)null);
+                });
+
+            modelBuilder.Entity("SMS.Domain.Entities.StaffAssignment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id")
+                        .HasDefaultValueSql("gen_random_uuid()");
+
+                    b.Property<Guid>("AcademicYearId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("academic_year_id");
+
+                    b.Property<Guid?>("AcademicYearId1")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateOnly>("AssignmentDate")
+                        .HasColumnType("date")
+                        .HasColumnName("assignment_date");
+
+                    b.Property<Guid>("ClassId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("class_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("CreatedBy")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("created_by");
+
+                    b.Property<DateOnly?>("RemovalDate")
+                        .HasColumnType("date")
+                        .HasColumnName("removal_date");
+
+                    b.Property<Guid>("StaffId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("staff_id");
+
+                    b.Property<Guid>("SubjectId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("subject_id");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("updated_by");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AcademicYearId");
+
+                    b.HasIndex("AcademicYearId1");
+
+                    b.HasIndex("ClassId");
+
+                    b.HasIndex("RemovalDate");
+
+                    b.HasIndex("StaffId");
+
+                    b.HasIndex("SubjectId");
+
+                    b.HasIndex("StaffId", "ClassId", "SubjectId", "RemovalDate")
+                        .IsUnique()
+                        .HasFilter("removal_date IS NULL");
+
+                    b.ToTable("staff_assignments", (string)null);
+                });
+
+            modelBuilder.Entity("SMS.Domain.Entities.StaffAttendance", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id")
+                        .HasDefaultValueSql("gen_random_uuid()");
+
+                    b.Property<DateOnly>("AttendanceDate")
+                        .HasColumnType("date")
+                        .HasColumnName("attendance_date");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("CreatedBy")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("Reason")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("reason");
+
+                    b.Property<DateTime>("RecordedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("recorded_at");
+
+                    b.Property<Guid?>("RecordedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("recorded_by_user_id");
+
+                    b.Property<Guid>("StaffId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("staff_id");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("status");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("updated_by");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AttendanceDate");
+
+                    b.HasIndex("StaffId");
+
+                    b.HasIndex("StaffId", "AttendanceDate")
+                        .IsUnique();
+
+                    b.ToTable("staff_attendances", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_staff_attendances_status", "status IN ('present', 'absent', 'leave')");
+                        });
                 });
 
             modelBuilder.Entity("SMS.Domain.Entities.Student", b =>
@@ -1484,244 +1812,6 @@ namespace SMS.Infrastructure.Migrations
                     b.ToTable("subjects", (string)null);
                 });
 
-            modelBuilder.Entity("SMS.Domain.Entities.Teacher", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id")
-                        .HasDefaultValueSql("gen_random_uuid()");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<string>("CreatedBy")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)")
-                        .HasColumnName("created_by");
-
-                    b.Property<string>("Email")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)")
-                        .HasColumnName("email");
-
-                    b.Property<int>("ExperienceYears")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasDefaultValue(0)
-                        .HasColumnName("experience_years");
-
-                    b.Property<string>("FirstName")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
-                        .HasColumnName("first_name");
-
-                    b.Property<string>("ImagePath")
-                        .HasColumnType("text");
-
-                    b.Property<bool>("IsActive")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(true)
-                        .HasColumnName("is_active");
-
-                    b.Property<DateOnly>("JoiningDate")
-                        .HasColumnType("date")
-                        .HasColumnName("joining_date");
-
-                    b.Property<string>("LastName")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
-                        .HasColumnName("last_name");
-
-                    b.Property<string>("Phone")
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)")
-                        .HasColumnName("phone");
-
-                    b.Property<string>("Qualification")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)")
-                        .HasColumnName("qualification");
-
-                    b.Property<DateOnly?>("SalaryStructureEffectiveDate")
-                        .HasColumnType("date");
-
-                    b.Property<Guid?>("SalaryStructureId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
-
-                    b.Property<string>("UpdatedBy")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)")
-                        .HasColumnName("updated_by");
-
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("user_id");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("Email")
-                        .IsUnique();
-
-                    b.HasIndex("IsActive");
-
-                    b.HasIndex("JoiningDate");
-
-                    b.HasIndex("SalaryStructureId");
-
-                    b.HasIndex("UserId")
-                        .IsUnique();
-
-                    b.ToTable("teachers", (string)null);
-                });
-
-            modelBuilder.Entity("SMS.Domain.Entities.TeacherAssignment", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id")
-                        .HasDefaultValueSql("gen_random_uuid()");
-
-                    b.Property<Guid>("AcademicYearId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateOnly>("AssignmentDate")
-                        .HasColumnType("date")
-                        .HasColumnName("assignment_date");
-
-                    b.Property<Guid>("ClassId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("class_id");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<string>("CreatedBy")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)")
-                        .HasColumnName("created_by");
-
-                    b.Property<DateOnly?>("RemovalDate")
-                        .HasColumnType("date")
-                        .HasColumnName("removal_date");
-
-                    b.Property<Guid>("SubjectId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("subject_id");
-
-                    b.Property<Guid>("TeacherId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("teacher_id");
-
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
-
-                    b.Property<string>("UpdatedBy")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)")
-                        .HasColumnName("updated_by");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("AcademicYearId");
-
-                    b.HasIndex("ClassId");
-
-                    b.HasIndex("RemovalDate");
-
-                    b.HasIndex("SubjectId");
-
-                    b.HasIndex("TeacherId");
-
-                    b.HasIndex("TeacherId", "ClassId", "SubjectId", "RemovalDate")
-                        .IsUnique()
-                        .HasFilter("removal_date IS NULL");
-
-                    b.ToTable("teacher_assignments", (string)null);
-                });
-
-            modelBuilder.Entity("SMS.Domain.Entities.TeacherAttendance", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id")
-                        .HasDefaultValueSql("gen_random_uuid()");
-
-                    b.Property<DateOnly>("AttendanceDate")
-                        .HasColumnType("date")
-                        .HasColumnName("attendance_date");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<string>("CreatedBy")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)")
-                        .HasColumnName("created_by");
-
-                    b.Property<string>("Reason")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)")
-                        .HasColumnName("reason");
-
-                    b.Property<DateTime>("RecordedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("recorded_at");
-
-                    b.Property<Guid?>("RecordedByUserId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("recorded_by_user_id");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)")
-                        .HasColumnName("status");
-
-                    b.Property<Guid>("TeacherId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("teacher_id");
-
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
-
-                    b.Property<string>("UpdatedBy")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)")
-                        .HasColumnName("updated_by");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("AttendanceDate");
-
-                    b.HasIndex("TeacherId");
-
-                    b.HasIndex("TeacherId", "AttendanceDate")
-                        .IsUnique();
-
-                    NpgsqlIndexBuilderExtensions.IncludeProperties(b.HasIndex("TeacherId", "AttendanceDate"), new[] { "Status" });
-
-                    b.ToTable("teacher_attendances", null, t =>
-                        {
-                            t.HasCheckConstraint("ck_teacher_attendances_status", "status IN ('present', 'absent', 'leave')");
-                        });
-                });
-
             modelBuilder.Entity("SMS.Domain.Entities.TimeSlot", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1809,13 +1899,13 @@ namespace SMS.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("section_id");
 
+                    b.Property<Guid>("StaffId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("staff_id");
+
                     b.Property<Guid>("SubjectId")
                         .HasColumnType("uuid")
                         .HasColumnName("subject_id");
-
-                    b.Property<Guid>("TeacherId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("teacher_id");
 
                     b.Property<Guid>("TimeSlotId")
                         .HasColumnType("uuid")
@@ -1835,16 +1925,16 @@ namespace SMS.Infrastructure.Migrations
 
                     b.HasIndex("SectionId");
 
-                    b.HasIndex("SubjectId");
+                    b.HasIndex("StaffId");
 
-                    b.HasIndex("TeacherId");
+                    b.HasIndex("SubjectId");
 
                     b.HasIndex("TimeSlotId");
 
                     b.HasIndex("AcademicYearId", "TimeSlotId", "SectionId")
                         .IsUnique();
 
-                    b.HasIndex("AcademicYearId", "TimeSlotId", "TeacherId")
+                    b.HasIndex("AcademicYearId", "TimeSlotId", "StaffId")
                         .IsUnique();
 
                     b.ToTable("timetable_entries", (string)null);
@@ -1939,6 +2029,92 @@ namespace SMS.Infrastructure.Migrations
                     b.ToTable("users", (string)null);
                 });
 
+            modelBuilder.Entity("SMS.Domain.Entities.UserProfile", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("BloodGroup")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("text");
+
+                    b.Property<string>("CurrentAddress")
+                        .HasColumnType("text");
+
+                    b.Property<DateOnly?>("DateOfBirth")
+                        .HasColumnType("date");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("EmergencyContactName")
+                        .HasColumnType("text");
+
+                    b.Property<string>("EmergencyContactPhone")
+                        .HasColumnType("text");
+
+                    b.Property<string>("FirstName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Gender")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ImagePath")
+                        .HasColumnType("text");
+
+                    b.Property<string>("LastName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("PermanentAddress")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Phone")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("UserProfiles");
+                });
+
+            modelBuilder.Entity("SMS.Domain.Entities.Department", b =>
+                {
+                    b.HasOne("SMS.Domain.Entities.Staff", "HeadOfDepartment")
+                        .WithMany()
+                        .HasForeignKey("HeadOfDepartmentId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("HeadOfDepartment");
+                });
+
+            modelBuilder.Entity("SMS.Domain.Entities.EducationalQualification", b =>
+                {
+                    b.HasOne("SMS.Domain.Entities.Staff", "Staff")
+                        .WithMany("Qualifications")
+                        .HasForeignKey("StaffId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Staff");
+                });
+
             modelBuilder.Entity("SMS.Domain.Entities.Enrollment", b =>
                 {
                     b.HasOne("SMS.Domain.Entities.AcademicYear", "AcademicYear")
@@ -1981,7 +2157,7 @@ namespace SMS.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("SMS.Domain.Entities.User", "CreatedBy")
+                    b.HasOne("SMS.Domain.Entities.User", "Creator")
                         .WithMany()
                         .HasForeignKey("CreatedById")
                         .OnDelete(DeleteBehavior.Restrict)
@@ -1989,7 +2165,7 @@ namespace SMS.Infrastructure.Migrations
 
                     b.Navigation("AcademicYear");
 
-                    b.Navigation("CreatedBy");
+                    b.Navigation("Creator");
                 });
 
             modelBuilder.Entity("SMS.Domain.Entities.ExamClass", b =>
@@ -2083,13 +2259,13 @@ namespace SMS.Infrastructure.Migrations
 
             modelBuilder.Entity("SMS.Domain.Entities.SalaryPayment", b =>
                 {
-                    b.HasOne("SMS.Domain.Entities.Teacher", "Teacher")
+                    b.HasOne("SMS.Domain.Entities.Staff", "Staff")
                         .WithMany()
-                        .HasForeignKey("TeacherId")
+                        .HasForeignKey("StaffId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.Navigation("Teacher");
+                    b.Navigation("Staff");
                 });
 
             modelBuilder.Entity("SMS.Domain.Entities.Section", b =>
@@ -2101,6 +2277,79 @@ namespace SMS.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("Class");
+                });
+
+            modelBuilder.Entity("SMS.Domain.Entities.Staff", b =>
+                {
+                    b.HasOne("SMS.Domain.Entities.Department", "Department")
+                        .WithMany("StaffMembers")
+                        .HasForeignKey("DepartmentId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("SMS.Domain.Entities.SalaryStructure", "SalaryStructure")
+                        .WithMany()
+                        .HasForeignKey("SalaryStructureId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("SMS.Domain.Entities.SalaryStructure", null)
+                        .WithMany("StaffMembers")
+                        .HasForeignKey("SalaryStructureId1");
+
+                    b.HasOne("SMS.Domain.Entities.UserProfile", "UserProfile")
+                        .WithMany()
+                        .HasForeignKey("UserProfileId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SMS.Domain.Entities.UserProfile", null)
+                        .WithMany("StaffRoles")
+                        .HasForeignKey("UserProfileId1");
+
+                    b.Navigation("Department");
+
+                    b.Navigation("SalaryStructure");
+
+                    b.Navigation("UserProfile");
+                });
+
+            modelBuilder.Entity("SMS.Domain.Entities.StaffAssignment", b =>
+                {
+                    b.HasOne("SMS.Domain.Entities.AcademicYear", "AcademicYear")
+                        .WithMany()
+                        .HasForeignKey("AcademicYearId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("SMS.Domain.Entities.AcademicYear", null)
+                        .WithMany("StaffAssignments")
+                        .HasForeignKey("AcademicYearId1");
+
+                    b.HasOne("SMS.Domain.Entities.Staff", "Staff")
+                        .WithMany("Assignments")
+                        .HasForeignKey("StaffId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("SMS.Domain.Entities.Subject", null)
+                        .WithMany("StaffAssignments")
+                        .HasForeignKey("SubjectId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("AcademicYear");
+
+                    b.Navigation("Staff");
+                });
+
+            modelBuilder.Entity("SMS.Domain.Entities.StaffAttendance", b =>
+                {
+                    b.HasOne("SMS.Domain.Entities.Staff", "Staff")
+                        .WithMany("AttendanceRecords")
+                        .HasForeignKey("StaffId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Staff");
                 });
 
             modelBuilder.Entity("SMS.Domain.Entities.StudentAttendance", b =>
@@ -2180,52 +2429,6 @@ namespace SMS.Infrastructure.Migrations
                     b.Navigation("Exam");
                 });
 
-            modelBuilder.Entity("SMS.Domain.Entities.Teacher", b =>
-                {
-                    b.HasOne("SMS.Domain.Entities.SalaryStructure", "SalaryStructure")
-                        .WithMany("Teachers")
-                        .HasForeignKey("SalaryStructureId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
-                    b.Navigation("SalaryStructure");
-                });
-
-            modelBuilder.Entity("SMS.Domain.Entities.TeacherAssignment", b =>
-                {
-                    b.HasOne("SMS.Domain.Entities.AcademicYear", "AcademicYear")
-                        .WithMany()
-                        .HasForeignKey("AcademicYearId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("SMS.Domain.Entities.Subject", null)
-                        .WithMany("TeacherAssignments")
-                        .HasForeignKey("SubjectId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("SMS.Domain.Entities.Teacher", "Teacher")
-                        .WithMany("Assignments")
-                        .HasForeignKey("TeacherId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("AcademicYear");
-
-                    b.Navigation("Teacher");
-                });
-
-            modelBuilder.Entity("SMS.Domain.Entities.TeacherAttendance", b =>
-                {
-                    b.HasOne("SMS.Domain.Entities.Teacher", "Teacher")
-                        .WithMany("AttendanceRecords")
-                        .HasForeignKey("TeacherId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Teacher");
-                });
-
             modelBuilder.Entity("SMS.Domain.Entities.TimeSlot", b =>
                 {
                     b.HasOne("SMS.Domain.Entities.AcademicYear", "AcademicYear")
@@ -2251,15 +2454,15 @@ namespace SMS.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("SMS.Domain.Entities.Subject", "Subject")
+                    b.HasOne("SMS.Domain.Entities.Staff", "Staff")
                         .WithMany()
-                        .HasForeignKey("SubjectId")
+                        .HasForeignKey("StaffId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("SMS.Domain.Entities.Teacher", "Teacher")
+                    b.HasOne("SMS.Domain.Entities.Subject", "Subject")
                         .WithMany()
-                        .HasForeignKey("TeacherId")
+                        .HasForeignKey("SubjectId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
@@ -2273,9 +2476,9 @@ namespace SMS.Infrastructure.Migrations
 
                     b.Navigation("Section");
 
-                    b.Navigation("Subject");
+                    b.Navigation("Staff");
 
-                    b.Navigation("Teacher");
+                    b.Navigation("Subject");
 
                     b.Navigation("TimeSlot");
                 });
@@ -2289,6 +2492,8 @@ namespace SMS.Infrastructure.Migrations
                     b.Navigation("FeeStructures");
 
                     b.Navigation("Holidays");
+
+                    b.Navigation("StaffAssignments");
                 });
 
             modelBuilder.Entity("SMS.Domain.Entities.Class", b =>
@@ -2296,6 +2501,11 @@ namespace SMS.Infrastructure.Migrations
                     b.Navigation("Enrollments");
 
                     b.Navigation("Sections");
+                });
+
+            modelBuilder.Entity("SMS.Domain.Entities.Department", b =>
+                {
+                    b.Navigation("StaffMembers");
                 });
 
             modelBuilder.Entity("SMS.Domain.Entities.Exam", b =>
@@ -2323,12 +2533,21 @@ namespace SMS.Infrastructure.Migrations
 
             modelBuilder.Entity("SMS.Domain.Entities.SalaryStructure", b =>
                 {
-                    b.Navigation("Teachers");
+                    b.Navigation("StaffMembers");
                 });
 
             modelBuilder.Entity("SMS.Domain.Entities.Section", b =>
                 {
                     b.Navigation("Enrollments");
+                });
+
+            modelBuilder.Entity("SMS.Domain.Entities.Staff", b =>
+                {
+                    b.Navigation("Assignments");
+
+                    b.Navigation("AttendanceRecords");
+
+                    b.Navigation("Qualifications");
                 });
 
             modelBuilder.Entity("SMS.Domain.Entities.Student", b =>
@@ -2343,19 +2562,17 @@ namespace SMS.Infrastructure.Migrations
 
             modelBuilder.Entity("SMS.Domain.Entities.Subject", b =>
                 {
-                    b.Navigation("TeacherAssignments");
-                });
-
-            modelBuilder.Entity("SMS.Domain.Entities.Teacher", b =>
-                {
-                    b.Navigation("Assignments");
-
-                    b.Navigation("AttendanceRecords");
+                    b.Navigation("StaffAssignments");
                 });
 
             modelBuilder.Entity("SMS.Domain.Entities.TimeSlot", b =>
                 {
                     b.Navigation("TimetableEntries");
+                });
+
+            modelBuilder.Entity("SMS.Domain.Entities.UserProfile", b =>
+                {
+                    b.Navigation("StaffRoles");
                 });
 #pragma warning restore 612, 618
         }

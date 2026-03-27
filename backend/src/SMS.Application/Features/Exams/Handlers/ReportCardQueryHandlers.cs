@@ -5,6 +5,7 @@ using SMS.Application.Features.Exams.DTOs;
 using SMS.Application.Features.Exams.Queries;
 using QuestPDF.Fluent;
 using QuestPDF.Infrastructure;
+using QuestPDF.Helpers;
 
 namespace SMS.Application.Features.Exams.Handlers;
 
@@ -391,135 +392,145 @@ public class ReportCardQueryHandlers
                 .FirstOrDefaultAsync(cancellationToken);
 
             var schoolName = school?.Name ?? "School Management System";
-            var schoolAddress = !string.IsNullOrEmpty(school?.Address) ? $"{school.Address}, {school.City}" : "";
-            var schoolPhone = school?.PhoneNumber ?? "";
+            var schoolAddress = !string.IsNullOrEmpty(school?.Address) ? $"{school.Address}, {school.City}" : "123 Education Street, City Center";
+            var schoolPhone = school?.PhoneNumber ?? "+91-1234-567-890";
+            var schoolEmail = school?.EmailAddress ?? "info@school.edu";
+
+            // Colors
+            var primaryColor = "#312E81"; // Deep Indigo
+            var secondaryColor = "#475569"; // Slate
+            var accentColor = "#6366F1"; // Indigo Light
+            var successColor = "#059669"; // Emerald
+            var dangerColor = "#DC2626"; // Crimson
+            var lightGray = "#F8FAFC";
+            var borderColor = "#E2E8F0";
+            var whiteColor = "#FFFFFF";
+            var blackColor = "#000000";
 
             // Generate PDF
             var document = Document.Create(container =>
             {
                 container.Page(page =>
                 {
-                    page.Margin(30);
-                    
-                    // Header with background
+                    page.Size(PageSizes.A4);
+                    page.Margin(40);
+                    page.PageColor(whiteColor);
+                    page.DefaultTextStyle(x => x.FontSize(10).FontFamily("Arial").FontColor(secondaryColor));
+
+                    // ==========================================
+                    // HEADER
+                    // ==========================================
                     page.Header().Column(col =>
                     {
-                        col.Item().Background("#1F2937").Padding(20).Column(inner =>
+                        col.Item().Row(row =>
                         {
-                            inner.Item().Text("STUDENT REPORT CARD").FontSize(28).Bold().FontColor("#FFFFFF");
-                            inner.Item().PaddingTop(5).Text(schoolName).FontSize(12).FontColor("#D1D5DB");
-                            if (!string.IsNullOrEmpty(schoolAddress))
-                                inner.Item().PaddingTop(2).Text(schoolAddress).FontSize(9).FontColor("#9CA3AF");
-                            if (!string.IsNullOrEmpty(schoolPhone))
-                                inner.Item().PaddingTop(2).Text($"Phone: {schoolPhone}").FontSize(9).FontColor("#9CA3AF");
+                            row.RelativeItem().Column(headerCol =>
+                            {
+                                headerCol.Item().Text(schoolName.ToUpper()).FontSize(24).Bold().FontColor(primaryColor);
+                                if (!string.IsNullOrEmpty(schoolAddress))
+                                    headerCol.Item().PaddingTop(2).Text(schoolAddress).FontSize(9).FontColor(secondaryColor);
+                                headerCol.Item().PaddingTop(4).Row(contactRow =>
+                                {
+                                    contactRow.AutoItem().Text($"📞 {schoolPhone}").FontSize(8);
+                                    contactRow.AutoItem().PaddingHorizontal(8).Text("|").FontSize(8);
+                                    contactRow.AutoItem().Text($"📧 {schoolEmail}").FontSize(8);
+                                });
+                            });
+
+                            // Right-aligned Title
+                            row.AutoItem().Background(primaryColor).PaddingHorizontal(15).PaddingVertical(10).AlignCenter().Column(titleCol =>
+                            {
+                                titleCol.Item().Text("ACADEMIC").FontSize(10).Bold().FontColor(whiteColor).AlignCenter();
+                                titleCol.Item().Text("REPORT CARD").FontSize(16).Bold().FontColor(whiteColor).AlignCenter();
+                                titleCol.Item().Text($"{DateTime.UtcNow.Year}-{DateTime.UtcNow.Year + 1}").FontSize(9).FontColor(whiteColor).AlignCenter();
+                            });
                         });
-                        col.Item().PaddingVertical(5);
+                        
+                        col.Item().PaddingVertical(10).LineHorizontal(1).LineColor(borderColor);
                     });
 
+                    // ==========================================
+                    // CONTENT
+                    // ==========================================
                     page.Content().Column(col =>
                     {
-                        // Student Information Section
-                        col.Item().Background("#F3F4F6").Padding(15).Column(studentInfo =>
-                        {
-                            studentInfo.Item().Text("Student Information").FontSize(14).Bold().FontColor("#1F2937");
-                            studentInfo.Item().PaddingTop(10).Row(row =>
-                            {
-                                row.RelativeItem().Column(c1 =>
-                                {
-                                    c1.Item().Text($"Name: {reportCard.Enrollment!.Student!.FirstName} {reportCard.Enrollment.Student.LastName}").FontSize(11f).FontColor("#374151");
-                                    c1.Item().PaddingTop(4).Text($"Roll Number: {(studentSection?.RollNumber ?? 0).ToString()}").FontSize(11f).FontColor("#374151");
-                                });
-                                row.RelativeItem().Column(c2 =>
-                                {
-                                    c2.Item().Text($"Exam: {reportCard.Exam!.Name}").FontSize(11f).FontColor("#374151");
-                                    c2.Item().PaddingTop(4).Text($"Exam Date: {reportCard.Exam.StartDate:dd MMM yyyy}").FontSize(11f).FontColor("#374151");
-                                });
-                            });
-                        });
-
-                        col.Item().PaddingVertical(15);
-
-                        // Performance Summary Cards
-                        col.Item().Text("Performance Summary").FontSize(13).Bold().FontColor("#1F2937");
+                        // 1. Student Information Grid
                         col.Item().PaddingVertical(10).Row(row =>
                         {
-                            // Total Marks Card
-                            row.RelativeItem().Border(1).BorderColor("#E5E7EB").Background("#EFF6FF").Padding(12).Column(c =>
+                            row.RelativeItem().Column(c1 =>
                             {
-                                c.Item().Text("Total Marks").FontSize(9).FontColor("#6B7280");
-                                c.Item().PaddingTop(6).Text($"{reportCard.TotalMarksObtained:F0} / {reportCard.TotalMarks}").FontSize(13f).Bold().FontColor("#1E40AF");
+                                c1.Item().Row(r => { r.ConstantItem(80).Text("STUDENT NAME").Bold().FontSize(8); r.RelativeItem().Text($": {reportCard.Enrollment!.Student!.FirstName} {reportCard.Enrollment.Student.LastName}").Bold().FontColor(blackColor); });
+                                c1.Item().PaddingTop(5).Row(r => { r.ConstantItem(80).Text("ROLL NUMBER").Bold().FontSize(8); r.RelativeItem().Text($": {(studentSection?.RollNumber ?? 0).ToString()}").FontColor(blackColor); });
+                                c1.Item().PaddingTop(5).Row(r => { r.ConstantItem(80).Text("CLASS/SECTION").Bold().FontSize(8); r.RelativeItem().Text($": {studentSection?.Section?.SectionName ?? "N/A"}").FontColor(blackColor); });
                             });
 
-                            row.RelativeItem().PaddingHorizontal(5);
-
-                            // Percentage Card
-                            row.RelativeItem().Border(1).BorderColor("#E5E7EB").Background("#F0FDF4").Padding(12).Column(c =>
+                            row.RelativeItem().Column(c2 =>
                             {
-                                c.Item().Text("Percentage").FontSize(9).FontColor("#6B7280");
-                                c.Item().PaddingTop(6).Text($"{reportCard.Percentage:F2}%").FontSize(13f).Bold().FontColor("#15803D");
-                            });
-
-                            row.RelativeItem().PaddingHorizontal(5);
-
-                            // Grade Card
-                            row.RelativeItem().Border(1).BorderColor("#E5E7EB").Background("#FEF3C7").Padding(12).Column(c =>
-                            {
-                                c.Item().Text("Grade").FontSize(9).FontColor("#6B7280");
-                                c.Item().PaddingTop(6).Text(reportCard.OverallGrade).FontSize(13f).Bold().FontColor("#D97706");
-                            });
-
-                            row.RelativeItem().PaddingHorizontal(5);
-
-                            // Rank Card
-                            row.RelativeItem().Border(1).BorderColor("#E5E7EB").Background("#F3E8FF").Padding(12).Column(c =>
-                            {
-                                c.Item().Text("Class Rank").FontSize(9).FontColor("#6B7280");
-                                c.Item().PaddingTop(6).Text($"#{reportCard.ClassPosition}").FontSize(13f).Bold().FontColor("#7C3AED");
-                            });
-
-                            row.RelativeItem().PaddingHorizontal(5);
-
-                            // Status Card
-                            var statusBg = reportCard.Pass ? "#DCFCE7" : "#FEE2E2";
-                            var statusTextColor = reportCard.Pass ? "#15803D" : "#DC2626";
-                            var statusText = reportCard.Pass ? "PASS" : "FAIL";
-
-                            row.RelativeItem().Border(1).BorderColor("#E5E7EB").Background(statusBg).Padding(12).Column(c =>
-                            {
-                                c.Item().Text("Status").FontSize(9).FontColor("#6B7280");
-                                c.Item().PaddingTop(6).Text(statusText).FontSize(13f).Bold().FontColor(statusTextColor);
+                                c2.Item().Row(r => { r.ConstantItem(80).Text("EXAMINATION").Bold().FontSize(8); r.RelativeItem().Text($": {reportCard.Exam!.Name}").Bold().FontColor(primaryColor); });
+                                c2.Item().PaddingTop(5).Row(r => { r.ConstantItem(80).Text("ISSUE DATE").Bold().FontSize(8); r.RelativeItem().Text($": {DateTime.UtcNow:dd MMM yyyy}").FontColor(blackColor); });
+                                c2.Item().PaddingTop(5).Row(r => { r.ConstantItem(80).Text("STATUS").Bold().FontSize(8); r.RelativeItem().Text(reportCard.Pass ? ": QUALIFIED" : ": NOT QUALIFIED").Bold().FontColor(reportCard.Pass ? successColor : dangerColor); });
                             });
                         });
 
-                        col.Item().PaddingVertical(15);
+                        col.Item().PaddingTop(20).Text("PERFORMANCE OVERVIEW").FontSize(11).Bold().FontColor(primaryColor);
+                        col.Item().PaddingTop(5).LineHorizontal(0.5f).LineColor(borderColor);
 
-                        // Subject Details Table
-                        col.Item().Text("Subject-wise Marks").FontSize(13).Bold().FontColor("#1F2937");
-                        col.Item().PaddingVertical(10).Table(table =>
+                        // 2. Summary Cards Container
+                        col.Item().PaddingVertical(15).Row(row =>
+                        {
+                            void SummaryCard(string label, string value, string color, string bgColor)
+                            {
+                                row.RelativeItem().PaddingRight(10).Border(1).BorderColor(borderColor).Background(bgColor).Padding(10).Column(c =>
+                                {
+                                    c.Item().Text(label).FontSize(8).Bold().FontColor(secondaryColor).AlignCenter();
+                                    c.Item().PaddingTop(4).Text(value).FontSize(14).Bold().FontColor(color).AlignCenter();
+                                });
+                            }
+
+                            SummaryCard("TOTAL MARKS", $"{reportCard.TotalMarksObtained:F0}/{reportCard.TotalMarks:F0}", primaryColor, lightGray);
+                            SummaryCard("PERCENTAGE", $"{reportCard.Percentage:F1}%", successColor, "#F0FDF4");
+                            SummaryCard("GRADE", reportCard.OverallGrade, "#B45309", "#FFFBEB");
+                            SummaryCard("CLASS RANK", $"#{reportCard.ClassPosition}", "#7C3AED", "#F5F3FF");
+                        });
+
+                        // 3. Subject Wise Details Table
+                        col.Item().PaddingTop(15).Text("SUBJECT-WISE SCHOLASTIC PERFORMANCE").FontSize(11).Bold().FontColor(primaryColor);
+                        
+                        col.Item().PaddingTop(10).Table(table =>
                         {
                             table.ColumnsDefinition(columns =>
                             {
-                                columns.RelativeColumn(2.5f);
-                                columns.RelativeColumn(1);
-                                columns.RelativeColumn(1);
-                                columns.RelativeColumn(1);
-                                columns.RelativeColumn(0.8f);
-                                columns.RelativeColumn(1);
+                                columns.ConstantColumn(30); // SR.
+                                columns.RelativeColumn(3);  // SUBJECT
+                                columns.RelativeColumn(1);  // MAX MARKS
+                                columns.RelativeColumn(1);  // PASS MARKS
+                                columns.RelativeColumn(1);  // OBTAINED
+                                columns.RelativeColumn(1);  // GRADE
+                                columns.RelativeColumn(1.2f); // STATUS
                             });
 
-                            // Header
+                            // Table Header
                             table.Header(header =>
                             {
-                                header.Cell().Background("#1F2937").Padding(8).Text("Subject").FontColor("#FFFFFF").Bold().FontSize(10);
-                                header.Cell().Background("#1F2937").Padding(8).Text("Max Marks").FontColor("#FFFFFF").Bold().FontSize(10).AlignRight();
-                                header.Cell().Background("#1F2937").Padding(8).Text("Obtained").FontColor("#FFFFFF").Bold().FontSize(10).AlignRight();
-                                header.Cell().Background("#1F2937").Padding(8).Text("Percentage").FontColor("#FFFFFF").Bold().FontSize(10).AlignRight();
-                                header.Cell().Background("#1F2937").Padding(8).Text("Grade").FontColor("#FFFFFF").Bold().FontSize(10).AlignCenter();
-                                header.Cell().Background("#1F2937").Padding(8).Text("Result").FontColor("#FFFFFF").Bold().FontSize(10).AlignCenter();
+                                void HeaderCell(string text, bool right = false, bool center = false)
+                                {
+                                    var cell = header.Cell().Background(primaryColor).Padding(8);
+                                    var txt = cell.Text(text).FontColor(whiteColor).Bold().FontSize(9);
+                                    if (right) txt.AlignRight();
+                                    if (center) txt.AlignCenter();
+                                }
+
+                                HeaderCell("#");
+                                HeaderCell("SUBJECT NAME");
+                                HeaderCell("MAX MARKS", center: true);
+                                HeaderCell("PASS MARKS", center: true);
+                                HeaderCell("OBTAINED", center: true);
+                                HeaderCell("GRADE", center: true);
+                                HeaderCell("RESULT", center: true);
                             });
 
-                            // Rows
-                            int rowIndex = 0;
+                            // Table Rows
+                            int index = 1;
                             foreach (var mark in subjectMarksList)
                             {
                                 var percentage = mark.MarksObtained.HasValue && mark.ExamSubject!.MaxMarks > 0
@@ -527,42 +538,75 @@ public class ReportCardQueryHandlers
                                     : 0;
                                 var grade = DetermineGrade(percentage);
                                 var isPassed = percentage >= 40;
-                                var rowBg = rowIndex % 2 == 0 ? "#F9FAFB" : "#FFFFFF";
-                                var gradeColor = percentage >= 90 ? "#059669" : percentage >= 70 ? "#0891B2" : percentage >= 50 ? "#D97706" : "#DC2626";
-                                var resultText = isPassed ? "PASS" : "FAIL";
-                                var resultColor = isPassed ? "#15803D" : "#DC2626";
+                                var rowBg = index % 2 == 0 ? lightGray : whiteColor;
 
-                                table.Cell().Background(rowBg).Padding(8).Text(mark.ExamSubject!.Subject!.Name).FontSize(10);
-                                table.Cell().Background(rowBg).Padding(8).Text(mark.ExamSubject.MaxMarks.ToString()).FontSize(10).AlignRight();
-                                table.Cell().Background(rowBg).Padding(8).Text((mark.MarksObtained ?? 0).ToString()).FontSize(10).AlignRight().Bold();
-                                table.Cell().Background(rowBg).Padding(8).Text($"{percentage:F1}%").FontSize(10).AlignRight();
-                                table.Cell().Background(rowBg).Padding(8).Text(grade).FontSize(10).AlignCenter().Bold().FontColor(gradeColor);
-                                table.Cell().Background(rowBg).Padding(8).Text(resultText).FontSize(10).AlignCenter().Bold().FontColor(resultColor);
+                                table.Cell().Background(rowBg).BorderBottom(0.5f).BorderColor(borderColor).Padding(8).Text(index.ToString()).FontSize(9).AlignCenter();
+                                table.Cell().Background(rowBg).BorderBottom(0.5f).BorderColor(borderColor).Padding(8).Text(mark.ExamSubject?.Subject?.Name ?? "N/A").FontSize(9).Bold();
+                                table.Cell().Background(rowBg).BorderBottom(0.5f).BorderColor(borderColor).Padding(8).Text(mark.ExamSubject?.MaxMarks.ToString("F0") ?? "0").FontSize(9).AlignCenter();
+                                table.Cell().Background(rowBg).BorderBottom(0.5f).BorderColor(borderColor).Padding(8).Text(mark.ExamSubject?.PassMarks.ToString("F0") ?? "0").FontSize(9).AlignCenter();
+                                table.Cell().Background(rowBg).BorderBottom(0.5f).BorderColor(borderColor).Padding(8).Text((mark.MarksObtained ?? 0).ToString("F0")).FontSize(9).Bold().AlignCenter().FontColor(primaryColor);
+                                table.Cell().Background(rowBg).BorderBottom(0.5f).BorderColor(borderColor).Padding(8).Text(grade).FontSize(9).Bold().AlignCenter().FontColor(percentage < 50 ? dangerColor : successColor);
+                                table.Cell().Background(rowBg).BorderBottom(0.5f).BorderColor(borderColor).Padding(8).Text(isPassed ? "PASS" : "FAIL").FontSize(8).Bold().AlignCenter().FontColor(isPassed ? successColor : dangerColor);
 
-                                rowIndex++;
+                                index++;
                             }
                         });
 
-                        col.Item().PaddingVertical(15);
-
-                        // Overall Result Banner
-                        var finalBg = reportCard.Pass ? "#DCFCE7" : "#FEE2E2";
-                        var finalColor = reportCard.Pass ? "#15803D" : "#DC2626";
-                        var finalText = reportCard.Pass ? "✓ STUDENT PASSED" : "✗ STUDENT FAILED";
-                        var finalBorder = reportCard.Pass ? "#16A34A" : "#EF4444";
-
-                        col.Item().Border(2).BorderColor(finalBorder).Background(finalBg).Padding(20).Column(result =>
+                        // 4. Grading Legend & Remarks
+                        col.Item().PaddingTop(25).Row(row =>
                         {
-                            result.Item().Text(finalText).FontSize(18).Bold().FontColor(finalColor).AlignCenter();
-                            result.Item().PaddingTop(8).Text($"Overall Grade: {reportCard.OverallGrade}").FontSize(12).FontColor(finalColor).AlignCenter();
+                            // Legend
+                            row.RelativeItem(1.5f).Column(legendCol =>
+                            {
+                                legendCol.Item().Text("GRADING SCALE").FontSize(8).Bold();
+                                legendCol.Item().PaddingTop(4).Table(t =>
+                                {
+                                    t.ColumnsDefinition(c => { c.ConstantColumn(40); c.RelativeColumn(); });
+                                    void LRow(string g, string d) { t.Cell().Border(0.5f).BorderColor(borderColor).Padding(2).AlignCenter().Text(g).FontSize(7).Bold(); t.Cell().Border(0.5f).BorderColor(borderColor).Padding(2).PaddingLeft(5).Text(d).FontSize(7); }
+                                    LRow("A", "EXCELLENT (90-100%)");
+                                    LRow("B", "VERY GOOD (80-89%)");
+                                    LRow("C", "GOOD (70-79%)");
+                                    LRow("D", "SATISFACTORY (60-69%)");
+                                    LRow("F", "FAIL (<60%)");
+                                });
+                            });
+
+                            row.ConstantItem(30);
+
+                            // Signatures
+                            row.RelativeItem(2).Column(sigCol =>
+                            {
+                                sigCol.Item().PaddingTop(20).Row(sigRow =>
+                                {
+                                    sigRow.RelativeItem().Column(s1 =>
+                                    {
+                                        s1.Item().PaddingTop(30).LineHorizontal(0.5f).LineColor(secondaryColor);
+                                        s1.Item().PaddingTop(4).Text("CLASS TEACHER").FontSize(8).Bold().AlignCenter();
+                                    });
+                                    sigRow.ConstantItem(40);
+                                    sigRow.RelativeItem().Column(s2 =>
+                                    {
+                                        s2.Item().PaddingTop(30).LineHorizontal(0.5f).LineColor(secondaryColor);
+                                        s2.Item().PaddingTop(4).Text("PRINCIPAL SIGNATURE").FontSize(8).Bold().AlignCenter();
+                                    });
+                                });
+                                
+                                sigCol.Item().PaddingTop(15).Text("Disclaimer: This is a computer-generated report and does not require a physical seal to be valid for internal school purposes.").FontSize(7).Italic().FontColor("#94A3B8");
+                            });
                         });
                     });
 
-                    // Footer
-                    page.Footer().PaddingTop(10).BorderTop(1).BorderColor("#E5E7EB").Column(footer =>
+                    // ==========================================
+                    // FOOTER
+                    // ==========================================
+                    page.Footer().Column(footerCol =>
                     {
-                        footer.Item().AlignCenter().Text($"Generated on: {DateTime.UtcNow:dd MMM yyyy HH:mm:ss}").FontSize(9).FontColor("#9CA3AF");
-                        footer.Item().PaddingTop(5).AlignCenter().Text("This is an official document from School Management System").FontSize(8).FontColor("#D1D5DB");
+                        footerCol.Item().LineHorizontal(0.5f).LineColor(borderColor);
+                        footerCol.Item().PaddingTop(5).Row(row =>
+                        {
+                            row.RelativeItem().Text($"System Generated on: {DateTime.UtcNow:dd/MM/yyyy HH:mm}").FontSize(7).FontColor("#94A3B8");
+                            row.RelativeItem().AlignRight().Text(x => { x.Span("Page "); x.CurrentPageNumber(); x.Span(" of "); x.TotalPages(); });
+                        });
                     });
                 });
             });

@@ -13,8 +13,8 @@ public class TimetableEntry : BaseEntity
     public Guid SubjectId { get; set; }
     public Subject? Subject { get; set; }
 
-    public Guid TeacherId { get; set; }
-    public Teacher? Teacher { get; set; }
+    public Guid StaffId { get; set; }
+    public Staff? Staff { get; set; }
 
     public string? RoomNumber { get; set; }
     

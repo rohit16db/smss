@@ -8,7 +8,7 @@ using SMS.Application.Features.Salary.Queries;
 namespace SMS.API.Controllers;
 
 /// <summary>
-/// Teacher Salary Management API
+/// Staff Salary Management API
 /// Handles salary payments, tracking, and reporting
 /// </summary>
 [Authorize(Policy = "SalaryAccess")]
@@ -70,19 +70,19 @@ public class SalaryController : ControllerBase
     }
 
     /// <summary>
-    /// Get salary history for a specific teacher
+    /// Get salary history for a specific staff member
     /// </summary>
-    [HttpGet("teacher/{teacherId}")]
-    public async Task<ActionResult<SalaryHistoryDto>> GetTeacherSalaryHistory(
-        Guid teacherId,
+    [HttpGet("staff/{staffId}")]
+    public async Task<ActionResult<SalaryHistoryDto>> GetStaffSalaryHistory(
+        Guid staffId,
         [FromQuery] DateOnly? startDate,
         [FromQuery] DateOnly? endDate)
     {
         try
         {
-            var query = new GetTeacherSalaryPaymentsQuery
+            var query = new GetStaffSalaryPaymentsQuery
             {
-                TeacherId = teacherId,
+                StaffId = staffId,
                 StartDate = startDate,
                 EndDate = endDate
             };
@@ -119,13 +119,13 @@ public class SalaryController : ControllerBase
     /// Get salary summary for dashboard
     /// </summary>
     [HttpGet("summary")]
-    public async Task<ActionResult<SalarySummaryDto>> GetSalarySummary(
+    public async Task<ActionResult<StaffSalarySummaryDto>> GetSalarySummary(
         [FromQuery] int? month,
         [FromQuery] int? year)
     {
         try
         {
-            var query = new GetSalarySummaryQuery { Month = month, Year = year };
+            var query = new GetStaffSalarySummaryQuery { Month = month, Year = year };
             var result = await _mediator.Send(query);
             return Ok(result);
         }
@@ -146,7 +146,7 @@ public class SalaryController : ControllerBase
         {
             var command = new CreateSalaryPaymentCommand
             {
-                TeacherId = dto.TeacherId,
+                StaffId = dto.StaffId,
                 PeriodStartDate = dto.PeriodStartDate,
                 PeriodEndDate = dto.PeriodEndDate,
                 BaseSalary = dto.BaseSalary,
@@ -167,7 +167,7 @@ public class SalaryController : ControllerBase
     }
 
     /// <summary>
-    /// Create bulk salary payments for all active teachers
+    /// Create bulk salary payments for all active staff
     /// </summary>
     [HttpPost("bulk")]
     public async Task<ActionResult<SalaryPaymentReportDto>> CreateBulkSalaryPayments(

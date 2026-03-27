@@ -10,7 +10,7 @@ const roleMap: Record<number, string> = {
   1: 'Admin',
   2: 'Accountant',
   3: 'Clerk',
-  4: 'Teacher',
+  4: 'Staff',
 };
 
 const normalizeRole = (role?: string | number) => {

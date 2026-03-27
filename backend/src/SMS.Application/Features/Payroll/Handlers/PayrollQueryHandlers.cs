@@ -7,46 +7,47 @@ using SMS.Domain.Enums;
 
 namespace SMS.Application.Features.Payroll.Handlers;
 
-public class GetTeacherPayrollReportQueryHandler : IRequestHandler<GetTeacherPayrollReportQuery, PayrollPeriodReportDto>
+public class GetStaffPayrollReportQueryHandler : IRequestHandler<GetStaffPayrollReportQuery, PayrollPeriodReportDto>
 {
     private readonly IApplicationDbContext _context;
 
-    public GetTeacherPayrollReportQueryHandler(IApplicationDbContext context)
+    public GetStaffPayrollReportQueryHandler(IApplicationDbContext context)
     {
         _context = context;
     }
 
-    public async Task<PayrollPeriodReportDto> Handle(GetTeacherPayrollReportQuery request, CancellationToken cancellationToken)
+    public async Task<PayrollPeriodReportDto> Handle(GetStaffPayrollReportQuery request, CancellationToken cancellationToken)
     {
-        var teachers = await _context.Teachers
+        var staffMembers = await _context.Staff
+            .Include(t => t.UserProfile)
             .Include(t => t.SalaryStructure)
             .Where(t => t.IsActive)
             .ToListAsync(cancellationToken);
-        var attendanceRecords = await _context.TeacherAttendances
+        var attendanceRecords = await _context.StaffAttendances
             .Where(a => a.AttendanceDate >= request.StartDate && a.AttendanceDate <= request.EndDate)
             .ToListAsync(cancellationToken);
 
         // Calculate working days (excluding weekends)
         var totalWorkingDays = CalculateWorkingDays(request.StartDate, request.EndDate);
 
-        var teacherPayrolls = new List<TeacherPayrollReportDto>();
+        var staffPayrolls = new List<StaffPayrollReportDto>();
         decimal totalPayrollAmount = 0;
         decimal totalBonusAmount = 0;
-        int eligibleTeachersCount = 0;
+        int eligibleStaffCount = 0;
 
-        foreach (var teacher in teachers)
+        foreach (var staff in staffMembers)
         {
-            var teacherAttendance = attendanceRecords.Where(a => a.TeacherId == teacher.Id).ToList();
-            var presentDays = teacherAttendance.Count(a => a.Status == AttendanceStatus.Present);
-            var absentDays = teacherAttendance.Count(a => a.Status == AttendanceStatus.Absent);
-            var leaveDays = teacherAttendance.Count(a => a.Status == AttendanceStatus.Leave);
+            var staffAttendance = attendanceRecords.Where(a => a.StaffId == staff.Id).ToList();
+            var presentDays = staffAttendance.Count(a => a.Status == AttendanceStatus.Present);
+            var absentDays = staffAttendance.Count(a => a.Status == AttendanceStatus.Absent);
+            var leaveDays = staffAttendance.Count(a => a.Status == AttendanceStatus.Leave);
 
             var attendancePercentage = totalWorkingDays > 0 ? ((decimal)presentDays / totalWorkingDays) * 100 : 0;
 
             // Bonus calculation (90% threshold)
             var bonusEligible = attendancePercentage >= 90;
             var bonusPercentage = bonusEligible ? 10m : 0m; // 10% bonus if eligible
-            var baseSalary = teacher.SalaryStructure?.BaseSalary ?? 50000m; // Get from assigned salary structure, fallback to 50k if not assigned
+            var baseSalary = staff.SalaryStructure?.BaseSalary ?? 0m; // Get from assigned salary structure, fallback to 0 if not assigned
             var bonusAmount = baseSalary * (bonusPercentage / 100);
 
             // Deductions
@@ -54,11 +55,11 @@ public class GetTeacherPayrollReportQueryHandler : IRequestHandler<GetTeacherPay
             var grossSalary = baseSalary;
             var netSalary = grossSalary - deductionsForAbsence + bonusAmount;
 
-            var payrollReport = new TeacherPayrollReportDto
+            var payrollReport = new StaffPayrollReportDto
             {
-                TeacherId = teacher.Id,
-                TeacherName = $"{teacher.FirstName} {teacher.LastName}",
-                TeacherImagePath = teacher.ImagePath,
+                StaffId = staff.Id,
+                StaffName = staff.FullName,
+                StaffImagePath = staff.UserProfile?.ImagePath,
                 BaseSalary = baseSalary,
                 PeriodStartDate = request.StartDate,
                 PeriodEndDate = request.EndDate,
@@ -75,12 +76,12 @@ public class GetTeacherPayrollReportQueryHandler : IRequestHandler<GetTeacherPay
                 BonusEligibilityReason = bonusEligible ? "Attendance >= 90%" : $"Attendance {attendancePercentage:F2}% < 90%"
             };
 
-            teacherPayrolls.Add(payrollReport);
+            staffPayrolls.Add(payrollReport);
             totalPayrollAmount += netSalary;
             totalBonusAmount += bonusAmount;
 
             if (bonusEligible)
-                eligibleTeachersCount++;
+                eligibleStaffCount++;
         }
 
         return new PayrollPeriodReportDto
@@ -88,10 +89,10 @@ public class GetTeacherPayrollReportQueryHandler : IRequestHandler<GetTeacherPay
             GeneratedAt = DateTime.UtcNow,
             PeriodStartDate = request.StartDate,
             PeriodEndDate = request.EndDate,
-            TeacherPayrolls = teacherPayrolls.OrderBy(p => p.TeacherName).ToList(),
+            StaffPayrolls = staffPayrolls.OrderBy(p => p.StaffName).ToList(),
             TotalPayrollAmount = Math.Round(totalPayrollAmount, 2),
             TotalBonusAmount = Math.Round(totalBonusAmount, 2),
-            EligibleTeachers = eligibleTeachersCount
+            EligibleStaffs = eligibleStaffCount
         };
     }
 
@@ -125,32 +126,33 @@ public class GetBonusEligibilityQueryHandler : IRequestHandler<GetBonusEligibili
 
     public async Task<List<BonusEligibilityDto>> Handle(GetBonusEligibilityQuery request, CancellationToken cancellationToken)
     {
-        var teachers = await _context.Teachers
+        var staffMembers = await _context.Staff
+            .Include(t => t.UserProfile)
             .Include(t => t.SalaryStructure)
             .Where(t => t.IsActive)
             .ToListAsync(cancellationToken);
-        var attendanceRecords = await _context.TeacherAttendances
+        var attendanceRecords = await _context.StaffAttendances
             .Where(a => a.AttendanceDate >= request.StartDate && a.AttendanceDate <= request.EndDate)
             .ToListAsync(cancellationToken);
 
         var totalWorkingDays = CalculateWorkingDays(request.StartDate, request.EndDate);
         var bonusEligibilities = new List<BonusEligibilityDto>();
 
-        foreach (var teacher in teachers)
+        foreach (var staff in staffMembers)
         {
-            var teacherAttendance = attendanceRecords.Where(a => a.TeacherId == teacher.Id).ToList();
-            var presentDays = teacherAttendance.Count(a => a.Status == AttendanceStatus.Present);
+            var staffAttendance = attendanceRecords.Where(a => a.StaffId == staff.Id).ToList();
+            var presentDays = staffAttendance.Count(a => a.Status == AttendanceStatus.Present);
 
             var attendancePercentage = totalWorkingDays > 0 ? ((decimal)presentDays / totalWorkingDays) * 100 : 0;
             var isEligible = attendancePercentage >= request.BonusThresholdPercentage;
-            var baseSalary = teacher.SalaryStructure?.BaseSalary ?? 50000m; // Get from assigned salary structure, fallback to 50k
+            var baseSalary = staff.SalaryStructure?.BaseSalary ?? 0m; // Get from assigned salary structure, fallback to 0
             var bonusPercentage = isEligible ? 10m : 0m;
             var bonusAmount = baseSalary * (bonusPercentage / 100);
 
             bonusEligibilities.Add(new BonusEligibilityDto
             {
-                TeacherId = teacher.Id,
-                TeacherName = $"{teacher.FirstName} {teacher.LastName}",
+                StaffId = staff.Id,
+                StaffName = staff.FullName,
                 AttendancePercentage = Math.Round(attendancePercentage, 2),
                 BonusPercentage = bonusPercentage,
                 BonusAmount = bonusAmount,
@@ -183,38 +185,40 @@ public class GetBonusEligibilityQueryHandler : IRequestHandler<GetBonusEligibili
     }
 }
 
-public class GetTeacherAttendanceSummaryQueryHandler : IRequestHandler<GetTeacherAttendanceSummaryQuery, List<TeacherAttendanceSummaryDto>>
+public class GetStaffAttendanceSummaryQueryHandler : IRequestHandler<GetStaffAttendanceSummaryQuery, List<StaffAttendanceSummaryDto>>
 {
     private readonly IApplicationDbContext _context;
 
-    public GetTeacherAttendanceSummaryQueryHandler(IApplicationDbContext context)
+    public GetStaffAttendanceSummaryQueryHandler(IApplicationDbContext context)
     {
         _context = context;
     }
 
-    public async Task<List<TeacherAttendanceSummaryDto>> Handle(GetTeacherAttendanceSummaryQuery request, CancellationToken cancellationToken)
+    public async Task<List<StaffAttendanceSummaryDto>> Handle(GetStaffAttendanceSummaryQuery request, CancellationToken cancellationToken)
     {
-        var teachers = await _context.Teachers.Where(t => t.IsActive).ToListAsync(cancellationToken);
-        var attendanceRecords = await _context.TeacherAttendances
+        var staffMembers = await _context.Staff
+            .Include(s => s.UserProfile)
+            .Where(t => t.IsActive).ToListAsync(cancellationToken);
+        var attendanceRecords = await _context.StaffAttendances
             .Where(a => a.AttendanceDate >= request.StartDate && a.AttendanceDate <= request.EndDate)
             .ToListAsync(cancellationToken);
 
         var totalDays = (request.EndDate.DayNumber - request.StartDate.DayNumber) + 1;
-        var summaries = new List<TeacherAttendanceSummaryDto>();
+        var summaries = new List<StaffAttendanceSummaryDto>();
 
-        foreach (var teacher in teachers)
+        foreach (var staff in staffMembers)
         {
-            var teacherAttendance = attendanceRecords.Where(a => a.TeacherId == teacher.Id).ToList();
-            var presentDays = teacherAttendance.Count(a => a.Status == AttendanceStatus.Present);
-            var absentDays = teacherAttendance.Count(a => a.Status == AttendanceStatus.Absent);
-            var leaveDays = teacherAttendance.Count(a => a.Status == AttendanceStatus.Leave);
+            var staffAttendance = attendanceRecords.Where(a => a.StaffId == staff.Id).ToList();
+            var presentDays = staffAttendance.Count(a => a.Status == AttendanceStatus.Present);
+            var absentDays = staffAttendance.Count(a => a.Status == AttendanceStatus.Absent);
+            var leaveDays = staffAttendance.Count(a => a.Status == AttendanceStatus.Leave);
 
             var attendancePercentage = totalDays > 0 ? ((decimal)presentDays / totalDays) * 100 : 0;
 
-            summaries.Add(new TeacherAttendanceSummaryDto
+            summaries.Add(new StaffAttendanceSummaryDto
             {
-                TeacherId = teacher.Id,
-                TeacherName = $"{teacher.FirstName} {teacher.LastName}",
+                StaffId = staff.Id,
+                StaffName = staff.FullName,
                 TotalDays = totalDays,
                 PresentDays = presentDays,
                 AbsentDays = absentDays,
@@ -223,6 +227,6 @@ public class GetTeacherAttendanceSummaryQueryHandler : IRequestHandler<GetTeache
             });
         }
 
-        return summaries.OrderBy(s => s.TeacherName).ToList();
+        return summaries.OrderBy(s => s.StaffName).ToList();
     }
 }

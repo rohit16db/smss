@@ -18,8 +18,8 @@ export interface FinancialSummary {
 
 export interface AttendanceSummary {
   averageStudentAttendance: number;
-  averageTeacherAttendance: number;
-  totalTeachers: number;
+  averageStaffAttendance: number;
+  totalStaffs: number;
   totalStudents: number;
   presentStudentsTodayCount: number;
   absentStudentsTodayCount: number;
@@ -27,10 +27,10 @@ export interface AttendanceSummary {
 
 export interface AcademicSummary {
   totalStudents: number;
-  totalTeachers: number;
+  totalStaffs: number;
   totalClasses: number;
   activeStudents: number;
-  activeTeachers: number;
+  activeStaffs: number;
 }
 
 export interface DashboardSummaryResponse {
@@ -51,7 +51,7 @@ export interface FeeCollectionTrend {
 export interface AttendanceTrend {
   date: string;
   studentAttendancePercentage: number;
-  teacherAttendancePercentage: number;
+  StaffAttendancePercentage: number;
 }
 
 export interface OutstandingFeeDetail {

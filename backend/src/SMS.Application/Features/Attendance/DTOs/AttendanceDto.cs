@@ -66,20 +66,20 @@ public class PaginatedStudentAttendanceListDto
 }
 
 /// <summary>
-/// DTO for recording teacher attendance
+/// DTO for recording staff attendance
 /// </summary>
-public class RecordTeacherAttendanceDto
+public class RecordStaffAttendanceDto
 {
-    public string TeacherId { get; set; } = string.Empty;
+    public string StaffId { get; set; } = string.Empty;
     public DateTime AttendanceDate { get; set; }
     public string Status { get; set; } = string.Empty;
     public string? Reason { get; set; }
 }
 
 /// <summary>
-/// DTO for updating teacher attendance record
+/// DTO for updating staff attendance record
 /// </summary>
-public class UpdateTeacherAttendanceDto
+public class UpdateStaffAttendanceDto
 {
     public string Id { get; set; } = string.Empty;
     public string Status { get; set; } = string.Empty;
@@ -87,13 +87,13 @@ public class UpdateTeacherAttendanceDto
 }
 
 /// <summary>
-/// DTO for teacher attendance details
+/// DTO for staff attendance details
 /// </summary>
-public class TeacherAttendanceDto
+public class StaffAttendanceDto
 {
     public string Id { get; set; } = string.Empty;
-    public string TeacherId { get; set; } = string.Empty;
-    public string? TeacherName { get; set; }
+    public string StaffId { get; set; } = string.Empty;
+    public string? StaffName { get; set; }
     public DateTime AttendanceDate { get; set; }
     public string Status { get; set; } = string.Empty;
     public string? Reason { get; set; }
@@ -103,24 +103,24 @@ public class TeacherAttendanceDto
 }
 
 /// <summary>
-/// DTO for teacher attendance list items
+/// DTO for staff attendance list items
 /// </summary>
-public class TeacherAttendanceListDto
+public class StaffAttendanceListDto
 {
     public string Id { get; set; } = string.Empty;
-    public string TeacherId { get; set; } = string.Empty;
-    public string? TeacherName { get; set; }
-    public string? TeacherEmail { get; set; }
+    public string StaffId { get; set; } = string.Empty;
+    public string? StaffName { get; set; }
+    public string? StaffEmail { get; set; }
     public DateTime AttendanceDate { get; set; }
     public string Status { get; set; } = string.Empty;
 }
 
 /// <summary>
-/// DTO for paginated teacher attendance list
+/// DTO for paginated staff attendance list
 /// </summary>
-public class PaginatedTeacherAttendanceListDto
+public class PaginatedStaffAttendanceListDto
 {
-    public List<TeacherAttendanceListDto> Items { get; set; } = new();
+    public List<StaffAttendanceListDto> Items { get; set; } = new();
     public int TotalCount { get; set; }
     public int PageNumber { get; set; }
     public int PageSize { get; set; }

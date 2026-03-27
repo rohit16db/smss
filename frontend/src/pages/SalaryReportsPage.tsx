@@ -4,19 +4,19 @@ import {
   useSalaryExpenseSummary,
   useMonthlySalaryTrend,
   useSalaryComponentBreakdown,
-  useTeacherSalaryComparison,
+  useStaffSalaryComparison,
   useAttendanceToSalaryCorrelation,
 } from '../hooks/useSalaryReports';
 import { SalaryExpenseSummaryCard } from '../components/reports/SalaryExpenseSummaryCard';
 import { MonthlySalaryTrendChart } from '../components/reports/MonthlySalaryTrendChart';
 import { SalaryComponentPieChart } from '../components/reports/SalaryComponentPieChart';
-import { TeacherSalaryComparisonTable } from '../components/reports/TeacherSalaryComparisonTable';
+import { StaffSalaryComparisonTable } from '../components/reports/StaffSalaryComparisonTable';
 import { AttendanceCorrelationTable } from '../components/reports/AttendanceCorrelationTable';
 import { exportToCSV } from '../utils/export';
 
 /**
  * Salary Reports & Analytics Page
- * Displays salary expense analytics, teacher comparisons, and attendance correlation
+ * Displays salary expense analytics, Staff comparisons, and attendance correlation
  */
 export const SalaryReportsPage: React.FC = () => {
   const [dateRange, setDateRange] = useState({
@@ -45,7 +45,7 @@ export const SalaryReportsPage: React.FC = () => {
     dateRange.endDate
   );
 
-  const teacherComparisonQuery = useTeacherSalaryComparison(
+  const StaffComparisonQuery = useStaffSalaryComparison(
     dateRange.startDate,
     dateRange.endDate,
     {
@@ -102,8 +102,8 @@ export const SalaryReportsPage: React.FC = () => {
         Amount: expenseSummaryQuery.data.deductionPercentage.toFixed(2),
       },
       {
-        Metric: 'Teacher Count',
-        Amount: expenseSummaryQuery.data.teacherCount,
+        Metric: 'Staff Count',
+        Amount: expenseSummaryQuery.data.StaffCount,
       },
       {
         Metric: 'Bonus Recipients',
@@ -117,22 +117,22 @@ export const SalaryReportsPage: React.FC = () => {
     );
   };
 
-  const handleExportTeacherComparison = () => {
-    if (!teacherComparisonQuery.data) return;
+  const handleExportStaffComparison = () => {
+    if (!StaffComparisonQuery.data) return;
 
-    const data = teacherComparisonQuery.data.map((teacher) => ({
-      'Teacher Name': teacher.teacherName,
-      'Base Salary': teacher.baseSalary,
-      'Bonus': teacher.bonus,
-      'Deductions': teacher.deductions,
-      'Net Salary': teacher.netSalary,
-      'Bonus Eligible': teacher.bonusEligible ? 'Yes' : 'No',
-      'Status': teacher.status,
+    const data = StaffComparisonQuery.data.map((Staff) => ({
+      'Staff Name': Staff.StaffName,
+      'Base Salary': Staff.baseSalary,
+      'Bonus': Staff.bonus,
+      'Deductions': Staff.deductions,
+      'Net Salary': Staff.netSalary,
+      'Bonus Eligible': Staff.bonusEligible ? 'Yes' : 'No',
+      'Status': Staff.status,
     }));
 
     exportToCSV(
       data,
-      `teacher-salary-comparison-${new Date().toISOString().split('T')[0]}.csv`
+      `Staff-salary-comparison-${new Date().toISOString().split('T')[0]}.csv`
     );
   };
 
@@ -255,12 +255,12 @@ export const SalaryReportsPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Teacher Salary Comparison */}
+      {/* Staff Salary Comparison */}
       <div className="bg-white rounded-lg shadow p-6">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-gray-900">Teacher Salary Comparison</h2>
+          <h2 className="text-lg font-semibold text-gray-900">Staff Salary Comparison</h2>
           <button
-            onClick={handleExportTeacherComparison}
+            onClick={handleExportStaffComparison}
             className="flex items-center gap-2 px-3 py-1 text-sm text-gray-600 hover:text-gray-900"
           >
             <Download className="w-4 h-4" />
@@ -275,17 +275,17 @@ export const SalaryReportsPage: React.FC = () => {
             onChange={(e) => setSelectedSortBy(e.target.value)}
             className="px-3 py-2 border border-gray-300 rounded-md text-sm"
           >
-            <option value="name">Sort: Teacher Name</option>
+            <option value="name">Sort: Staff Name</option>
             <option value="netsalary">Sort: Net Salary</option>
             <option value="bonus">Sort: Bonus</option>
             <option value="deduction">Sort: Deductions</option>
           </select>
         </div>
 
-        {teacherComparisonQuery.isLoading ? (
+        {StaffComparisonQuery.isLoading ? (
           <div className="h-64 bg-gray-100 rounded animate-pulse"></div>
-        ) : teacherComparisonQuery.data ? (
-          <TeacherSalaryComparisonTable data={teacherComparisonQuery.data} />
+        ) : StaffComparisonQuery.data ? (
+          <StaffSalaryComparisonTable data={StaffComparisonQuery.data} />
         ) : null}
       </div>
 

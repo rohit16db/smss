@@ -45,27 +45,27 @@ public class GetStudentAttendanceSummaryQuery : IRequest<AttendanceStatisticsDto
 }
 
 /// <summary>
-/// Query to get teacher attendance by ID
+/// Query to get staff attendance by ID
 /// </summary>
-public class GetTeacherAttendanceByIdQuery : IRequest<TeacherAttendanceDto?>
+public class GetStaffAttendanceByIdQuery : IRequest<StaffAttendanceDto?>
 {
     public string Id { get; set; } = string.Empty;
 }
 
 /// <summary>
-/// Query to get teacher attendance by date
+/// Query to get staff attendance by date
 /// </summary>
-public class GetTeacherAttendanceByDateQuery : IRequest<List<TeacherAttendanceDto>>
+public class GetStaffAttendanceByDateQuery : IRequest<List<StaffAttendanceDto>>
 {
     public DateTime AttendanceDate { get; set; }
 }
 
 /// <summary>
-/// Query to get teacher attendance history with pagination
+/// Query to get staff attendance history with pagination
 /// </summary>
-public class GetTeacherAttendanceHistoryQuery : IRequest<PaginatedTeacherAttendanceListDto>
+public class GetStaffAttendanceHistoryQuery : IRequest<PaginatedStaffAttendanceListDto>
 {
-    public string? TeacherId { get; set; }
+    public string? StaffId { get; set; }
     public DateTime? StartDate { get; set; }
     public DateTime? EndDate { get; set; }
     public string? Status { get; set; }
@@ -74,11 +74,11 @@ public class GetTeacherAttendanceHistoryQuery : IRequest<PaginatedTeacherAttenda
 }
 
 /// <summary>
-/// Query to get teacher attendance summary
+/// Query to get staff attendance summary
 /// </summary>
-public class GetTeacherAttendanceSummaryQuery : IRequest<AttendanceStatisticsDto>
+public class GetStaffAttendanceSummaryQuery : IRequest<AttendanceStatisticsDto>
 {
-    public string TeacherId { get; set; } = string.Empty;
+    public string StaffId { get; set; } = string.Empty;
     public DateTime? StartDate { get; set; }
     public DateTime? EndDate { get; set; }
 }

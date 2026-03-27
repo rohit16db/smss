@@ -26,7 +26,7 @@ export const AttendanceCorrelationTable: React.FC<AttendanceCorrelationTableProp
       {/* Summary Statistics */}
       <div className="grid grid-cols-3 gap-4">
         <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
-          <p className="text-sm text-gray-700 mb-1">Total Teachers</p>
+          <p className="text-sm text-gray-700 mb-1">Total Staffs</p>
           <p className="text-2xl font-bold text-blue-900">{data.length}</p>
         </div>
         <div className="bg-green-50 rounded-lg p-4 border border-green-200">
@@ -48,7 +48,7 @@ export const AttendanceCorrelationTable: React.FC<AttendanceCorrelationTableProp
         <table className="w-full text-sm">
           <thead className="bg-gray-50 border-b">
             <tr>
-              <th className="px-4 py-3 text-left font-medium text-gray-700">Teacher Name</th>
+              <th className="px-4 py-3 text-left font-medium text-gray-700">Staff Name</th>
               <th className="px-4 py-3 text-center font-medium text-gray-700">Attendance %</th>
               <th className="px-4 py-3 text-center font-medium text-gray-700">Present Days</th>
               <th className="px-4 py-3 text-center font-medium text-gray-700">Absent Days</th>
@@ -61,13 +61,13 @@ export const AttendanceCorrelationTable: React.FC<AttendanceCorrelationTableProp
           <tbody className="divide-y">
             {data.map((record) => (
               <tr
-                key={record.teacherId}
+                key={record.StaffId}
                 className={`hover:bg-gray-50 ${
                   record.hasDiscrepancy ? 'bg-yellow-50' : ''
                 }`}
               >
                 <td className="px-4 py-3">
-                  <p className="font-medium text-gray-900">{record.teacherName}</p>
+                  <p className="font-medium text-gray-900">{record.StaffName}</p>
                   <p className="text-xs text-gray-500">Base: ₹{record.baseSalary.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</p>
                 </td>
                 <td className="px-4 py-3 text-center">

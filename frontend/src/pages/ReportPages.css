@@ -332,7 +332,7 @@
 }
 
 .report-table td.student-name,
-.report-table td.teacher-name,
+.report-table td.staff-name,
 .report-table td.period {
   font-weight: 500;
   color: #1a1a1a;

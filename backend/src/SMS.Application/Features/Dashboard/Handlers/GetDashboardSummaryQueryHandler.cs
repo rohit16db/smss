@@ -48,17 +48,17 @@ public class GetDashboardSummaryQueryHandler : IRequestHandler<GetDashboardSumma
     private async Task<AcademicSummaryDto> GetAcademicSummary(CancellationToken cancellationToken)
     {
         var totalStudents = await _context.Students.CountAsync(cancellationToken);
-        var totalTeachers = await _context.Teachers.CountAsync(cancellationToken);
+        var totalTeachers = await _context.Staff.Where(s => s.RoleType == UserRole.Teacher).CountAsync(cancellationToken);
         var activeStudents = await _context.Students.Where(s => s.IsActive).CountAsync(cancellationToken);
-        var activeTeachers = await _context.Teachers.Where(t => t.IsActive).CountAsync(cancellationToken);
+        var activeTeachers = await _context.Staff.Where(t => t.IsActive && t.RoleType == UserRole.Teacher).CountAsync(cancellationToken);
 
         return new AcademicSummaryDto
         {
             TotalStudents = totalStudents,
-            TotalTeachers = totalTeachers,
+            TotalStaff = totalTeachers,
             TotalClasses = totalStudents > 0 ? (totalStudents / 40) + 1 : 0, // Estimate classes
             ActiveStudents = activeStudents,
-            ActiveTeachers = activeTeachers
+            ActiveStaff = activeTeachers
         };
     }
 
@@ -107,7 +107,7 @@ public class GetDashboardSummaryQueryHandler : IRequestHandler<GetDashboardSumma
     private async Task<AttendanceSummaryDto> GetAttendanceSummary(DateTime startDate, DateTime endDate, CancellationToken cancellationToken)
     {
         var totalStudents = await _context.Students.Where(s => s.IsActive).CountAsync(cancellationToken);
-        var totalTeachers = await _context.Teachers.Where(t => t.IsActive).CountAsync(cancellationToken);
+        var totalTeachers = await _context.Staff.Where(t => t.IsActive && t.RoleType == UserRole.Teacher).CountAsync(cancellationToken);
 
         var startDateOnly = DateOnly.FromDateTime(startDate);
         var endDateOnly = DateOnly.FromDateTime(endDate);
@@ -126,15 +126,15 @@ public class GetDashboardSummaryQueryHandler : IRequestHandler<GetDashboardSumma
         }
 
         // Average teacher attendance in period
-        var teacherAttendanceRecords = await _context.TeacherAttendances
+        var teacherAttendanceRecords = await _context.StaffAttendances
             .Where(a => a.AttendanceDate >= startDateOnly && a.AttendanceDate <= endDateOnly)
             .ToListAsync(cancellationToken);
 
-        var avgTeacherAttendance = 0m;
+        var avgStaffAttendance = 0m;
         if (teacherAttendanceRecords.Count > 0)
         {
             var presentDays = teacherAttendanceRecords.Count(a => a.Status == AttendanceStatus.Present);
-            avgTeacherAttendance = ((decimal)presentDays / teacherAttendanceRecords.Count) * 100;
+            avgStaffAttendance = ((decimal)presentDays / teacherAttendanceRecords.Count) * 100;
         }
 
         // Today's attendance
@@ -148,8 +148,8 @@ public class GetDashboardSummaryQueryHandler : IRequestHandler<GetDashboardSumma
         return new AttendanceSummaryDto
         {
             AverageStudentAttendance = Math.Round(avgStudentAttendance, 2),
-            AverageTeacherAttendance = Math.Round(avgTeacherAttendance, 2),
-            TotalTeachers = totalTeachers,
+            AverageStaffAttendance = Math.Round(avgStaffAttendance, 2),
+            TotalStaff = totalTeachers,
             TotalStudents = totalStudents,
             PresentStudentsTodayCount = presentToday,
             AbsentStudentsTodayCount = absentToday
@@ -173,10 +173,10 @@ public class GetDashboardSummaryQueryHandler : IRequestHandler<GetDashboardSumma
             },
             new DashboardSummaryCardDto
             {
-                Title = "Active Teachers",
-                Value = academic.ActiveTeachers,
-                Unit = "Teachers",
-                IconName = "teachers",
+                Title = "Active Staff",
+                Value = academic.ActiveStaff,
+                Unit = "Staff",
+                IconName = "staff",
                 TrendDirection = "stable"
             },
             new DashboardSummaryCardDto

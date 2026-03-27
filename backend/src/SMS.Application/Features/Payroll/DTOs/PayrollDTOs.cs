@@ -1,26 +1,26 @@
 namespace SMS.Application.Features.Payroll.DTOs;
 
 /// <summary>
-/// Teacher attendance record for payroll
+/// Staff attendance record for payroll
 /// </summary>
-public class TeacherAttendancePayrollDto
+public class StaffAttendancePayrollDto
 {
     public Guid Id { get; set; }
-    public Guid TeacherId { get; set; }
-    public string TeacherName { get; set; }
+    public Guid StaffId { get; set; }
+    public string StaffName { get; set; } = string.Empty;
     public DateOnly AttendanceDate { get; set; }
-    public string Status { get; set; } // Present, Absent, Leave, etc.
+    public string Status { get; set; } = string.Empty; // Present, Absent, Leave, etc.
     public DateTime CreatedAt { get; set; }
 }
 
 /// <summary>
-/// Teacher payroll report for a specific period
+/// Staff payroll report for a specific period
 /// </summary>
-public class TeacherPayrollReportDto
+public class StaffPayrollReportDto
 {
-    public Guid TeacherId { get; set; }
-    public string TeacherName { get; set; }
-    public string? TeacherImagePath { get; set; }
+    public Guid StaffId { get; set; }
+    public string StaffName { get; set; } = string.Empty;
+    public string? StaffImagePath { get; set; }
     public decimal BaseSalary { get; set; }
     public DateOnly PeriodStartDate { get; set; }
     public DateOnly PeriodEndDate { get; set; }
@@ -40,7 +40,7 @@ public class TeacherPayrollReportDto
     
     // Bonus eligibility
     public bool IsBonusEligible { get; set; }
-    public string BonusEligibilityReason { get; set; }
+    public string BonusEligibilityReason { get; set; } = string.Empty;
 }
 
 /// <summary>
@@ -48,22 +48,22 @@ public class TeacherPayrollReportDto
 /// </summary>
 public class BonusEligibilityDto
 {
-    public Guid TeacherId { get; set; }
-    public string TeacherName { get; set; }
+    public Guid StaffId { get; set; }
+    public string StaffName { get; set; } = string.Empty;
     public decimal AttendancePercentage { get; set; }
     public decimal BonusPercentage { get; set; }
     public decimal BonusAmount { get; set; }
     public bool IsEligible { get; set; }
-    public string Reason { get; set; }
+    public string Reason { get; set; } = string.Empty;
 }
 
 /// <summary>
-/// Summary of teacher attendance for a period
+/// Summary of staff attendance for a period
 /// </summary>
-public class TeacherAttendanceSummaryDto
+public class StaffAttendanceSummaryDto
 {
-    public Guid TeacherId { get; set; }
-    public string TeacherName { get; set; }
+    public Guid StaffId { get; set; }
+    public string StaffName { get; set; } = string.Empty;
     public int TotalDays { get; set; }
     public int PresentDays { get; set; }
     public int AbsentDays { get; set; }
@@ -79,8 +79,8 @@ public class PayrollPeriodReportDto
     public DateTime GeneratedAt { get; set; }
     public DateOnly PeriodStartDate { get; set; }
     public DateOnly PeriodEndDate { get; set; }
-    public List<TeacherPayrollReportDto> TeacherPayrolls { get; set; }
+    public List<StaffPayrollReportDto> StaffPayrolls { get; set; } = new();
     public decimal TotalPayrollAmount { get; set; }
     public decimal TotalBonusAmount { get; set; }
-    public int EligibleTeachers { get; set; }
+    public int EligibleStaffs { get; set; }
 }

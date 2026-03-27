@@ -6,8 +6,8 @@ namespace SMS.Domain.Entities;
 public class SalaryPayment
 {
     public Guid Id { get; set; }
-    public Guid TeacherId { get; set; }
-    public Teacher Teacher { get; set; } = null!;
+    public Guid StaffId { get; set; }
+    public Staff Staff { get; set; } = null!;
 
     /// <summary>
     /// Salary period start date
@@ -57,7 +57,7 @@ public class SalaryPayment
     /// <summary>
     /// Payment method (Cash, Bank Transfer, Cheque, etc.)
     /// </summary>
-    public PaymentMethod? PaymentMethod { get; set; }
+    public SalaryPaymentMethod? PaymentMethod { get; set; }
 
     /// <summary>
     /// Remarks/Notes about the payment
@@ -80,7 +80,7 @@ public enum SalaryPaymentStatus
     OnHold = 4
 }
 
-public enum PaymentMethod
+public enum SalaryPaymentMethod
 {
     Cash = 0,
     BankTransfer = 1,

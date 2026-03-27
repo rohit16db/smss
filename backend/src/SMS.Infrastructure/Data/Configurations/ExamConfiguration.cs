@@ -69,7 +69,7 @@ public class ExamConfiguration : IEntityTypeConfiguration<Exam>
             .IsRequired();
 
         // Relationships
-        builder.HasOne(e => e.CreatedBy)
+        builder.HasOne(e => e.Creator)
             .WithMany()
             .HasForeignKey(e => e.CreatedById)
             .OnDelete(DeleteBehavior.Restrict);

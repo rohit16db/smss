@@ -61,7 +61,7 @@ public class SubjectConfiguration : IEntityTypeConfiguration<Subject>
             .HasDatabaseName("idx_subjects_is_active");
 
         // Relationships
-        builder.HasMany(s => s.TeacherAssignments)
+        builder.HasMany(s => s.StaffAssignments)
             .WithOne()
             .HasForeignKey(ta => ta.SubjectId)
             .OnDelete(DeleteBehavior.Restrict);

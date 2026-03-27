@@ -4,7 +4,7 @@ import type {
   SalaryExpenseSummaryDto,
   MonthlySalaryTrendDto,
   SalaryComponentBreakdownDto,
-  TeacherSalaryComparisonDto,
+  StaffSalaryComparisonDto,
   AttendanceToSalaryCorrelationDto,
   BudgetVsActualDto,
 } from '../types/reports';
@@ -114,9 +114,9 @@ export function useSalaryComponentBreakdown(
 }
 
 /**
- * Hook to fetch teacher salary comparison
+ * Hook to fetch Staff salary comparison
  */
-export function useTeacherSalaryComparison(
+export function useStaffSalaryComparison(
   startDate: Date,
   endDate: Date,
   options?: {
@@ -125,10 +125,10 @@ export function useTeacherSalaryComparison(
     descending?: boolean;
     enabled?: boolean;
   }
-): UseQueryResult<TeacherSalaryComparisonDto[]> {
+): UseQueryResult<StaffSalaryComparisonDto[]> {
   return useQuery({
     queryKey: [
-      'teacherSalaryComparison',
+      'StaffSalaryComparison',
       startDate.toISOString(),
       endDate.toISOString(),
       options?.status,
@@ -152,7 +152,7 @@ export function useTeacherSalaryComparison(
       }
 
       const response = await api.get(
-        `/salary-reports/teacher-comparison?${params}`
+        `/salary-reports/staff-comparison?${params}`
       );
       return response.data;
     },

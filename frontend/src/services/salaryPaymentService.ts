@@ -13,7 +13,7 @@ import type {
 const SALARY_PAYMENT_ENDPOINTS = {
   base: '/v1/salary-management',
   byId: (id: string) => `/v1/salary-management/${id}`,
-  byTeacher: (teacherId: string) => `/v1/salary-management/teacher/${teacherId}`,
+  byStaff: (staffId: string) => `/v1/salary-management/staff/${staffId}`,
   summary: '/v1/salary-management/summary',
   updateStatus: (id: string) => `/v1/salary-management/${id}/status`,
   markPaid: (id: string) => `/v1/salary-management/${id}/pay`
@@ -24,13 +24,13 @@ export const salaryPaymentApi = {
   // Get all salary payments with optional filters
   getAll: async (params?: {
     status?: string;
-    teacherId?: string;
+    staffId?: string;
     periodStartDate?: string;
     periodEndDate?: string;
   }): Promise<SalaryPaymentDto[]> => {
     const queryParams = new URLSearchParams();
     if (params?.status) queryParams.append('status', params.status);
-    if (params?.teacherId) queryParams.append('teacherId', params.teacherId);
+    if (params?.staffId) queryParams.append('staffId', params.staffId);
     if (params?.periodStartDate) queryParams.append('periodStartDate', params.periodStartDate);
     if (params?.periodEndDate) queryParams.append('periodEndDate', params.periodEndDate);
 
@@ -48,9 +48,9 @@ export const salaryPaymentApi = {
     return response.data;
   },
 
-  // Get salary payments for a specific teacher
-  getByTeacher: async (teacherId: string): Promise<SalaryHistoryDto> => {
-    const response = await api.get<SalaryHistoryDto>(SALARY_PAYMENT_ENDPOINTS.byTeacher(teacherId));
+  // Get salary payments for a specific Staff
+  getByStaff: async (staffId: string): Promise<SalaryHistoryDto> => {
+    const response = await api.get<SalaryHistoryDto>(SALARY_PAYMENT_ENDPOINTS.byStaff(staffId));
     return response.data;
   },
 
@@ -98,7 +98,7 @@ export const salaryPaymentApi = {
 // React Query hooks
 export const useSalaryPayments = (params?: {
   status?: string;
-  teacherId?: string;
+  staffId?: string;
   periodStartDate?: string;
   periodEndDate?: string;
 }, enabled = true) => {
@@ -117,11 +117,11 @@ export const useSalaryPaymentById = (id: string, enabled = true) => {
   });
 };
 
-export const useSalaryPaymentsByTeacher = (teacherId: string, enabled = true) => {
+export const useSalaryPaymentsByStaff = (staffId: string, enabled = true) => {
   return useQuery({
-    queryKey: ['salaryPayments', 'teacher', teacherId],
-    queryFn: () => salaryPaymentApi.getByTeacher(teacherId),
-    enabled: enabled && !!teacherId
+    queryKey: ['salaryPayments', 'Staff', staffId],
+    queryFn: () => salaryPaymentApi.getByStaff(staffId),
+    enabled: enabled && !!staffId
   });
 };
 

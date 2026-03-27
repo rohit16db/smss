@@ -37,11 +37,11 @@ public class DeleteStudentAttendanceCommand : IRequest<bool>
 }
 
 /// <summary>
-/// Command to record teacher attendance
+/// Command to record staff attendance
 /// </summary>
-public class RecordTeacherAttendanceCommand : IRequest<TeacherAttendanceDto>
+public class RecordStaffAttendanceCommand : IRequest<StaffAttendanceDto>
 {
-    public string TeacherId { get; set; } = string.Empty;
+    public string StaffId { get; set; } = string.Empty;
     public DateTime AttendanceDate { get; set; }
     public string Status { get; set; } = string.Empty;
     public string? Reason { get; set; }
@@ -49,9 +49,9 @@ public class RecordTeacherAttendanceCommand : IRequest<TeacherAttendanceDto>
 }
 
 /// <summary>
-/// Command to update teacher attendance
+/// Command to update staff attendance
 /// </summary>
-public class UpdateTeacherAttendanceCommand : IRequest<TeacherAttendanceDto>
+public class UpdateStaffAttendanceCommand : IRequest<StaffAttendanceDto>
 {
     public string Id { get; set; } = string.Empty;
     public string Status { get; set; } = string.Empty;
@@ -60,9 +60,9 @@ public class UpdateTeacherAttendanceCommand : IRequest<TeacherAttendanceDto>
 }
 
 /// <summary>
-/// Command to delete teacher attendance record
+/// Command to delete staff attendance record
 /// </summary>
-public class DeleteTeacherAttendanceCommand : IRequest<bool>
+public class DeleteStaffAttendanceCommand : IRequest<bool>
 {
     public string Id { get; set; } = string.Empty;
 }

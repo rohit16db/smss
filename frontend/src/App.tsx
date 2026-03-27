@@ -5,13 +5,14 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { theme } from './theme/theme';
 import { MainLayout } from './components/layout/MainLayout';
 import { HomePage } from './pages/HomePage';
-import { TeachersPage } from './pages/TeachersPage';
+import { StaffDirectoryPage } from './pages/StaffDirectoryPage';
+import { DepartmentPage } from './pages/DepartmentPage';
 import { FeesPage } from './pages/FeesPage';
 import { FeeReportPage } from './pages/FeeReportPage';
 import { FeeReportsPage } from './pages/FeeReportsPage';
 import { SalaryReportsPage } from './pages/SalaryReportsPage';
 import { OutstandingFeesPage } from './pages/OutstandingFeesPage';
-import { TeacherSalaryComparisonPage } from './pages/TeacherSalaryComparisonPage';
+import { StaffSalaryComparisonPage } from './pages/StaffSalaryComparisonPage';
 import { BudgetVsActualPage } from './pages/BudgetVsActualPage';
 import { StudentsPage } from './pages/StudentsPage';
 import { AttendancePage } from './pages/AttendancePage';
@@ -32,7 +33,7 @@ import { StudentPromotionPage } from './pages/StudentPromotionPage';
 import { AcademicYearManagementPage } from './pages/AcademicYearManagementPage';
 import { PerformanceAnalyticsPage } from './pages/PerformanceAnalyticsPage';
 import { SalaryStructurePage } from './pages/SalaryStructurePage';
-import { TeacherSalaryAssignmentPage } from './pages/TeacherSalaryAssignmentPage';
+import { StaffSalaryAssignmentPage } from './pages/StaffSalaryAssignmentPage';
 import { BulkSalaryProcessingPage } from './pages/BulkSalaryProcessingPage';
 import SalaryPaymentPage from './pages/SalaryPaymentPage';
 import { LoginPage } from './pages/LoginPage';
@@ -75,10 +76,18 @@ function App() {
               >
                 <Route index element={<HomePage />} />
                 <Route
-                  path="teachers"
+                  path="staff"
                   element={
                     <ProtectedRoute allowedRoles={["Admin", "Clerk"]}>
-                      <TeachersPage />
+                      <StaffDirectoryPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="departments"
+                  element={
+                    <ProtectedRoute allowedRoles={["Admin", "Clerk"]}>
+                      <DepartmentPage />
                     </ProtectedRoute>
                   }
                 />
@@ -133,7 +142,7 @@ function App() {
                 <Route
                   path="attendance"
                   element={
-                    <ProtectedRoute allowedRoles={["Admin", "Clerk", "Teacher"]}>
+                    <ProtectedRoute allowedRoles={["Admin", "Clerk", "Staff"]}>
                       <AttendancePage />
                     </ProtectedRoute>
                   }
@@ -157,7 +166,7 @@ function App() {
                 <Route
                   path="salary"
                   element={
-                    <ProtectedRoute allowedRoles={["Admin", "Accountant", "Teacher"]}>
+                    <ProtectedRoute allowedRoles={["Admin", "Accountant", "Staff"]}>
                       <SalaryPage />
                     </ProtectedRoute>
                   }
@@ -171,10 +180,10 @@ function App() {
                   }
                 />
                 <Route
-                  path="teacher-salary-comparison"
+                  path="staff-salary-comparison"
                   element={
                     <ProtectedRoute allowedRoles={["Admin", "Accountant"]}>
-                      <TeacherSalaryComparisonPage />
+                      <StaffSalaryComparisonPage />
                     </ProtectedRoute>
                   }
                 />
@@ -195,10 +204,10 @@ function App() {
                   }
                 />
                 <Route
-                  path="teacher-salary-assignment"
+                  path="staff-salary-assignment"
                   element={
                     <ProtectedRoute allowedRoles={["Admin", "Accountant"]}>
-                      <TeacherSalaryAssignmentPage />
+                      <StaffSalaryAssignmentPage />
                     </ProtectedRoute>
                   }
                 />
@@ -245,7 +254,7 @@ function App() {
                 <Route
                   path="exams"
                   element={
-                    <ProtectedRoute allowedRoles={["Admin", "Clerk", "Teacher"]}>
+                    <ProtectedRoute allowedRoles={["Admin", "Clerk", "Staff"]}>
                       <ExamsPage />
                     </ProtectedRoute>
                   }
@@ -253,7 +262,7 @@ function App() {
                   <Route
                     path=":examId/marks"
                     element={
-                      <ProtectedRoute allowedRoles={["Admin", "Clerk", "Teacher"]}>
+                      <ProtectedRoute allowedRoles={["Admin", "Clerk", "Staff"]}>
                         <MarksPage />
                       </ProtectedRoute>
                     }
@@ -261,7 +270,7 @@ function App() {
                   <Route
                     path=":examId/report-cards"
                     element={
-                      <ProtectedRoute allowedRoles={["Admin", "Clerk", "Teacher"]}>
+                      <ProtectedRoute allowedRoles={["Admin", "Clerk", "Staff"]}>
                         <ReportCardsPage />
                       </ProtectedRoute>
                     }
@@ -269,7 +278,7 @@ function App() {
                   <Route
                     path=":examId/analytics"
                     element={
-                      <ProtectedRoute allowedRoles={["Admin", "Clerk", "Teacher"]}>
+                      <ProtectedRoute allowedRoles={["Admin", "Clerk", "Staff"]}>
                         <PerformanceAnalyticsPage />
                       </ProtectedRoute>
                     }
@@ -278,7 +287,7 @@ function App() {
                 <Route
                   path="report-cards/:examId/:studentId"
                   element={
-                    <ProtectedRoute allowedRoles={["Admin", "Clerk", "Teacher"]}>
+                    <ProtectedRoute allowedRoles={["Admin", "Clerk", "Staff"]}>
                       <ReportCardDetailPage />
                     </ProtectedRoute>
                   }
@@ -302,7 +311,7 @@ function App() {
                 <Route
                   path="timetable"
                   element={
-                    <ProtectedRoute allowedRoles={["Admin", "Clerk", "Teacher"]}>
+                    <ProtectedRoute allowedRoles={["Admin", "Clerk", "Staff"]}>
                       <TimetablePage />
                     </ProtectedRoute>
                   }

@@ -163,14 +163,18 @@ export const studentApi = {
   },
 };
 
-// Teacher Types
-export type Teacher = {
+// Staff Types
+export type Staff = {
   id: string;
   userId: string;
   firstName: string;
   lastName: string;
   email: string;
   phone?: string;
+  designation: string;
+  roleType: number;
+  departmentId?: string;
+  departmentName?: string;
   qualification?: string;
   experienceYears: number;
   joiningDate: string;
@@ -178,25 +182,31 @@ export type Teacher = {
   imagePath?: string;
 };
 
-export type CreateTeacherDto = {
+export type CreateStaffDto = {
   userId: string;
   firstName: string;
   lastName: string;
   email: string;
   phone?: string;
+  designation: string;
+  roleType: number;
+  departmentId?: string;
   qualification?: string;
   experienceYears: number;
   joiningDate: string;
   imagePath?: string;
 };
 
-export type UpdateTeacherDto = {
+export type UpdateStaffDto = {
   id: string;
   userId: string;
   firstName: string;
   lastName: string;
   email: string;
   phone?: string;
+  designation: string;
+  roleType: number;
+  departmentId?: string;
   qualification?: string;
   experienceYears: number;
   joiningDate: string;
@@ -204,16 +214,16 @@ export type UpdateTeacherDto = {
   imagePath?: string;
 };
 
-export type PaginatedTeacherList = {
-  items: Teacher[];
+export type PaginatedStaffList = {
+  items: Staff[];
   totalCount: number;
   pageNumber: number;
   pageSize: number;
 };
 
-export type TeacherAssignment = {
+export type StaffAssignment = {
   id: string;
-  teacherId: string;
+  StaffId: string;
   classId: string;
   subjectId: string;
   assignmentDate: string;
@@ -224,51 +234,51 @@ export type TeacherAssignment = {
   isActive: boolean;
 };
 
-export type CreateTeacherAssignmentDto = {
+export type CreateStaffAssignmentDto = {
   classId: string;
   subjectId: string;
   assignmentDate?: string;
 };
 
-export const teacherApi = {
+export const StaffApi = {
   getAll: async (params?: { pageNumber?: number; pageSize?: number; searchTerm?: string; isActive?: boolean }) => {
-    const response = await api.get<PaginatedTeacherList>('/teachers', { params });
+    const response = await api.get<PaginatedStaffList>('/staff', { params });
     return response.data;
   },
 
   getById: async (id: string) => {
-    const response = await api.get<Teacher>(`/teachers/${id}`);
+    const response = await api.get<Staff>(`/staff/${id}`);
     return response.data;
   },
 
-  create: async (data: CreateTeacherDto) => {
-    const response = await api.post<Teacher>('/teachers', data);
+  create: async (data: CreateStaffDto) => {
+    const response = await api.post<Staff>('/staff', data);
     return response.data;
   },
 
-  update: async (id: string, data: UpdateTeacherDto) => {
-    const response = await api.put<Teacher>(`/teachers/${id}`, data);
+  update: async (id: string, data: UpdateStaffDto) => {
+    const response = await api.put<Staff>(`/staff/${id}`, data);
     return response.data;
   },
 
   delete: async (id: string) => {
-    await api.delete(`/teachers/${id}`);
+    await api.delete(`/staff/${id}`);
   },
 
   activate: async (id: string) => {
-    const response = await api.patch<Teacher>(`/teachers/${id}/activate`);
+    const response = await api.patch<Staff>(`/staff/${id}/activate`);
     return response.data;
   },
 
   deactivate: async (id: string) => {
-    const response = await api.patch<Teacher>(`/teachers/${id}/deactivate`);
+    const response = await api.patch<Staff>(`/staff/${id}/deactivate`);
     return response.data;
   },
 
   uploadImage: async (id: string, file: File) => {
     const formData = new FormData();
     formData.append('file', file);
-    const response = await api.post<{ message: string; imagePath: string }>(`/teachers/${id}/upload-image`, formData, {
+    const response = await api.post<{ message: string; imagePath: string }>(`/staff/${id}/upload-image`, formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
@@ -276,21 +286,21 @@ export const teacherApi = {
     return response.data;
   },
 
-  // Teacher Assignment APIs
-  getAssignments: async (teacherId: string, activeOnly?: boolean) => {
-    const response = await api.get<TeacherAssignment[]>(`/teachers/${teacherId}/assignments`, {
+  // Staff Assignment APIs
+  getAssignments: async (StaffId: string, activeOnly?: boolean) => {
+    const response = await api.get<StaffAssignment[]>(`/staff/${StaffId}/assignments`, {
       params: { activeOnly }
     });
     return response.data;
   },
 
-  createAssignment: async (teacherId: string, data: CreateTeacherAssignmentDto) => {
-    const response = await api.post<TeacherAssignment>(`/teachers/${teacherId}/assignments`, data);
+  createAssignment: async (StaffId: string, data: CreateStaffAssignmentDto) => {
+    const response = await api.post<StaffAssignment>(`/staff/${StaffId}/assignments`, data);
     return response.data;
   },
 
-  removeAssignment: async (teacherId: string, assignmentId: string, removalDate?: string) => {
-    await api.delete(`/teachers/${teacherId}/assignments/${assignmentId}`, {
+  removeAssignment: async (StaffId: string, assignmentId: string, removalDate?: string) => {
+    await api.delete(`/staff/${StaffId}/assignments/${assignmentId}`, {
       data: { assignmentId, removalDate }
     });
   },
@@ -552,11 +562,11 @@ export type StudentAttendance = {
   remarks?: string;
 };
 
-export type TeacherAttendance = {
+export type StaffAttendance = {
   id: string;
-  teacherId: string;
-  teacherName?: string;
-  teacherEmail?: string;
+  staffId: string;
+  staffName?: string;
+  staffEmail?: string;
   attendanceDate: string;
   status: 'Present' | 'Absent' | 'Late' | 'Leave';
   reason?: string;
@@ -571,8 +581,8 @@ export type CreateStudentAttendanceDto = {
   reason?: string;
 };
 
-export type CreateTeacherAttendanceDto = {
-  teacherId: string;
+export type CreateStaffAttendanceDto = {
+  staffId: string;
   attendanceDate: string;
   status: 'Present' | 'Absent' | 'Late' | 'Leave';
   reason?: string;
@@ -585,8 +595,8 @@ export type PaginatedStudentAttendanceList = {
   pageSize: number;
 };
 
-export type PaginatedTeacherAttendanceList = {
-  items: TeacherAttendance[];
+export type PaginatedStaffAttendanceList = {
+  items: StaffAttendance[];
   totalCount: number;
   pageNumber: number;
   pageSize: number;
@@ -679,37 +689,37 @@ export const attendanceApi = {
     await api.delete(`/attendance/students/${id}`);
   },
 
-  // Teacher Attendance
-  getAllTeacherAttendance: async (params?: {
+  // Staff Attendance
+  getAllStaffAttendance: async (params?: {
     pageNumber?: number;
     pageSize?: number;
-    teacherId?: string;
+    staffId?: string;
     attendanceDate?: string;
     startDate?: string;
     endDate?: string;
     status?: string;
   }) => {
-    const response = await api.get<PaginatedTeacherAttendanceList>('/attendance/teachers/history', { params });
+    const response = await api.get<PaginatedStaffAttendanceList>('/attendance/staff/history', { params });
     return response.data;
   },
 
-  getTeacherAttendanceById: async (id: string) => {
-    const response = await api.get<TeacherAttendance>(`/attendance/teachers/${id}`);
+  getStaffAttendanceById: async (id: string) => {
+    const response = await api.get<StaffAttendance>(`/attendance/staff/${id}`);
     return response.data;
   },
 
-  recordTeacherAttendance: async (data: CreateTeacherAttendanceDto) => {
-    const response = await api.post<TeacherAttendance>('/attendance/teachers', data);
+  recordStaffAttendance: async (data: CreateStaffAttendanceDto) => {
+    const response = await api.post<StaffAttendance>('/attendance/staff', data);
     return response.data;
   },
 
-  updateTeacherAttendance: async (id: string, data: Partial<CreateTeacherAttendanceDto> & { id: string }) => {
-    const response = await api.put<TeacherAttendance>(`/attendance/teachers/${id}`, data);
+  updateStaffAttendance: async (id: string, data: Partial<CreateStaffAttendanceDto> & { id: string }) => {
+    const response = await api.put<StaffAttendance>(`/attendance/staff/${id}`, data);
     return response.data;
   },
 
-  deleteTeacherAttendance: async (id: string) => {
-    await api.delete(`/attendance/teachers/${id}`);
+  deleteStaffAttendance: async (id: string) => {
+    await api.delete(`/attendance/staff/${id}`);
   },
 
   // Report Methods
@@ -1153,9 +1163,9 @@ export type SalaryComponentBreakdownDto = {
   };
 };
 
-export type TeacherSalaryComparisonDto = {
-  teacherId: string;
-  teacherName: string;
+export type StaffSalaryComparisonDto = {
+  StaffId: string;
+  StaffName: string;
   baseSalary: number;
   bonus: number;
   deductions: number;
@@ -1166,8 +1176,8 @@ export type TeacherSalaryComparisonDto = {
 };
 
 export type AttendanceToSalaryCorrelationDto = {
-  teacherId: string;
-  teacherName: string;
+  StaffId: string;
+  StaffName: string;
   expectedDeduction: number;
   actualDeduction: number;
   discrepancy: number;
@@ -1243,7 +1253,7 @@ export const reportApi = {
     prevStartDate?: string;
     prevEndDate?: string;
   }) => {
-    const response = await api.get<SalaryExpenseSummaryDto>('/salaryreports/expense-summary', { params });
+    const response = await api.get<SalaryExpenseSummaryDto>('/salary-reports/expense-summary', { params });
     return response.data;
   },
 
@@ -1251,7 +1261,7 @@ export const reportApi = {
     startDate: string;
     endDate: string;
   }) => {
-    const response = await api.get<MonthlySalaryTrendDto[]>('/salaryreports/monthly-trend', { params });
+    const response = await api.get<MonthlySalaryTrendDto[]>('/salary-reports/monthly-trend', { params });
     return response.data;
   },
 
@@ -1259,18 +1269,18 @@ export const reportApi = {
     startDate: string;
     endDate: string;
   }) => {
-    const response = await api.get<SalaryComponentBreakdownDto>('/salaryreports/component-breakdown', { params });
+    const response = await api.get<SalaryComponentBreakdownDto>('/salary-reports/component-breakdown', { params });
     return response.data;
   },
 
-  getTeacherSalaryComparison: async (params: {
+  getStaffSalaryComparison: async (params: {
     startDate: string;
     endDate: string;
     status?: string;
     sortBy?: string;
     descending?: boolean;
   }) => {
-    const response = await api.get<TeacherSalaryComparisonDto[]>('/salaryreports/teacher-comparison', { params });
+    const response = await api.get<StaffSalaryComparisonDto[]>('/salary-reports/staff-comparison', { params });
     return response.data;
   },
 
@@ -1278,7 +1288,7 @@ export const reportApi = {
     month: string;
     onlyDiscrepancies?: boolean;
   }) => {
-    const response = await api.get<AttendanceToSalaryCorrelationDto[]>('/salaryreports/attendance-correlation', { params });
+    const response = await api.get<AttendanceToSalaryCorrelationDto[]>('/salary-reports/attendance-correlation', { params });
     return response.data;
   },
 
@@ -1288,7 +1298,7 @@ export const reportApi = {
     endDate: string;
     groupBy?: string;
   }) => {
-    const response = await api.get<BudgetVsActualDto[]>('/salaryreports/budget-vs-actual', { params });
+    const response = await api.get<BudgetVsActualDto[]>('/salary-reports/budget-vs-actual', { params });
     return response.data;
   },
 };
@@ -1417,8 +1427,8 @@ export type TimetableEntry = {
   className: string;
   subjectId: string;
   subjectName: string;
-  teacherId: string;
-  teacherName: string;
+  StaffId: string;
+  StaffName: string;
   roomNumber?: string;
   academicYearId: string;
 };
@@ -1427,7 +1437,7 @@ export type CreateTimetableEntryDto = {
   timeSlotId: string;
   sectionId: string;
   subjectId: string;
-  teacherId: string;
+  StaffId: string;
   roomNumber?: string;
   academicYearId: string;
 };
@@ -1460,8 +1470,8 @@ export const timetableApi = {
     return response.data;
   },
 
-  getTeacherTimetable: async (teacherId: string, academicYearId: string) => {
-    const response = await api.get<TimetableEntry[]>(`/timetable/entries/teacher/${teacherId}/${academicYearId}`);
+  getStaffTimetable: async (StaffId: string, academicYearId: string) => {
+    const response = await api.get<TimetableEntry[]>(`/timetable/entries/staff/${StaffId}/${academicYearId}`);
     return response.data;
   },
 
@@ -1478,4 +1488,65 @@ export const timetableApi = {
   deleteEntry: async (id: string) => {
     await api.delete(`/timetable/entries/${id}`);
   },
-};
+};
+
+// Department Types
+export type Department = {
+  id: string;
+  name: string;
+  description?: string;
+  headOfDepartmentId?: string;
+  headOfDepartmentName?: string;
+  staffCount: number;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type DepartmentListItem = {
+  id: string;
+  name: string;
+  description?: string;
+  headOfDepartmentName?: string;
+  staffCount: number;
+};
+
+export type CreateDepartmentDto = {
+  name: string;
+  description?: string;
+  headOfDepartmentId?: string;
+};
+
+export type UpdateDepartmentDto = {
+  name: string;
+  description?: string;
+  headOfDepartmentId?: string;
+};
+
+// Department API
+export const departmentApi = {
+  getAll: async (searchTerm?: string) => {
+    const response = await api.get<DepartmentListItem[]>('/departments', {
+      params: searchTerm ? { searchTerm } : undefined,
+    });
+    return response.data;
+  },
+
+  getById: async (id: string) => {
+    const response = await api.get<Department>(`/departments/${id}`);
+    return response.data;
+  },
+
+  create: async (data: CreateDepartmentDto) => {
+    const response = await api.post<Department>('/departments', data);
+    return response.data;
+  },
+
+  update: async (id: string, data: UpdateDepartmentDto) => {
+    const response = await api.put<Department>(`/departments/${id}`, data);
+    return response.data;
+  },
+
+  delete: async (id: string) => {
+    await api.delete(`/departments/${id}`);
+  },
+};

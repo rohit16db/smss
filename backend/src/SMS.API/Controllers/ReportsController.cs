@@ -149,7 +149,7 @@ public class FeeReportsController : ControllerBase
 /// API endpoints for salary expense and payroll reports
 /// </summary>
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/salary-reports")]
 [Authorize]
 public class SalaryReportsController : ControllerBase
 {
@@ -224,25 +224,25 @@ public class SalaryReportsController : ControllerBase
     }
 
     /// <summary>
-    /// Get teacher-wise salary comparison
+    /// Get staff-wise salary comparison
     /// </summary>
     /// <param name="startDate">Start date (YYYY-MM-DD)</param>
     /// <param name="endDate">End date (YYYY-MM-DD)</param>
     /// <param name="status">Optional status filter: Pending, Approved, Paid</param>
     /// <param name="sortBy">Sort field: name (default), netsalary, bonus, deduction</param>
     /// <param name="descending">Descending sort order</param>
-    /// <returns>Teacher salary comparison list</returns>
-    [HttpGet("teacher-comparison")]
+    /// <returns>Staff salary comparison list</returns>
+    [HttpGet("staff-comparison")]
     [Authorize(Policy = "SalaryAccess")]
-    [ProducesResponseType(typeof(IEnumerable<TeacherSalaryComparisonDto>), StatusCodes.Status200OK)]
-    public async Task<ActionResult<IEnumerable<TeacherSalaryComparisonDto>>> GetTeacherComparison(
+    [ProducesResponseType(typeof(IEnumerable<StaffSalaryComparisonDto>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<IEnumerable<StaffSalaryComparisonDto>>> GetStaffComparison(
         [FromQuery] DateTime startDate,
         [FromQuery] DateTime endDate,
         [FromQuery] string? status = null,
         [FromQuery] string sortBy = "name",
         [FromQuery] bool descending = false)
     {
-        var query = new GetTeacherSalaryComparisonQuery(startDate, endDate)
+        var query = new GetStaffSalaryComparisonQuery(startDate, endDate)
         {
             Status = status,
             SortBy = sortBy,

@@ -20,7 +20,7 @@ public class Exam : BaseEntity
 
     // Navigation properties
     public virtual AcademicYear? AcademicYear { get; set; }
-    public virtual User? CreatedBy { get; set; }
+    public virtual User? Creator { get; set; }
     public virtual ICollection<ExamSubject> ExamSubjects { get; set; } = new List<ExamSubject>();
     public virtual ICollection<ExamClass> ExamClasses { get; set; } = new List<ExamClass>();
     public virtual ICollection<StudentMarks> StudentMarks { get; set; } = new List<StudentMarks>();

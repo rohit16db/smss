@@ -49,8 +49,8 @@ export const salaryApi = {
     return response.json();
   },
 
-  getTeacherSalaryHistory: async (
-    teacherId: string,
+  getStaffSalaryHistory: async (
+    StaffId: string,
     startDate?: string,
     endDate?: string
   ): Promise<SalaryHistoryDto> => {
@@ -59,7 +59,7 @@ export const salaryApi = {
     if (endDate) params.append('endDate', endDate);
 
     const response = await fetch(
-      `${API_BASE_URL}/v1/salary/teacher/${teacherId}?${params}`,
+      `${API_BASE_URL}/v1/salary/Staff/${StaffId}?${params}`,
       {
         headers: {
           Authorization: `Bearer ${localStorage.getItem('authToken') || ''}`,
@@ -68,7 +68,7 @@ export const salaryApi = {
     );
 
     if (!response.ok) {
-      throw new Error('Failed to fetch teacher salary history');
+      throw new Error('Failed to fetch Staff salary history');
     }
 
     return response.json();
@@ -210,16 +210,16 @@ export const useSalaryPaymentsByPeriod = (startDate: string, endDate: string) =>
   });
 };
 
-export const useTeacherSalaryHistory = (
-  teacherId: string,
+export const useStaffSalaryHistory = (
+  StaffId: string,
   startDate?: string,
   endDate?: string
 ) => {
   return useQuery({
-    queryKey: ['teacherSalaryHistory', teacherId, startDate, endDate],
+    queryKey: ['StaffSalaryHistory', StaffId, startDate, endDate],
     queryFn: () =>
-      salaryApi.getTeacherSalaryHistory(teacherId, startDate, endDate),
-    enabled: !!teacherId,
+      salaryApi.getStaffSalaryHistory(StaffId, startDate, endDate),
+    enabled: !!StaffId,
   });
 };
 

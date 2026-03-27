@@ -21,11 +21,11 @@ public class GetSalaryPaymentsByPeriodQuery : IRequest<SalaryPaymentReportDto>
 }
 
 /// <summary>
-/// Get salary payments for a specific teacher
+/// Get salary payments for a specific staff member
 /// </summary>
-public class GetTeacherSalaryPaymentsQuery : IRequest<SalaryHistoryDto>
+public class GetStaffSalaryPaymentsQuery : IRequest<SalaryHistoryDto>
 {
-    public Guid TeacherId { get; set; }
+    public Guid StaffId { get; set; }
     public DateOnly? StartDate { get; set; }
     public DateOnly? EndDate { get; set; }
 }
@@ -39,9 +39,9 @@ public class GetPendingSalaryPaymentsQuery : IRequest<List<SalaryPaymentDto>>
 }
 
 /// <summary>
-/// Get salary payment summary for dashboard
+/// Get staff salary summary for dashboard
 /// </summary>
-public class GetSalarySummaryQuery : IRequest<SalarySummaryDto>
+public class GetStaffSalarySummaryQuery : IRequest<StaffSalarySummaryDto>
 {
     public int? Month { get; set; }
     public int? Year { get; set; }
@@ -50,15 +50,15 @@ public class GetSalarySummaryQuery : IRequest<SalarySummaryDto>
 /// <summary>
 /// DTO for salary summary
 /// </summary>
-public class SalarySummaryDto
+public class StaffSalarySummaryDto
 {
     public decimal TotalSalaryExpense { get; set; }
     public decimal TotalPaid { get; set; }
     public decimal TotalPending { get; set; }
-    public int TeacherCount { get; set; }
+    public int StaffCount { get; set; }
     public int PaidCount { get; set; }
     public int PendingCount { get; set; }
-    public decimal AverageSalaryPerTeacher { get; set; }
+    public decimal AverageSalaryPerStaff { get; set; }
 }
 
 /// <summary>
@@ -67,7 +67,7 @@ public class SalarySummaryDto
 public class GetAllSalaryPaymentsQuery : IRequest<List<SalaryPaymentDto>>
 {
     public string? Status { get; set; }
-    public Guid? TeacherId { get; set; }
+    public Guid? StaffId { get; set; }
     public DateTime? PeriodStartDate { get; set; }
     public DateTime? PeriodEndDate { get; set; }
 }

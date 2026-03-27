@@ -24,5 +24,5 @@ public class Subject : BaseEntity
     public int DisplayOrder { get; set; }
     
     // Navigation properties
-    public ICollection<TeacherAssignment> TeacherAssignments { get; set; } = new List<TeacherAssignment>();
+    public ICollection<StaffAssignment> StaffAssignments { get; set; } = new List<StaffAssignment>();
 }

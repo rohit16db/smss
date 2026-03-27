@@ -11,7 +11,7 @@ namespace SMS.Application.Features.Timetable.Handlers.QueryHandlers;
 public class TimetableQueryHandlers : 
     IRequestHandler<GetTimeSlotsQuery, List<TimeSlotDto>>,
     IRequestHandler<GetSectionTimetableQuery, List<TimetableEntryDto>>,
-    IRequestHandler<GetTeacherTimetableQuery, List<TimetableEntryDto>>
+    IRequestHandler<GetStaffTimetableQuery, List<TimetableEntryDto>>
 {
     private readonly IApplicationDbContext _context;
 
@@ -44,7 +44,8 @@ public class TimetableQueryHandlers :
         return await _context.TimetableEntries
             .Include(t => t.TimeSlot)
             .Include(t => t.Subject)
-            .Include(t => t.Teacher)
+            .Include(t => t.Staff)
+                .ThenInclude(s => s.UserProfile)
             .Include(t => t.Section)
                 .ThenInclude(s => s!.Class)
             .Where(t => t.AcademicYearId == request.AcademicYearId && t.SectionId == request.SectionId)
@@ -61,23 +62,24 @@ public class TimetableQueryHandlers :
                 ClassName = t.Section.Class!.Name,
                 SubjectId = t.SubjectId,
                 SubjectName = t.Subject!.Name,
-                TeacherId = t.TeacherId,
-                TeacherName = $"{t.Teacher!.FirstName} {t.Teacher.LastName}",
+                StaffId = t.StaffId,
+                StaffName = t.Staff != null ? t.Staff.FullName : "Unknown",
                 RoomNumber = t.RoomNumber,
                 AcademicYearId = t.AcademicYearId
             })
             .ToListAsync(cancellationToken);
     }
 
-    public async Task<List<TimetableEntryDto>> Handle(GetTeacherTimetableQuery request, CancellationToken cancellationToken)
+    public async Task<List<TimetableEntryDto>> Handle(GetStaffTimetableQuery request, CancellationToken cancellationToken)
     {
         return await _context.TimetableEntries
             .Include(t => t.TimeSlot)
             .Include(t => t.Subject)
-            .Include(t => t.Teacher)
+            .Include(t => t.Staff)
+                .ThenInclude(s => s.UserProfile)
             .Include(t => t.Section)
                 .ThenInclude(s => s!.Class)
-            .Where(t => t.AcademicYearId == request.AcademicYearId && t.TeacherId == request.TeacherId)
+            .Where(t => t.AcademicYearId == request.AcademicYearId && t.StaffId == request.StaffId)
             .Select(t => new TimetableEntryDto
             {
                 Id = t.Id,
@@ -91,8 +93,8 @@ public class TimetableQueryHandlers :
                 ClassName = t.Section.Class!.Name,
                 SubjectId = t.SubjectId,
                 SubjectName = t.Subject!.Name,
-                TeacherId = t.TeacherId,
-                TeacherName = $"{t.Teacher!.FirstName} {t.Teacher.LastName}",
+                StaffId = t.StaffId,
+                StaffName = t.Staff != null ? t.Staff.FullName : "Unknown",
                 RoomNumber = t.RoomNumber,
                 AcademicYearId = t.AcademicYearId
             })

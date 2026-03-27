@@ -1,6 +1,6 @@
-import type { Teacher, Student, FeeStructure, StudentFee, FeePayment } from '../services/api';
+import type { Staff, Student, FeeStructure, StudentFee, FeePayment } from '../services/api';
 
-export const mockTeachers: Teacher[] = [
+export const mockStaffs: Staff[] = [
   {
     id: '1',
     userId: 'user-1',
@@ -143,8 +143,8 @@ export const mockFeePayments: FeePayment[] = [
   },
 ];
 
-export const mockPaginatedTeachers = {
-  items: mockTeachers,
+export const mockPaginatedStaffs = {
+  items: mockStaffs,
   pageNumber: 1,
   pageSize: 10,
   totalCount: 2,

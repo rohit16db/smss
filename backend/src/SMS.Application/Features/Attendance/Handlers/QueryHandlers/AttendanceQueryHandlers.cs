@@ -223,34 +223,35 @@ public class GetStudentAttendanceSummaryQueryHandler : IRequestHandler<GetStuden
 }
 
 /// <summary>
-/// Handler for GetTeacherAttendanceByIdQuery
+/// Handler for GetStaffAttendanceByIdQuery
 /// </summary>
-public class GetTeacherAttendanceByIdQueryHandler : IRequestHandler<GetTeacherAttendanceByIdQuery, TeacherAttendanceDto?>
+public class GetStaffAttendanceByIdQueryHandler : IRequestHandler<GetStaffAttendanceByIdQuery, StaffAttendanceDto?>
 {
     private readonly IApplicationDbContext _context;
 
-    public GetTeacherAttendanceByIdQueryHandler(IApplicationDbContext context)
+    public GetStaffAttendanceByIdQueryHandler(IApplicationDbContext context)
     {
         _context = context;
     }
 
-    public async Task<TeacherAttendanceDto?> Handle(GetTeacherAttendanceByIdQuery request, CancellationToken cancellationToken)
+    public async Task<StaffAttendanceDto?> Handle(GetStaffAttendanceByIdQuery request, CancellationToken cancellationToken)
     {
         if (!Guid.TryParse(request.Id, out var attendanceId))
             return null;
 
-        var attendance = await _context.TeacherAttendances
-            .Include(a => a.Teacher)
+        var attendance = await _context.StaffAttendances
+            .Include(a => a.Staff)
+                .ThenInclude(s => s.UserProfile)
             .FirstOrDefaultAsync(a => a.Id == attendanceId, cancellationToken);
 
         if (attendance == null)
             return null;
 
-        return new TeacherAttendanceDto
+        return new StaffAttendanceDto
         {
             Id = attendance.Id.ToString(),
-            TeacherId = attendance.TeacherId.ToString(),
-            TeacherName = attendance.Teacher != null ? $"{attendance.Teacher.FirstName} {attendance.Teacher.LastName}" : null,
+            StaffId = attendance.StaffId.ToString(),
+            StaffName = attendance.Staff?.FullName,
             AttendanceDate = attendance.AttendanceDate.ToDateTime(TimeOnly.MinValue),
             Status = attendance.Status,
             Reason = attendance.Reason,
@@ -262,32 +263,33 @@ public class GetTeacherAttendanceByIdQueryHandler : IRequestHandler<GetTeacherAt
 }
 
 /// <summary>
-/// Handler for GetTeacherAttendanceByDateQuery
+/// Handler for GetStaffAttendanceByDateQuery
 /// </summary>
-public class GetTeacherAttendanceByDateQueryHandler : IRequestHandler<GetTeacherAttendanceByDateQuery, List<TeacherAttendanceDto>>
+public class GetStaffAttendanceByDateQueryHandler : IRequestHandler<GetStaffAttendanceByDateQuery, List<StaffAttendanceDto>>
 {
     private readonly IApplicationDbContext _context;
 
-    public GetTeacherAttendanceByDateQueryHandler(IApplicationDbContext context)
+    public GetStaffAttendanceByDateQueryHandler(IApplicationDbContext context)
     {
         _context = context;
     }
 
-    public async Task<List<TeacherAttendanceDto>> Handle(GetTeacherAttendanceByDateQuery request, CancellationToken cancellationToken)
+    public async Task<List<StaffAttendanceDto>> Handle(GetStaffAttendanceByDateQuery request, CancellationToken cancellationToken)
     {
         var attendanceDate = DateOnly.FromDateTime(request.AttendanceDate);
 
-        var attendances = await _context.TeacherAttendances
-            .Include(a => a.Teacher)
+        var attendances = await _context.StaffAttendances
+            .Include(a => a.Staff)
+                .ThenInclude(s => s.UserProfile)
             .Where(a => a.AttendanceDate == attendanceDate)
-            .OrderBy(a => a.Teacher != null ? a.Teacher.FirstName : string.Empty)
+            .OrderBy(a => a.Staff != null ? a.Staff.UserProfile.FirstName : string.Empty)
             .ToListAsync(cancellationToken);
 
-        return attendances.Select(a => new TeacherAttendanceDto
+        return attendances.Select(a => new StaffAttendanceDto
         {
             Id = a.Id.ToString(),
-            TeacherId = a.TeacherId.ToString(),
-            TeacherName = a.Teacher != null ? $"{a.Teacher.FirstName} {a.Teacher.LastName}" : null,
+            StaffId = a.StaffId.ToString(),
+            StaffName = a.Staff?.FullName,
             AttendanceDate = a.AttendanceDate.ToDateTime(TimeOnly.MinValue),
             Status = a.Status,
             Reason = a.Reason,
@@ -299,24 +301,24 @@ public class GetTeacherAttendanceByDateQueryHandler : IRequestHandler<GetTeacher
 }
 
 /// <summary>
-/// Handler for GetTeacherAttendanceHistoryQuery
+/// Handler for GetStaffAttendanceHistoryQuery
 /// </summary>
-public class GetTeacherAttendanceHistoryQueryHandler : IRequestHandler<GetTeacherAttendanceHistoryQuery, PaginatedTeacherAttendanceListDto>
+public class GetStaffAttendanceHistoryQueryHandler : IRequestHandler<GetStaffAttendanceHistoryQuery, PaginatedStaffAttendanceListDto>
 {
     private readonly IApplicationDbContext _context;
 
-    public GetTeacherAttendanceHistoryQueryHandler(IApplicationDbContext context)
+    public GetStaffAttendanceHistoryQueryHandler(IApplicationDbContext context)
     {
         _context = context;
     }
 
-    public async Task<PaginatedTeacherAttendanceListDto> Handle(GetTeacherAttendanceHistoryQuery request, CancellationToken cancellationToken)
+    public async Task<PaginatedStaffAttendanceListDto> Handle(GetStaffAttendanceHistoryQuery request, CancellationToken cancellationToken)
     {
-        var query = _context.TeacherAttendances.AsQueryable();
+        var query = _context.StaffAttendances.AsQueryable();
 
         // Apply filters
-        if (!string.IsNullOrEmpty(request.TeacherId) && Guid.TryParse(request.TeacherId, out var teacherId))
-            query = query.Where(a => a.TeacherId == teacherId);
+        if (!string.IsNullOrEmpty(request.StaffId) && Guid.TryParse(request.StaffId, out var staffId))
+            query = query.Where(a => a.StaffId == staffId);
 
         if (request.StartDate.HasValue)
         {
@@ -338,22 +340,23 @@ public class GetTeacherAttendanceHistoryQueryHandler : IRequestHandler<GetTeache
 
         // Apply pagination
         var attendances = await query
-            .Include(a => a.Teacher)
+            .Include(a => a.Staff)
+                .ThenInclude(s => s.UserProfile)
             .OrderByDescending(a => a.AttendanceDate)
             .Skip((request.PageNumber - 1) * request.PageSize)
             .Take(request.PageSize)
-            .Select(a => new TeacherAttendanceListDto
+            .Select(a => new StaffAttendanceListDto
             {
                 Id = a.Id.ToString(),
-                TeacherId = a.TeacherId.ToString(),
-                TeacherName = a.Teacher != null ? $"{a.Teacher.FirstName} {a.Teacher.LastName}" : null,
-                TeacherEmail = a.Teacher != null ? a.Teacher.Email : null,
+                StaffId = a.StaffId.ToString(),
+                StaffName = a.Staff != null ? a.Staff.FullName : string.Empty,
+                StaffEmail = (a.Staff != null && a.Staff.UserProfile != null) ? a.Staff.UserProfile.Email : string.Empty,
                 AttendanceDate = a.AttendanceDate.ToDateTime(TimeOnly.MinValue),
                 Status = a.Status
             })
             .ToListAsync(cancellationToken);
 
-        return new PaginatedTeacherAttendanceListDto
+        return new PaginatedStaffAttendanceListDto
         {
             Items = attendances,
             TotalCount = totalCount,
@@ -364,24 +367,24 @@ public class GetTeacherAttendanceHistoryQueryHandler : IRequestHandler<GetTeache
 }
 
 /// <summary>
-/// Handler for GetTeacherAttendanceSummaryQuery
+/// Handler for GetStaffAttendanceSummaryQuery
 /// </summary>
-public class GetTeacherAttendanceSummaryQueryHandler : IRequestHandler<GetTeacherAttendanceSummaryQuery, AttendanceStatisticsDto>
+public class GetStaffAttendanceSummaryQueryHandler : IRequestHandler<GetStaffAttendanceSummaryQuery, AttendanceStatisticsDto>
 {
     private readonly IApplicationDbContext _context;
 
-    public GetTeacherAttendanceSummaryQueryHandler(IApplicationDbContext context)
+    public GetStaffAttendanceSummaryQueryHandler(IApplicationDbContext context)
     {
         _context = context;
     }
 
-    public async Task<AttendanceStatisticsDto> Handle(GetTeacherAttendanceSummaryQuery request, CancellationToken cancellationToken)
+    public async Task<AttendanceStatisticsDto> Handle(GetStaffAttendanceSummaryQuery request, CancellationToken cancellationToken)
     {
-        if (!Guid.TryParse(request.TeacherId, out var teacherId))
-            throw new InvalidOperationException($"Invalid teacher ID format: {request.TeacherId}");
+        if (!Guid.TryParse(request.StaffId, out var staffId))
+            throw new InvalidOperationException($"Invalid staff ID format: {request.StaffId}");
 
-        var query = _context.TeacherAttendances
-            .Where(a => a.TeacherId == teacherId);
+        var query = _context.StaffAttendances
+            .Where(a => a.StaffId == staffId);
 
         if (request.StartDate.HasValue)
         {

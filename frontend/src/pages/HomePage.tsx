@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { studentApi, teacherApi, feeApi } from '../services/api';
+import { studentApi, StaffApi, feeApi } from '../services/api';
 import { dashboardApi } from '../services/dashboardService';
 import { DashboardSummaryCards } from '../components/dashboard/DashboardSummaryCards';
 import { FeesCollectionChart } from '../components/dashboard/FeesCollectionChart';
@@ -21,9 +21,9 @@ export const HomePage = () => {
     queryFn: () => studentApi.getAll({ pageNumber: 1, pageSize: 1, isActive: true }),
   });
 
-  const { data: teachersData } = useQuery({
-    queryKey: ['teachers', 1, 1],
-    queryFn: () => teacherApi.getAll({ pageNumber: 1, pageSize: 1, isActive: true }),
+  const { data: StaffsData } = useQuery({
+    queryKey: ['Staffs', 1, 1],
+    queryFn: () => StaffApi.getAll({ pageNumber: 1, pageSize: 1, isActive: true }),
   });
 
   const { data: feesData } = useQuery({
@@ -32,17 +32,17 @@ export const HomePage = () => {
   });
 
   const totalStudents = studentsData?.totalCount || 0;
-  const totalTeachers = teachersData?.totalCount || 0;
+  const totalStaffs = StaffsData?.totalCount || 0;
   const totalFeeStructures = feesData?.totalCount || 0;
 
   const modules = [
     {
-      title: 'Teacher Management',
-      description: 'Manage teacher records, assignments, and profiles',
+      title: 'Staff Management',
+      description: 'Manage Staff records, assignments, and profiles',
       icon: '👨‍🏫',
-      path: '/teachers',
+      path: '/Staffs',
       color: 'from-blue-500 to-blue-600',
-      stats: { label: 'Active Teachers', value: totalTeachers.toString() }
+      stats: { label: 'Active Staffs', value: totalStaffs.toString() }
     },
     {
       title: 'Student Management',
@@ -62,7 +62,7 @@ export const HomePage = () => {
     },
     {
       title: 'Attendance Tracking',
-      description: 'Record and monitor student and teacher attendance',
+      description: 'Record and monitor student and Staff attendance',
       icon: '📊',
       path: '/attendance',
       color: 'from-purple-500 to-purple-600',
@@ -168,8 +168,8 @@ export const HomePage = () => {
                 <span className="text-lg font-bold text-blue-600">{dashboardData?.academicSummary?.totalStudents || 0}</span>
               </div>
               <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
-                <span className="text-sm font-medium text-gray-700">Total Teachers</span>
-                <span className="text-lg font-bold text-green-600">{dashboardData?.academicSummary?.activeTeachers || 0}</span>
+                <span className="text-sm font-medium text-gray-700">Total Staffs</span>
+                <span className="text-lg font-bold text-green-600">{dashboardData?.academicSummary?.activeStaffs || 0}</span>
               </div>
               <div className="flex items-center justify-between p-3 bg-purple-50 rounded-lg">
                 <span className="text-sm font-medium text-gray-700">Collection Rate</span>

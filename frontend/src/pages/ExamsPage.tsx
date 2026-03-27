@@ -1,14 +1,10 @@
-/**
- * ExamsPage Component
- * Single Responsibility: Display and manage exams
- */
-
 import React, { useState, useEffect } from "react";
+import { Calendar, Trash2, Edit2, CheckCircle, Clock } from "lucide-react";
 import { useExams, useCreateExam, usePublishExam, useDeleteExam, useUpdateExam } from "../hooks/useExamHooks";
 import { useNavigate, Outlet, useLocation } from "react-router-dom";
 import { api } from "../services/api";
-import { formatDate } from "../utils/dateFormat";
 import { useAcademicYear } from "../hooks/useAcademicYear";
+import { formatDate } from "../utils/dateFormat";
 import "../styles/pages.css";
 
 interface SubjectSelection {
@@ -39,9 +35,13 @@ interface SubjectOption {
   code?: string;
 }
 
-export const ExamsPage: React.FC = () => {
+export function ExamsPage() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { activeYear, academicYears } = useAcademicYear();
+  const selectedYearId = localStorage.getItem('selectedAcademicYearId');
+  const sessionName = academicYears?.find(y => y.id === selectedYearId)?.name || activeYear?.name || "current session";
+
   const [page, setPage] = useState(1);
   const [pageSize] = useState(10);
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -52,7 +52,6 @@ export const ExamsPage: React.FC = () => {
   const [classes, setClasses] = useState<ClassOption[]>([]);
   const [subjects, setSubjects] = useState<SubjectOption[]>([]);
   const [loadingClassesSubjects, setLoadingClassesSubjects] = useState(false);
-  const { activeYear } = useAcademicYear();
   const [formData, setFormData] = useState<CreateExamFormData>({
     name: "",
     description: "",
@@ -300,6 +299,22 @@ export const ExamsPage: React.FC = () => {
     navigate(`/exams/${examId}/analytics`);
   };
 
+  if (!activeYear) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-8 flex items-center justify-center">
+        <div className="bg-white rounded-2xl shadow-lg border border-yellow-100 p-8 text-center max-w-md">
+          <div className="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Calendar className="w-8 h-8 text-yellow-600" />
+          </div>
+          <h2 className="text-xl font-bold text-gray-900 mb-2">No Academic Session Selected</h2>
+          <p className="text-gray-600 mb-6">
+            Please select an academic year from the header to manage exams and academic records.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
@@ -336,7 +351,7 @@ export const ExamsPage: React.FC = () => {
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
               <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent">
-                Exams Management - {activeYear?.name || "Loading..."}
+                Exams Management - {sessionName}
               </h1>
               <p className="text-gray-600 mt-2">Create and manage exams and results for the current session</p>
             </div>

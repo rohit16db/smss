@@ -3,7 +3,7 @@ import type {
   SalaryStructureDto,
   CreateSalaryStructureDto,
   UpdateSalaryStructureDto,
-  TeacherSalaryAssignmentDto,
+  StaffSalaryAssignmentDto,
   AssignSalaryStructureDto,
   BulkCreateFromStructureDto,
 } from '../types/salaryStructure';
@@ -50,10 +50,10 @@ export const salaryStructureApi = {
   },
 
   getApplicableSalaryStructures: async (
-    teacherId: string
+    StaffId: string
   ): Promise<SalaryStructureDto[]> => {
     const response = await fetch(
-      `${API_BASE_URL}/v1/salarystructure/applicable/${teacherId}`,
+      `${API_BASE_URL}/v1/salarystructure/applicable/${StaffId}`,
       {
         headers: {
           Authorization: `Bearer ${localStorage.getItem('authToken') || ''}`,
@@ -68,11 +68,11 @@ export const salaryStructureApi = {
     return response.json();
   },
 
-  getTeacherCurrentSalaryStructure: async (
-    teacherId: string
-  ): Promise<TeacherSalaryAssignmentDto> => {
+  getStaffCurrentSalaryStructure: async (
+    StaffId: string
+  ): Promise<StaffSalaryAssignmentDto> => {
     const response = await fetch(
-      `${API_BASE_URL}/v1/salarystructure/teacher/${teacherId}/current`,
+      `${API_BASE_URL}/v1/salarystructure/Staff/${StaffId}/current`,
       {
         headers: {
           Authorization: `Bearer ${localStorage.getItem('authToken') || ''}`,
@@ -81,20 +81,20 @@ export const salaryStructureApi = {
     );
 
     if (!response.ok) {
-      throw new Error('Failed to fetch teacher salary structure');
+      throw new Error('Failed to fetch Staff salary structure');
     }
 
     return response.json();
   },
 
-  getTeachersWithSalaryStructures: async (
+  getStaffsWithSalaryStructures: async (
     isActive?: boolean
-  ): Promise<TeacherSalaryAssignmentDto[]> => {
+  ): Promise<StaffSalaryAssignmentDto[]> => {
     const params = new URLSearchParams();
     if (isActive !== undefined) params.append('isActive', isActive.toString());
 
     const response = await fetch(
-      `${API_BASE_URL}/v1/salarystructure/teachers/assignments?${params}`,
+      `${API_BASE_URL}/v1/salarystructure/Staffs/assignments?${params}`,
       {
         headers: {
           Authorization: `Bearer ${localStorage.getItem('authToken') || ''}`,
@@ -103,7 +103,7 @@ export const salaryStructureApi = {
     );
 
     if (!response.ok) {
-      throw new Error('Failed to fetch teacher assignments');
+      throw new Error('Failed to fetch Staff assignments');
     }
 
     return response.json();
@@ -170,11 +170,11 @@ export const salaryStructureApi = {
     }
   },
 
-  assignSalaryStructureToTeacher: async (
+  assignSalaryStructureToStaff: async (
     data: AssignSalaryStructureDto
-  ): Promise<TeacherSalaryAssignmentDto> => {
+  ): Promise<StaffSalaryAssignmentDto> => {
     const response = await fetch(
-      `${API_BASE_URL}/v1/salarystructure/assign-to-teacher`,
+      `${API_BASE_URL}/v1/salarystructure/assign-to-Staff`,
       {
         method: 'POST',
         headers: {
@@ -186,7 +186,7 @@ export const salaryStructureApi = {
     );
 
     if (!response.ok) {
-      throw new Error('Failed to assign salary structure to teacher');
+      throw new Error('Failed to assign salary structure to Staff');
     }
 
     return response.json();
@@ -231,26 +231,26 @@ export const useSalaryStructureById = (id: string) => {
   });
 };
 
-export const useApplicableSalaryStructures = (teacherId: string) => {
+export const useApplicableSalaryStructures = (StaffId: string) => {
   return useQuery({
-    queryKey: ['applicableSalaryStructures', teacherId],
-    queryFn: () => salaryStructureApi.getApplicableSalaryStructures(teacherId),
-    enabled: !!teacherId,
+    queryKey: ['applicableSalaryStructures', StaffId],
+    queryFn: () => salaryStructureApi.getApplicableSalaryStructures(StaffId),
+    enabled: !!StaffId,
   });
 };
 
-export const useTeacherCurrentSalaryStructure = (teacherId: string) => {
+export const useStaffCurrentSalaryStructure = (StaffId: string) => {
   return useQuery({
-    queryKey: ['teacherSalaryStructure', teacherId],
-    queryFn: () => salaryStructureApi.getTeacherCurrentSalaryStructure(teacherId),
-    enabled: !!teacherId,
+    queryKey: ['StaffSalaryStructure', StaffId],
+    queryFn: () => salaryStructureApi.getStaffCurrentSalaryStructure(StaffId),
+    enabled: !!StaffId,
   });
 };
 
-export const useTeachersWithSalaryStructures = (isActive?: boolean) => {
+export const useStaffsWithSalaryStructures = (isActive?: boolean) => {
   return useQuery({
-    queryKey: ['teachersWithAssignments', isActive],
-    queryFn: () => salaryStructureApi.getTeachersWithSalaryStructures(isActive),
+    queryKey: ['StaffsWithAssignments', isActive],
+    queryFn: () => salaryStructureApi.getStaffsWithSalaryStructures(isActive),
   });
 };
 
@@ -288,13 +288,13 @@ export const useDeleteSalaryStructure = () => {
   });
 };
 
-export const useAssignSalaryStructureToTeacher = () => {
+export const useAssignSalaryStructureToStaff = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: salaryStructureApi.assignSalaryStructureToTeacher,
+    mutationFn: salaryStructureApi.assignSalaryStructureToStaff,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['teachersWithAssignments'] });
+      queryClient.invalidateQueries({ queryKey: ['StaffsWithAssignments'] });
     },
   });
 };

@@ -35,7 +35,7 @@ export const BonusEligibilityList: React.FC<BonusEligibilityListProps> = ({
         <thead>
           <tr className="border-b-2 border-gray-200">
             <th className="text-left py-3 px-4 font-semibold text-gray-900">
-              Teacher Name
+              Staff Name
             </th>
             <th className="text-right py-3 px-4 font-semibold text-gray-900">
               Attendance
@@ -56,9 +56,9 @@ export const BonusEligibilityList: React.FC<BonusEligibilityListProps> = ({
         </thead>
         <tbody className="divide-y divide-gray-200">
           {bonuses.map((bonus) => (
-            <tr key={bonus.teacherId} className="hover:bg-gray-50">
+            <tr key={bonus.staffId} className="hover:bg-gray-50">
               <td className="py-4 px-4 font-medium text-gray-900">
-                {bonus.teacherName}
+                {bonus.staffName}
               </td>
               <td className="py-4 px-4 text-right">
                 <span

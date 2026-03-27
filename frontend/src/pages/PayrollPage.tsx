@@ -4,7 +4,7 @@ import {
   useBonusEligibility,
   useAttendanceSummary,
 } from '../services/payrollService';
-import { TeacherPayrollCard } from '../components/payroll/TeacherPayrollCard';
+import { StaffPayrollCard } from '../components/payroll/StaffPayrollCard';
 import { BonusEligibilityList } from '../components/payroll/BonusEligibilityList';
 import { DollarSign, Award, Search, Download, ArrowUp, ArrowDown, TrendingUp } from 'lucide-react';
 
@@ -52,8 +52,8 @@ export const PayrollPage: React.FC = () => {
   // Filter functions
   const filteredPayrolls = useMemo(() => {
     if (!payrollQuery.data) return [];
-    return payrollQuery.data.teacherPayrolls.filter(p =>
-      p.teacherName.toLowerCase().includes(searchQuery.toLowerCase())
+    return payrollQuery.data.staffPayrolls.filter(p =>
+      p.staffName.toLowerCase().includes(searchQuery.toLowerCase())
     );
   }, [payrollQuery.data, searchQuery]);
 
@@ -61,7 +61,7 @@ export const PayrollPage: React.FC = () => {
     if (!attendanceQuery.data) return [];
     
     const filtered = attendanceQuery.data.filter(a =>
-      a.teacherName.toLowerCase().includes(searchQuery.toLowerCase())
+      a.staffName.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
     return [...filtered].sort((a, b) => {
@@ -82,8 +82,8 @@ export const PayrollPage: React.FC = () => {
           bVal = b.absentDays;
           break;
         default:
-          aVal = a.teacherName;
-          bVal = b.teacherName;
+          aVal = a.staffName;
+          bVal = b.staffName;
       }
 
       if (typeof aVal === 'string') {
@@ -113,9 +113,9 @@ export const PayrollPage: React.FC = () => {
 
   const handleExportExcel = () => {
     if (activeTab === 'attendance' && attendanceQuery.data) {
-      const headers = ['Teacher Name', 'Total Days', 'Present', 'Absent', 'Leave', 'Attendance %'];
+      const headers = ['Staff Name', 'Total Days', 'Present', 'Absent', 'Leave', 'Attendance %'];
       const rows = filteredAndSortedAttendance.map(a => [
-        a.teacherName,
+        a.staffName,
         a.totalDays,
         a.presentDays,
         a.absentDays,
@@ -134,9 +134,9 @@ export const PayrollPage: React.FC = () => {
       link.download = `attendance-summary-${startDate}-${endDate}.csv`;
       link.click();
     } else if (activeTab === 'payroll' && payrollQuery.data) {
-      const headers = ['Teacher Name', 'Base Salary', 'Deductions', 'Bonus', 'Net Salary', 'Attendance %'];
+      const headers = ['Staff Name', 'Base Salary', 'Deductions', 'Bonus', 'Net Salary', 'Attendance %'];
       const rows = filteredPayrolls.map(p => [
-        p.teacherName,
+        p.staffName,
         p.baseSalary,
         p.deductionsForAbsence,
         p.isBonusEligible ? p.bonusAmount : 0,
@@ -202,7 +202,7 @@ export const PayrollPage: React.FC = () => {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredPayrolls.map((payroll) => (
-          <TeacherPayrollCard key={payroll.teacherId} payroll={payroll} />
+          <StaffPayrollCard key={payroll.staffId} payroll={payroll} />
         ))}
       </div>
     );
@@ -238,13 +238,13 @@ export const PayrollPage: React.FC = () => {
     }
 
     const filtered = bonusQuery.data.filter(b =>
-      b.teacherName.toLowerCase().includes(searchQuery.toLowerCase())
+      b.staffName.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
     return (
       <div>
         <div className="mb-4 p-3 bg-blue-50 text-sm text-blue-700 rounded-lg">
-          Showing {filtered.length} of {bonusQuery.data.length} teachers
+          Showing {filtered.length} of {bonusQuery.data.length} Staffs
         </div>
         <BonusEligibilityList bonuses={filtered} isLoading={false} />
       </div>
@@ -286,7 +286,7 @@ export const PayrollPage: React.FC = () => {
           <thead>
             <tr className="bg-gradient-to-r from-gray-50 to-gray-100 border-b-2 border-gray-200">
               <th className="text-left py-4 px-5 font-bold text-gray-900">
-                Teacher Name
+                Staff Name
               </th>
               <th
                 className="text-right py-4 px-5 font-bold text-gray-900 cursor-pointer hover:bg-gray-200 transition-colors"
@@ -319,11 +319,11 @@ export const PayrollPage: React.FC = () => {
           </thead>
           <tbody className="divide-y divide-gray-200">
             {filteredAndSortedAttendance.map((summary, idx) => (
-              <tr key={summary.teacherId} className="hover:bg-blue-50 transition-colors duration-200">
+              <tr key={summary.staffId} className="hover:bg-blue-50 transition-colors duration-200">
                 <td className="py-4 px-5 font-semibold text-gray-900">
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-bold text-gray-400 min-w-6">{idx + 1}.</span>
-                    {summary.teacherName}
+                    {summary.staffName}
                   </div>
                 </td>
                 <td className="py-4 px-5 text-right text-gray-900 font-medium">
@@ -368,10 +368,10 @@ export const PayrollPage: React.FC = () => {
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
             <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent">
-              Teacher Payroll
+              Staff Payroll
             </h1>
             <p className="text-gray-600 mt-2">
-              Manage teacher salaries, bonuses, and attendance tracking
+              Manage Staff salaries, bonuses, and attendance tracking
             </p>
           </div>
         </div>
@@ -456,7 +456,7 @@ export const PayrollPage: React.FC = () => {
                     })}
                   </p>
                   <p className="text-xs text-gray-500 mt-2">
-                    {payrollQuery.data.eligibleTeachers} teachers eligible
+                    {payrollQuery.data.eligibleStaffs} Staffs eligible
                   </p>
                 </div>
                 <div className="p-4 bg-gradient-to-br from-green-500 to-emerald-500 rounded-xl shadow-lg group-hover:scale-110 transition-transform">
@@ -465,7 +465,7 @@ export const PayrollPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Eligible Teachers */}
+            {/* Eligible Staffs */}
             <div className="group bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 p-6 border border-gray-100 transform hover:-translate-y-1">
               <div className="flex items-center justify-between">
                 <div>
@@ -473,11 +473,11 @@ export const PayrollPage: React.FC = () => {
                     Eligible for Bonus
                   </p>
                   <p className="text-3xl font-bold text-gray-900 mt-2">
-                    {payrollQuery.data.eligibleTeachers}/
-                    {payrollQuery.data.teacherPayrolls.length}
+                    {payrollQuery.data.eligibleStaffs}/
+                    {payrollQuery.data.staffPayrolls.length}
                   </p>
                   <p className="text-xs text-gray-500 mt-2">
-                    {((payrollQuery.data.eligibleTeachers / payrollQuery.data.teacherPayrolls.length) * 100).toFixed(0)}% of teachers
+                    {((payrollQuery.data.eligibleStaffs / payrollQuery.data.staffPayrolls.length) * 100).toFixed(0)}% of Staffs
                   </p>
                 </div>
                 <div className="p-4 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-xl shadow-lg group-hover:scale-110 transition-transform">
@@ -530,7 +530,7 @@ export const PayrollPage: React.FC = () => {
                 <Search className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
                 <input
                   type="text"
-                  placeholder="Search by teacher name..."
+                  placeholder="Search by Staff name..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full pl-10 pr-4 py-2 border-2 border-gray-300 rounded-lg focus:border-purple-500 focus:outline-none transition-colors"

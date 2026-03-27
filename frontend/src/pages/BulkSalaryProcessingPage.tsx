@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import {
-  useTeachersWithSalaryStructures,
+  useStaffsWithSalaryStructures,
   useBulkCreateSalaryPayments,
 } from '../services/salaryStructureService';
 import { AlertCircle, CheckCircle } from 'lucide-react';
 import type { SalaryPaymentReportDto } from '../types/salary';
 
 export const BulkSalaryProcessingPage: React.FC = () => {
-  const { data: teachersWithAssignments, isLoading } = useTeachersWithSalaryStructures(true);
+  const { data: StaffsWithAssignments, isLoading } = useStaffsWithSalaryStructures(true);
   const bulkCreateMutation = useBulkCreateSalaryPayments();
 
   const [formData, setFormData] = useState({
@@ -26,8 +26,8 @@ export const BulkSalaryProcessingPage: React.FC = () => {
       return;
     }
 
-    if (!teachersWithAssignments || teachersWithAssignments.length === 0) {
-      alert('No teachers with assigned salary structures found');
+    if (!StaffsWithAssignments || StaffsWithAssignments.length === 0) {
+      alert('No Staffs with assigned salary structures found');
       return;
     }
 
@@ -44,13 +44,13 @@ export const BulkSalaryProcessingPage: React.FC = () => {
     }
   };
 
-  const estimatedTotalSalary = (teachersWithAssignments || []).reduce(
+  const estimatedTotalSalary = (StaffsWithAssignments || []).reduce(
     (sum, t) => sum + t.grossSalary,
     0
   );
 
   const totalDeductions =
-    (teachersWithAssignments?.length || 0) * (formData.fixedDeductions || 0);
+    (StaffsWithAssignments?.length || 0) * (formData.fixedDeductions || 0);
   const estimatedNetTotal = estimatedTotalSalary - totalDeductions;
 
   return (
@@ -63,7 +63,7 @@ export const BulkSalaryProcessingPage: React.FC = () => {
               Bulk Salary Processing
             </h1>
             <p className="text-gray-600 mt-2">
-              Create salary payments for all teachers with assigned salary structures
+              Create salary payments for all Staffs with assigned salary structures
             </p>
           </div>
 
@@ -78,7 +78,7 @@ export const BulkSalaryProcessingPage: React.FC = () => {
                       ✓ Salary Payments Created Successfully
                     </h2>
                     <p className="text-green-700 mt-2 font-medium">
-                      {result.totalTeachers} salary payments have been created for the period{' '}
+                      {result.totalStaffs} salary payments have been created for the period{' '}
                       <span className="font-bold">{new Date(result.monthStart).toLocaleDateString('en-IN')}</span> to{' '}
                       <span className="font-bold">{new Date(result.monthEnd).toLocaleDateString('en-IN')}</span>
                     </p>
@@ -89,8 +89,8 @@ export const BulkSalaryProcessingPage: React.FC = () => {
               {/* Summary Stats */}
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 hover:shadow-xl hover:scale-105 transition-all duration-300">
-                  <p className="text-gray-600 text-sm font-semibold">Total Teachers</p>
-                  <p className="text-3xl font-bold text-gray-900 mt-3">{result.totalTeachers}</p>
+                  <p className="text-gray-600 text-sm font-semibold">Total Staffs</p>
+                  <p className="text-3xl font-bold text-gray-900 mt-3">{result.totalStaffs}</p>
                 </div>
                 <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 hover:shadow-xl hover:scale-105 transition-all duration-300">
                   <p className="text-gray-600 text-sm font-semibold">Total Base Salary</p>
@@ -124,7 +124,7 @@ export const BulkSalaryProcessingPage: React.FC = () => {
                     <thead className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b-2 border-blue-100">
                       <tr>
                         <th className="px-6 py-4 text-left text-sm font-bold text-gray-900">
-                          Teacher
+                          Staff
                         </th>
                         <th className="px-6 py-4 text-left text-sm font-bold text-gray-900">
                           Base Salary
@@ -144,7 +144,7 @@ export const BulkSalaryProcessingPage: React.FC = () => {
                       {result.paymentDetails.map((payment, idx: number) => (
                         <tr key={idx} className="hover:bg-blue-50 transition-colors duration-200">
                           <td className="px-6 py-4">
-                            <p className="font-semibold text-gray-900">{payment.teacherName}</p>
+                            <p className="font-semibold text-gray-900">{payment.StaffName}</p>
                           </td>
                           <td className="px-6 py-4 text-sm text-blue-600 font-semibold">
                             ₹{payment.baseSalary.toLocaleString('en-IN')}
@@ -181,9 +181,9 @@ export const BulkSalaryProcessingPage: React.FC = () => {
               {/* Summary Info */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="bg-gradient-to-br from-blue-50 to-blue-100 border-2 border-blue-200 rounded-2xl p-6 hover:shadow-lg transition-all duration-300">
-                  <p className="text-blue-800 text-sm font-bold mb-1">👥 Teachers Ready</p>
+                  <p className="text-blue-800 text-sm font-bold mb-1">👥 Staffs Ready</p>
                   <p className="text-4xl font-bold text-blue-900">
-                    {teachersWithAssignments?.length || 0}
+                    {StaffsWithAssignments?.length || 0}
                   </p>
                   <p className="text-xs text-blue-700 mt-2">
                     with assigned salary structures
@@ -208,13 +208,13 @@ export const BulkSalaryProcessingPage: React.FC = () => {
               </div>
 
               {/* Warning */}
-              {!isLoading && (!teachersWithAssignments || teachersWithAssignments.length === 0) && (
+              {!isLoading && (!StaffsWithAssignments || StaffsWithAssignments.length === 0) && (
                 <div className="bg-yellow-50 border-2 border-yellow-200 rounded-2xl p-6 flex gap-3 shadow-md">
                   <AlertCircle className="w-6 h-6 text-yellow-600 flex-shrink-0 mt-0.5" />
                   <div>
-                    <p className="font-bold text-yellow-900 text-lg">⚠️ No Teachers Available</p>
+                    <p className="font-bold text-yellow-900 text-lg">⚠️ No Staffs Available</p>
                     <p className="text-sm text-yellow-700 mt-2">
-                      First assign salary structures to teachers before creating bulk salary payments.
+                      First assign salary structures to Staffs before creating bulk salary payments.
                     </p>
                   </div>
                 </div>
@@ -265,7 +265,7 @@ export const BulkSalaryProcessingPage: React.FC = () => {
                   <h2 className="text-2xl font-bold bg-gradient-to-r from-red-600 to-red-800 bg-clip-text text-transparent mb-6">⛔ Fixed Deductions</h2>
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-3">
-                      Fixed Deduction per Teacher (Optional)
+                      Fixed Deduction per Staff (Optional)
                     </label>
                     <div className="flex items-center gap-4">
                       <div className="flex-1">
@@ -288,7 +288,7 @@ export const BulkSalaryProcessingPage: React.FC = () => {
                       </div>
                     </div>
                     <p className="text-xs text-gray-500 mt-3 font-medium">
-                      This amount will be deducted from each teacher's gross salary
+                      This amount will be deducted from each Staff's gross salary
                     </p>
                   </div>
                 </div>
@@ -298,9 +298,9 @@ export const BulkSalaryProcessingPage: React.FC = () => {
                   <h3 className="font-bold text-gray-900 mb-6 text-lg">📊 Summary Preview</h3>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                     <div className="bg-white rounded-lg p-3 shadow-sm">
-                      <p className="text-gray-600 mb-1 font-semibold">Teachers</p>
+                      <p className="text-gray-600 mb-1 font-semibold">Staffs</p>
                       <p className="font-bold text-gray-900 text-lg">
-                        {teachersWithAssignments?.length || 0}
+                        {StaffsWithAssignments?.length || 0}
                       </p>
                     </div>
                     <div className="bg-white rounded-lg p-3 shadow-sm">
@@ -308,7 +308,7 @@ export const BulkSalaryProcessingPage: React.FC = () => {
                       <p className="font-bold text-gray-900 text-lg">
                         ₹
                         {(
-                          estimatedTotalSalary / (teachersWithAssignments?.length || 1)
+                          estimatedTotalSalary / (StaffsWithAssignments?.length || 1)
                         ).toLocaleString('en-IN', { maximumFractionDigits: 0 })}
                       </p>
                     </div>
@@ -333,8 +333,8 @@ export const BulkSalaryProcessingPage: React.FC = () => {
                   disabled={
                     bulkCreateMutation.isPending ||
                     isLoading ||
-                    !teachersWithAssignments ||
-                    teachersWithAssignments.length === 0
+                    !StaffsWithAssignments ||
+                    StaffsWithAssignments.length === 0
                   }
                   className="w-full px-6 py-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:shadow-lg hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:scale-100 transition-all duration-300 font-bold text-lg"
                 >

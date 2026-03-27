@@ -204,9 +204,9 @@ public class GetSalaryComponentBreakdownQuery : IRequest<SalaryComponentBreakdow
 }
 
 /// <summary>
-/// Query for teacher-wise salary comparison and analysis
+/// Query for staff-wise salary comparison and analysis
 /// </summary>
-public class GetTeacherSalaryComparisonQuery : IRequest<IEnumerable<TeacherSalaryComparisonDto>>
+public class GetStaffSalaryComparisonQuery : IRequest<IEnumerable<StaffSalaryComparisonDto>>
 {
     /// <summary>Start date for salary data</summary>
     public DateTime StartDate { get; set; }
@@ -226,7 +226,7 @@ public class GetTeacherSalaryComparisonQuery : IRequest<IEnumerable<TeacherSalar
     /// <summary>Descending order (default false for name, true for amounts)</summary>
     public bool Descending { get; set; } = false;
 
-    public GetTeacherSalaryComparisonQuery(DateTime startDate, DateTime endDate)
+    public GetStaffSalaryComparisonQuery(DateTime startDate, DateTime endDate)
     {
         StartDate = startDate;
         EndDate = endDate;

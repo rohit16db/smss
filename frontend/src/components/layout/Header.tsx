@@ -20,7 +20,7 @@ const roleMap: Record<number, string> = {
   1: 'Admin',
   2: 'Accountant',
   3: 'Clerk',
-  4: 'Teacher',
+  4: 'Staff',
 };
 
 const normalizeRole = (role?: string | number) => {
@@ -115,14 +115,14 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
   const isAdmin = role === 'admin' || role === '';
   const isAccountant = role === 'accountant';
   const isClerk = role === 'clerk';
-  const isTeacher = role === 'teacher';
+  const isStaff = role === 'staff';
   const canViewAcademic = isAdmin || isClerk;
-  const canViewFinance = isAdmin || isAccountant || isTeacher;
+  const canViewFinance = isAdmin || isAccountant || isStaff;
   const canViewFees = isAdmin || isAccountant;
-  const canViewSalary = isAdmin || isAccountant || isTeacher;
+  const canViewSalary = isAdmin || isAccountant || isStaff;
   const canViewPayroll = isAdmin || isAccountant;
   const canManageSalary = isAdmin || isAccountant;
-  const canViewAttendance = isAdmin || isClerk || isTeacher;
+  const canViewAttendance = isAdmin || isClerk || isStaff;
   const canViewAttendanceReports = isAdmin || isClerk;
 
   const handleAcademicMouseLeave = () => {
@@ -261,10 +261,16 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
                       👨‍🎓 Students
                     </button>
                     <button
-                      onClick={() => navigate('/teachers')}
+                      onClick={() => navigate('/staff')}
                       className="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-colors flex items-center gap-2"
                     >
-                      👨‍🏫 Teachers
+                      👨‍🏫 Staff Management
+                    </button>
+                    <button
+                      onClick={() => navigate('/departments')}
+                      className="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-colors flex items-center gap-2"
+                    >
+                      🏢 Departments
                     </button>
                     <button
                       onClick={() => navigate('/classes')}
@@ -393,10 +399,10 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
                       📊 Salary Structures
                     </button>
                     <button
-                      onClick={() => navigate('/teacher-salary-assignment')}
+                      onClick={() => navigate('/staff-salary-assignment')}
                       className="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-colors flex items-center gap-2"
                     >
-                      👥 Teacher Assignments
+                      👥 Staff Assignments
                     </button>
                     <button
                       onClick={() => navigate('/bulk-salary-processing')}
@@ -440,7 +446,7 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
                           ⚠️ Outstanding Fees
                         </button>
                         <button
-                          onClick={() => navigate('/teacher-salary-comparison')}
+                          onClick={() => navigate('/staff-salary-comparison')}
                           className="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-colors flex items-center gap-2"
                         >
                           📈 Salary Comparison
@@ -687,12 +693,21 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
                       </button>
                       <button
                         onClick={() => {
-                          navigate('/teachers');
+                          navigate('/staff');
                           setMobileMenuOpen(false);
                         }}
                         className="w-full px-4 py-2 rounded-lg text-white hover:bg-blue-700 transition-colors duration-200 text-left"
                       >
-                        👨‍🏫 Teachers
+                        👨‍🏫 Staff Management
+                      </button>
+                      <button
+                        onClick={() => {
+                          navigate('/departments');
+                          setMobileMenuOpen(false);
+                        }}
+                        className="w-full px-4 py-2 rounded-lg text-white hover:bg-blue-700 transition-colors duration-200 text-left"
+                      >
+                        🏢 Departments
                       </button>
                       <button
                         onClick={() => {
@@ -855,12 +870,12 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
                       </button>
                       <button
                         onClick={() => {
-                          navigate('/teacher-salary-assignment');
+                          navigate('/staff-salary-assignment');
                           setMobileMenuOpen(false);
                         }}
                         className="w-full px-4 py-2 rounded-lg text-white hover:bg-blue-700 transition-colors duration-200 text-left"
                       >
-                        👥 Teacher Assignments
+                        👥 Staff Assignments
                       </button>
                       <button
                         onClick={() => {
@@ -918,7 +933,7 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
                           </button>
                           <button
                             onClick={() => {
-                              navigate('/teacher-salary-comparison');
+                              navigate('/staff-salary-comparison');
                               setMobileMenuOpen(false);
                             }}
                             className="w-full px-4 py-2 rounded-lg text-white hover:bg-blue-700 transition-colors duration-200 text-left"

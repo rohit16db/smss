@@ -119,7 +119,7 @@ export const SalaryStructurePage: React.FC = () => {
               <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent">
                 Salary Structures
               </h1>
-              <p className="text-gray-600 mt-2">Create and manage salary scales for teachers</p>
+              <p className="text-gray-600 mt-2">Create and manage salary scales for Staffs</p>
             </div>
             <button
               onClick={() => handleOpenDialog()}

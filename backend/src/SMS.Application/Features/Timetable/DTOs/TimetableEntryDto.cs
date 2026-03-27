@@ -18,8 +18,8 @@ public class TimetableEntryDto
     public Guid SubjectId { get; set; }
     public string SubjectName { get; set; } = string.Empty;
 
-    public Guid TeacherId { get; set; }
-    public string TeacherName { get; set; } = string.Empty;
+    public Guid StaffId { get; set; }
+    public string StaffName { get; set; } = string.Empty;
 
     public string? RoomNumber { get; set; }
     public Guid AcademicYearId { get; set; }
@@ -30,7 +30,7 @@ public class CreateTimetableEntryDto
     public Guid TimeSlotId { get; set; }
     public Guid SectionId { get; set; }
     public Guid SubjectId { get; set; }
-    public Guid TeacherId { get; set; }
+    public Guid StaffId { get; set; }
     public string? RoomNumber { get; set; }
     public Guid AcademicYearId { get; set; }
 }

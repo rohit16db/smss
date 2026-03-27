@@ -151,7 +151,7 @@ public class DeleteSubjectCommandHandler : IRequestHandler<DeleteSubjectCommand,
         }
 
         // Check if subject is assigned to any teachers
-        var hasAssignments = await _context.TeacherAssignments
+        var hasAssignments = await _context.StaffAssignments
             .AnyAsync(ta => ta.SubjectId == subjectId && ta.RemovalDate == null, cancellationToken);
 
         if (hasAssignments)

@@ -49,10 +49,10 @@ public class TimetableController : ControllerBase
         return await _mediator.Send(new GetSectionTimetableQuery(sectionId, academicYearId));
     }
 
-    [HttpGet("entries/teacher/{teacherId}/{academicYearId}")]
-    public async Task<ActionResult<List<TimetableEntryDto>>> GetTeacherTimetable(Guid teacherId, Guid academicYearId)
+    [HttpGet("entries/staff/{staffId}/{academicYearId}")]
+    public async Task<ActionResult<List<TimetableEntryDto>>> GetStaffTimetable(Guid staffId, Guid academicYearId)
     {
-        return await _mediator.Send(new GetTeacherTimetableQuery(teacherId, academicYearId));
+        return await _mediator.Send(new GetStaffTimetableQuery(staffId, academicYearId));
     }
 
     [HttpPost("entries")]

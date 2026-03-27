@@ -86,12 +86,8 @@ public class SalaryStructure : BaseEntity
     /// </summary>
     public DateOnly? EffectiveToDate { get; set; }
 
-    /// <summary>
-    /// Audit trail
-    /// </summary>
-    public DateTime CreatedAt { get; set; }
-    public DateTime? UpdatedAt { get; set; }
+
 
     // Navigation properties
-    public ICollection<Teacher> Teachers { get; set; } = new List<Teacher>();
+    public ICollection<Staff> StaffMembers { get; set; } = new List<Staff>();
 }
