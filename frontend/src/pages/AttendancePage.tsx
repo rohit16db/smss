@@ -1,13 +1,13 @@
 import { useState, useRef, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { attendanceApi, studentApi, teacherApi, holidayApi, type CreateStudentAttendanceDto, type CreateTeacherAttendanceDto, type StudentAttendance, type TeacherAttendance, type Student, type Teacher } from '../services/api';
+import { attendanceApi, studentApi, StaffApi, holidayApi, type CreateStudentAttendanceDto, type CreateStaffAttendanceDto, type StudentAttendance, type StaffAttendance, type Student, type Staff } from '../services/api';
 import { useAcademicYear } from '../hooks/useAcademicYear';
 
 export function AttendancePage() {
   const queryClient = useQueryClient();
   const { activeYear } = useAcademicYear();
-  const [activeTab, setActiveTab] = useState<'student' | 'teacher'>('student');
+  const [activeTab, setActiveTab] = useState<'student' | 'Staff'>('student');
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [searchTerm, setSearchTerm] = useState('');
@@ -16,26 +16,26 @@ export function AttendancePage() {
     return saved ? JSON.parse(saved) : null;
   });
   const [showStudentDropdown, setShowStudentDropdown] = useState(false);
-  const [selectedTeacher, setSelectedTeacher] = useState<Teacher | null>(() => {
-    const saved = localStorage.getItem('attendance_selectedTeacher');
+  const [selectedStaff, setSelectedStaff] = useState<Staff | null>(() => {
+    const saved = localStorage.getItem('attendance_selectedStaff');
     return saved ? JSON.parse(saved) : null;
   });
-  const [teacherSearchTerm, setTeacherSearchTerm] = useState('');
-  const [showTeacherDropdown, setShowTeacherDropdown] = useState(false);
+  const [StaffSearchTerm, setStaffSearchTerm] = useState('');
+  const [showStaffDropdown, setShowStaffDropdown] = useState(false);
   const [dialogSearchTerm, setDialogSearchTerm] = useState('');
   const [dialogSelectedStudent, setDialogSelectedStudent] = useState<Student | null>(null);
   const [showDialogStudentDropdown, setShowDialogStudentDropdown] = useState(false);
-  const [dialogTeacherSearchTerm, setDialogTeacherSearchTerm] = useState('');
-  const [dialogSelectedTeacher, setDialogSelectedTeacher] = useState<Teacher | null>(null);
-  const [showDialogTeacherDropdown, setShowDialogTeacherDropdown] = useState(false);
+  const [dialogStaffSearchTerm, setDialogStaffSearchTerm] = useState('');
+  const [dialogSelectedStaff, setDialogSelectedStaff] = useState<Staff | null>(null);
+  const [showDialogStaffDropdown, setShowDialogStaffDropdown] = useState(false);
   const [openDialog, setOpenDialog] = useState(false);
-  const [selectedRecord, setSelectedRecord] = useState<StudentAttendance | TeacherAttendance | null>(null);
+  const [selectedRecord, setSelectedRecord] = useState<StudentAttendance | StaffAttendance | null>(null);
   const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
   const [calendarMonth, setCalendarMonth] = useState(() => new Date().toISOString().slice(0, 7));
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const teacherDropdownRef = useRef<HTMLDivElement>(null);
+  const StaffDropdownRef = useRef<HTMLDivElement>(null);
   const dialogDropdownRef = useRef<HTMLDivElement>(null);
-  const dialogTeacherDropdownRef = useRef<HTMLDivElement>(null);
+  const dialogStaffDropdownRef = useRef<HTMLDivElement>(null);
   
   const [studentFormData, setStudentFormData] = useState<CreateStudentAttendanceDto>({
     studentId: '',
@@ -45,8 +45,8 @@ export function AttendancePage() {
     reason: '',
   });
 
-  const [teacherFormData, setTeacherFormData] = useState<CreateTeacherAttendanceDto>({
-    teacherId: '',
+  const [StaffFormData, setStaffFormData] = useState<CreateStaffAttendanceDto>({
+    staffId: '',
     attendanceDate: new Date().toISOString().split('T')[0],
     status: 'Present',
     reason: '',
@@ -66,18 +66,18 @@ export function AttendancePage() {
     enabled: openDialog && activeTab === 'student' && dialogSearchTerm.length >= 2,
   });
 
-  // Teacher search query for filter
-  const { data: teachersData } = useQuery({
-    queryKey: ['teachers', teacherSearchTerm],
-    queryFn: () => teacherApi.getAll({ searchTerm: teacherSearchTerm || undefined, pageSize: 50, isActive: true }),
-    enabled: activeTab === 'teacher' && teacherSearchTerm.length >= 2,
+  // Staff search query for filter
+  const { data: StaffsData } = useQuery({
+    queryKey: ['Staffs', StaffSearchTerm],
+    queryFn: () => StaffApi.getAll({ searchTerm: StaffSearchTerm || undefined, pageSize: 50, isActive: true }),
+    enabled: activeTab === 'Staff' && StaffSearchTerm.length >= 2,
   });
 
-  // Teacher search query for dialog
-  const { data: dialogTeachersData } = useQuery({
-    queryKey: ['dialogTeachers', dialogTeacherSearchTerm],
-    queryFn: () => teacherApi.getAll({ searchTerm: dialogTeacherSearchTerm || undefined, pageSize: 50, isActive: true }),
-    enabled: openDialog && activeTab === 'teacher' && dialogTeacherSearchTerm.length >= 2,
+  // Staff search query for dialog
+  const { data: dialogStaffsData } = useQuery({
+    queryKey: ['dialogStaffs', dialogStaffSearchTerm],
+    queryFn: () => StaffApi.getAll({ searchTerm: dialogStaffSearchTerm || undefined, pageSize: 50, isActive: true }),
+    enabled: openDialog && activeTab === 'Staff' && dialogStaffSearchTerm.length >= 2,
   });
 
   // Close dropdown when clicking outside
@@ -86,14 +86,14 @@ export function AttendancePage() {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setShowStudentDropdown(false);
       }
-      if (teacherDropdownRef.current && !teacherDropdownRef.current.contains(event.target as Node)) {
-        setShowTeacherDropdown(false);
+      if (StaffDropdownRef.current && !StaffDropdownRef.current.contains(event.target as Node)) {
+        setShowStaffDropdown(false);
       }
       if (dialogDropdownRef.current && !dialogDropdownRef.current.contains(event.target as Node)) {
         setShowDialogStudentDropdown(false);
       }
-      if (dialogTeacherDropdownRef.current && !dialogTeacherDropdownRef.current.contains(event.target as Node)) {
-        setShowDialogTeacherDropdown(false);
+      if (dialogStaffDropdownRef.current && !dialogStaffDropdownRef.current.contains(event.target as Node)) {
+        setShowDialogStaffDropdown(false);
       }
     }
     document.addEventListener('mousedown', handleClickOutside);
@@ -111,14 +111,14 @@ export function AttendancePage() {
     }
   }, [selectedStudent]);
 
-  // Persist selected teacher to localStorage
+  // Persist selected Staff to localStorage
   useEffect(() => {
-    if (selectedTeacher) {
-      localStorage.setItem('attendance_selectedTeacher', JSON.stringify(selectedTeacher));
+    if (selectedStaff) {
+      localStorage.setItem('attendance_selectedStaff', JSON.stringify(selectedStaff));
     } else {
-      localStorage.removeItem('attendance_selectedTeacher');
+      localStorage.removeItem('attendance_selectedStaff');
     }
-  }, [selectedTeacher]);
+  }, [selectedStaff]);
 
   // Parse month filter to get date range
   const parseMonthFilter = (monthStr: string) => {
@@ -201,25 +201,25 @@ export function AttendancePage() {
     },
   });
 
-  // Teacher Attendance Queries
-  const { data: teacherAttendanceData, isLoading: teacherLoading } = useQuery({
-    queryKey: ['teacherAttendance', page + 1, rowsPerPage, selectedTeacher?.id, calendarMonth, activeTab],
-    enabled: activeTab === 'teacher',
-    queryFn: () => attendanceApi.getAllTeacherAttendance({
+  // Staff Attendance Queries
+  const { data: StaffAttendanceData, isLoading: StaffLoading } = useQuery({
+    queryKey: ['StaffAttendance', page + 1, rowsPerPage, selectedStaff?.id, calendarMonth, activeTab],
+    enabled: activeTab === 'Staff',
+    queryFn: () => attendanceApi.getAllStaffAttendance({
       pageNumber: page + 1,
       pageSize: rowsPerPage,
-      teacherId: selectedTeacher?.id || undefined,
+      staffId: selectedStaff?.id || undefined,
       startDate: monthRange.startDate,
       endDate: monthRange.endDate,
     }),
   });
 
-  const teacherCreateMutation = useMutation({
-    mutationFn: attendanceApi.recordTeacherAttendance,
+  const StaffCreateMutation = useMutation({
+    mutationFn: attendanceApi.recordStaffAttendance,
     onSuccess: () => {
-      toast.success('Teacher attendance recorded successfully!');
-      queryClient.invalidateQueries({ queryKey: ['teacherAttendance'] });
-      queryClient.invalidateQueries({ queryKey: ['teacherAttendanceCalendar'] });
+      toast.success('Staff attendance recorded successfully!');
+      queryClient.invalidateQueries({ queryKey: ['StaffAttendance'] });
+      queryClient.invalidateQueries({ queryKey: ['StaffAttendanceCalendar'] });
       handleCloseDialog();
     },
     onError: (error: any) => {
@@ -236,7 +236,7 @@ export function AttendancePage() {
       
       if (status === 409) {
         // Conflict - attendance already marked
-        toast.error(message || 'Attendance already marked for this teacher on this date');
+        toast.error(message || 'Attendance already marked for this Staff on this date');
       } else if (status === 400) {
         toast.error(message);
       } else {
@@ -245,13 +245,13 @@ export function AttendancePage() {
     },
   });
 
-  const teacherUpdateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Partial<CreateTeacherAttendanceDto> & { id: string } }) =>
-      attendanceApi.updateTeacherAttendance(id, data),
+  const StaffUpdateMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: Partial<CreateStaffAttendanceDto> & { id: string } }) =>
+      attendanceApi.updateStaffAttendance(id, data),
     onSuccess: () => {
       toast.success('Attendance updated successfully!');
-      queryClient.invalidateQueries({ queryKey: ['teacherAttendance'] });
-      queryClient.invalidateQueries({ queryKey: ['teacherAttendanceCalendar'] });
+      queryClient.invalidateQueries({ queryKey: ['StaffAttendance'] });
+      queryClient.invalidateQueries({ queryKey: ['StaffAttendanceCalendar'] });
       handleCloseDialog();
     },
     onError: (error: any) => {
@@ -259,19 +259,19 @@ export function AttendancePage() {
     },
   });
 
-  const teacherDeleteMutation = useMutation({
-    mutationFn: attendanceApi.deleteTeacherAttendance,
+  const StaffDeleteMutation = useMutation({
+    mutationFn: attendanceApi.deleteStaffAttendance,
     onSuccess: () => {
       toast.success('Attendance record deleted successfully!');
-      queryClient.invalidateQueries({ queryKey: ['teacherAttendance'] });
-      queryClient.invalidateQueries({ queryKey: ['teacherAttendanceCalendar'] });
+      queryClient.invalidateQueries({ queryKey: ['StaffAttendance'] });
+      queryClient.invalidateQueries({ queryKey: ['StaffAttendanceCalendar'] });
     },
     onError: (error: any) => {
       toast.error(error?.response?.data?.message || 'Failed to delete record');
     },
   });
 
-  const handleOpenDialog = (record?: StudentAttendance | TeacherAttendance) => {
+  const handleOpenDialog = (record?: StudentAttendance | StaffAttendance) => {
     if (record) {
       setSelectedRecord(record);
       if (activeTab === 'student') {
@@ -296,17 +296,17 @@ export function AttendancePage() {
           enrollmentDate: new Date().toISOString().split('T')[0],
         } as any);
       } else {
-        const teacherRec = record as TeacherAttendance;
-        setTeacherFormData({
-          teacherId: teacherRec.teacherId,
-          attendanceDate: teacherRec.attendanceDate.split('T')[0],
-          status: teacherRec.status as any,
-          reason: teacherRec.remarks || '',
+        const StaffRec = record as StaffAttendance;
+        setStaffFormData({
+          staffId: StaffRec.staffId,
+          attendanceDate: StaffRec.attendanceDate.split('T')[0],
+          status: StaffRec.status as any,
+          reason: StaffRec.remarks || '',
         });
-        // Set the teacher info in read-only mode for edit
-        const nameParts = teacherRec.teacherName?.split(' ') || ['', ''];
-        setDialogSelectedTeacher({
-          id: teacherRec.teacherId,
+        // Set the Staff info in read-only mode for edit
+        const nameParts = StaffRec.staffName?.split(' ') || ['', ''];
+        setDialogSelectedStaff({
+          id: StaffRec.staffId,
           firstName: nameParts[0],
           lastName: nameParts.slice(1).join(' '),
           userId: '',
@@ -314,14 +314,14 @@ export function AttendancePage() {
           experienceYears: 0,
           joiningDate: new Date().toISOString(),
           isActive: true,
-        } as Teacher);
+        } as Staff);
       }
     } else {
       setSelectedRecord(null);
       setDialogSelectedStudent(null);
-      setDialogSelectedTeacher(null);
+      setDialogSelectedStaff(null);
       setDialogSearchTerm('');
-      setDialogTeacherSearchTerm('');
+      setDialogStaffSearchTerm('');
       setStudentFormData({
         studentId: '',
         // sectionId removed - auto-detected
@@ -329,8 +329,8 @@ export function AttendancePage() {
         status: 'Present',
         reason: '',
       });
-      setTeacherFormData({
-        teacherId: '',
+      setStaffFormData({
+        staffId: '',
         attendanceDate: new Date().toISOString().split('T')[0],
         status: 'Present',
         reason: '',
@@ -343,11 +343,11 @@ export function AttendancePage() {
     setOpenDialog(false);
     setSelectedRecord(null);
     setDialogSelectedStudent(null);
-    setDialogSelectedTeacher(null);
+    setDialogSelectedStaff(null);
     setDialogSearchTerm('');
-    setDialogTeacherSearchTerm('');
+    setDialogStaffSearchTerm('');
     setShowDialogStudentDropdown(false);
-    setShowDialogTeacherDropdown(false);
+    setShowDialogStaffDropdown(false);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -363,12 +363,12 @@ export function AttendancePage() {
       }
     } else {
       if (selectedRecord) {
-        teacherUpdateMutation.mutate({
+        StaffUpdateMutation.mutate({
           id: selectedRecord.id,
-          data: { ...teacherFormData, id: selectedRecord.id },
+          data: { ...StaffFormData, id: selectedRecord.id },
         });
       } else {
-        teacherCreateMutation.mutate(teacherFormData);
+        StaffCreateMutation.mutate(StaffFormData);
       }
     }
   };
@@ -378,7 +378,7 @@ export function AttendancePage() {
       if (activeTab === 'student') {
         studentDeleteMutation.mutate(id);
       } else {
-        teacherDeleteMutation.mutate(id);
+        StaffDeleteMutation.mutate(id);
       }
     }
   };
@@ -392,8 +392,8 @@ export function AttendancePage() {
     setPage(0);
   };
 
-  const attendanceData = activeTab === 'student' ? studentAttendanceData : teacherAttendanceData;
-  const isLoading = activeTab === 'student' ? studentLoading : teacherLoading;
+  const attendanceData = activeTab === 'student' ? studentAttendanceData : StaffAttendanceData;
+  const isLoading = activeTab === 'student' ? studentLoading : StaffLoading;
   const totalPages = attendanceData ? Math.ceil(attendanceData.totalCount / rowsPerPage) : 0;
 
   const parseCalendarMonth = (value: string) => {
@@ -436,14 +436,14 @@ export function AttendancePage() {
     },
   });
 
-  const { data: teacherCalendarData, isLoading: teacherCalendarLoading } = useQuery({
-    queryKey: ['teacherAttendanceCalendar', selectedTeacher?.id, calendarMonth, activeTab],
-    enabled: viewMode === 'calendar' && activeTab === 'teacher' && !!selectedTeacher?.id,
+  const { data: StaffCalendarData, isLoading: StaffCalendarLoading } = useQuery({
+    queryKey: ['StaffAttendanceCalendar', selectedStaff?.id, calendarMonth, activeTab],
+    enabled: viewMode === 'calendar' && activeTab === 'Staff' && !!selectedStaff?.id,
     queryFn: async () => {
-      const result = await attendanceApi.getAllTeacherAttendance({
+      const result = await attendanceApi.getAllStaffAttendance({
         pageNumber: 1,
         pageSize: 500,
-        teacherId: selectedTeacher?.id,
+        staffId: selectedStaff?.id,
         startDate: calendarRange.startStr,
         endDate: calendarRange.endStr,
       });
@@ -464,8 +464,8 @@ export function AttendancePage() {
 
   const calendarRecords = activeTab === 'student'
     ? studentCalendarData?.items || []
-    : teacherCalendarData?.items || [];
-  const calendarLoading = activeTab === 'student' ? studentCalendarLoading : teacherCalendarLoading;
+    : StaffCalendarData?.items || [];
+  const calendarLoading = activeTab === 'student' ? studentCalendarLoading : StaffCalendarLoading;
 
   const getStatusColor = (status: string) => {
     // Normalize status to lowercase for comparison
@@ -571,7 +571,7 @@ export function AttendancePage() {
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-2">📊 Attendance Management - {activeYear?.name || "Loading..."}</h1>
-          <p className="text-gray-600 mt-1">Track student and teacher attendance records for the current session</p>
+          <p className="text-gray-600 mt-1">Track student and Staff attendance records for the current session</p>
         </div>
 
         {/* Tabs */}
@@ -592,16 +592,16 @@ export function AttendancePage() {
             </button>
             <button
               onClick={() => {
-                setActiveTab('teacher');
+                setActiveTab('Staff');
                 setPage(0);
               }}
               className={`px-6 py-3 font-medium rounded-lg transition-colors ${
-                activeTab === 'teacher'
+                activeTab === 'Staff'
                   ? 'bg-blue-600 text-white'
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
               }`}
             >
-              👨‍🏫 Teacher Attendance
+              👨‍🏫 Staff Attendance
             </button>
           </div>
         </div>
@@ -662,26 +662,26 @@ export function AttendancePage() {
                 )}
               </div>
             ) : (
-              <div className="flex-1 relative" ref={teacherDropdownRef}>
-                <label className="text-sm font-medium text-gray-700 mb-1 block">Search Teacher</label>
+              <div className="flex-1 relative" ref={StaffDropdownRef}>
+                <label className="text-sm font-medium text-gray-700 mb-1 block">Search Staff</label>
                 <input
                   type="text"
                   placeholder="Type name..."
-                  value={selectedTeacher ? `${selectedTeacher.firstName} ${selectedTeacher.lastName}` : teacherSearchTerm}
+                  value={selectedStaff ? `${selectedStaff.firstName} ${selectedStaff.lastName}` : StaffSearchTerm}
                   onChange={(e) => {
-                    setTeacherSearchTerm(e.target.value);
-                    setSelectedTeacher(null);
-                    setShowTeacherDropdown(true);
+                    setStaffSearchTerm(e.target.value);
+                    setSelectedStaff(null);
+                    setShowStaffDropdown(true);
                     setPage(0);
                   }}
-                  onFocus={() => setShowTeacherDropdown(true)}
+                  onFocus={() => setShowStaffDropdown(true)}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
-                {selectedTeacher && (
+                {selectedStaff && (
                   <button
                     onClick={() => {
-                      setSelectedTeacher(null);
-                      setTeacherSearchTerm('');
+                      setSelectedStaff(null);
+                      setStaffSearchTerm('');
                       setPage(0);
                     }}
                     className="absolute right-3 top-9 text-gray-400 hover:text-gray-600"
@@ -689,42 +689,42 @@ export function AttendancePage() {
                     ✕
                   </button>
                 )}
-                {showTeacherDropdown && teacherSearchTerm.length >= 2 && teachersData && teachersData.items.length > 0 && !selectedTeacher && (
+                {showStaffDropdown && StaffSearchTerm.length >= 2 && StaffsData && StaffsData.items.length > 0 && !selectedStaff && (
                   <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                    {teachersData.items.map((teacher) => (
+                    {StaffsData.items.map((Staff) => (
                       <button
-                        key={teacher.id}
+                        key={Staff.id}
                         onClick={() => {
-                          setSelectedTeacher(teacher);
-                          setTeacherSearchTerm('');
-                          setShowTeacherDropdown(false);
+                          setSelectedStaff(Staff);
+                          setStaffSearchTerm('');
+                          setShowStaffDropdown(false);
                           setPage(0);
                         }}
                         className="w-full text-left px-3 py-2 hover:bg-blue-50 flex items-center gap-3 border-b border-gray-100 last:border-b-0"
                       >
-                        {teacher.imagePath ? (
+                        {Staff.imagePath ? (
                           <div className="flex-shrink-0 h-8 w-8 rounded-full overflow-hidden bg-gray-100">
                             <img
-                              src={`${(import.meta.env.VITE_API_URL || 'http://localhost:5208/api').replace('/api', '')}${teacher.imagePath}`}
-                              alt={`${teacher.firstName} ${teacher.lastName}`}
+                              src={`${(import.meta.env.VITE_API_URL || 'http://localhost:5208/api').replace('/api', '')}${Staff.imagePath}`}
+                              alt={`${Staff.firstName} ${Staff.lastName}`}
                               className="w-full h-full object-cover"
                             />
                           </div>
                         ) : (
                           <div className="flex-shrink-0 h-8 w-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white font-bold text-xs">
-                            {teacher.firstName[0]}{teacher.lastName[0]}
+                            {Staff.firstName[0]}{Staff.lastName[0]}
                           </div>
                         )}
                         <div className="flex-1">
-                          <p className="font-medium text-gray-900 text-sm">{teacher.firstName} {teacher.lastName}</p>
-                          <p className="text-xs text-gray-500">{teacher.email}</p>
+                          <p className="font-medium text-gray-900 text-sm">{Staff.firstName} {Staff.lastName}</p>
+                          <p className="text-xs text-gray-500">{Staff.email}</p>
                         </div>
                       </button>
                     ))}
                   </div>
                 )}
-                {selectedTeacher && (
-                  <p className="text-sm text-blue-600 mt-1">Showing attendance for {selectedTeacher.firstName} {selectedTeacher.lastName}</p>
+                {selectedStaff && (
+                  <p className="text-sm text-blue-600 mt-1">Showing attendance for {selectedStaff.firstName} {selectedStaff.lastName}</p>
                 )}
               </div>
             )}
@@ -794,7 +794,7 @@ export function AttendancePage() {
                   <p className="text-sm text-gray-600 mt-0.5">
                     {activeTab === 'student'
                       ? (selectedStudent ? `${selectedStudent.firstName} ${selectedStudent.lastName}` : 'Select a student to view the calendar')
-                      : (selectedTeacher ? `${selectedTeacher.firstName} ${selectedTeacher.lastName}` : 'Select a teacher to view the calendar')}
+                      : (selectedStaff ? `${selectedStaff.firstName} ${selectedStaff.lastName}` : 'Select a Staff to view the calendar')}
                   </p>
                 </div>
               </div>
@@ -810,7 +810,7 @@ export function AttendancePage() {
             </div>
 
             {/* Calendar Content */}
-            {(!selectedStudent && activeTab === 'student') || (!selectedTeacher && activeTab === 'teacher') ? (
+            {(!selectedStudent && activeTab === 'student') || (!selectedStaff && activeTab === 'Staff') ? (
               <div className="text-center py-16">
                 <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-full mb-4">
                   <svg className="w-10 h-10 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -941,10 +941,10 @@ export function AttendancePage() {
                       {attendanceData?.items.map((record) => (
                         <tr key={record.id} className="hover:bg-gray-50">
                           <td className="px-6 py-4 text-sm font-medium text-gray-900">
-                            {activeTab === 'student' ? (record as StudentAttendance).studentName : (record as TeacherAttendance).teacherName}
+                            {activeTab === 'student' ? (record as StudentAttendance).studentName : (record as StaffAttendance).staffName}
                           </td>
                           <td className="px-6 py-4 text-sm text-gray-600">
-                            {activeTab === 'student' ? ((record as StudentAttendance).studentEnrollmentNumber || (record as StudentAttendance).studentId) : ((record as TeacherAttendance).teacherEmail || '-')}
+                            {activeTab === 'student' ? ((record as StudentAttendance).studentEnrollmentNumber || (record as StudentAttendance).studentId) : ((record as StaffAttendance).staffEmail || '-')}
                           </td>
                           <td className="px-6 py-4 text-sm text-gray-600">
                             {new Date(record.attendanceDate).toLocaleDateString()}
@@ -1024,10 +1024,10 @@ export function AttendancePage() {
                       <div className="flex items-start justify-between mb-3">
                         <div>
                           <h3 className="font-semibold text-gray-900">
-                            {activeTab === 'student' ? (record as StudentAttendance).studentName : (record as TeacherAttendance).teacherName || 'N/A'}
+                            {activeTab === 'student' ? (record as StudentAttendance).studentName : (record as StaffAttendance).staffName || 'N/A'}
                           </h3>
                           <p className="text-sm text-gray-600">
-                            {activeTab === 'student' ? `ID: ${(record as StudentAttendance).studentEnrollmentNumber || (record as StudentAttendance).studentId}` : `Email: ${(record as TeacherAttendance).teacherEmail || '-'}`}
+                            {activeTab === 'student' ? `ID: ${(record as StudentAttendance).studentEnrollmentNumber || (record as StudentAttendance).studentId}` : `Email: ${(record as StaffAttendance).staffEmail || '-'}`}
                           </p>
                         </div>
                         <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(record.status)}`}>
@@ -1192,38 +1192,38 @@ export function AttendancePage() {
               ) : (
                 <>
                   {selectedRecord ? (
-                    // Edit mode - show teacher info as read-only
+                    // Edit mode - show Staff info as read-only
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Teacher</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Staff</label>
                       <div className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-700">
-                        {(selectedRecord as TeacherAttendance)?.teacherName || 'Loading teacher info...'}
+                        {(selectedRecord as StaffAttendance)?.staffName || 'Loading Staff info...'}
                       </div>
                     </div>
                   ) : (
-                    // Create mode - searchable teacher dropdown
-                    <div ref={dialogTeacherDropdownRef}>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Teacher</label>
+                    // Create mode - searchable Staff dropdown
+                    <div ref={dialogStaffDropdownRef}>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Staff</label>
                       <div className="relative">
                         <div className="flex items-center gap-2">
                           <input
                             type="text"
-                            placeholder="Search teacher by name..."
-                            value={dialogTeacherSearchTerm}
+                            placeholder="Search Staff by name..."
+                            value={dialogStaffSearchTerm}
                             onChange={(e) => {
-                              setDialogTeacherSearchTerm(e.target.value);
-                              setShowDialogTeacherDropdown(true);
-                              setDialogSelectedTeacher(null);
+                              setDialogStaffSearchTerm(e.target.value);
+                              setShowDialogStaffDropdown(true);
+                              setDialogSelectedStaff(null);
                             }}
-                            onFocus={() => setShowDialogTeacherDropdown(true)}
+                            onFocus={() => setShowDialogStaffDropdown(true)}
                             className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                           />
-                          {dialogSelectedTeacher && (
+                          {dialogSelectedStaff && (
                             <button
                               type="button"
                               onClick={() => {
-                                setDialogSelectedTeacher(null);
-                                setDialogTeacherSearchTerm('');
-                                setTeacherFormData({ ...teacherFormData, teacherId: '' });
+                                setDialogSelectedStaff(null);
+                                setDialogStaffSearchTerm('');
+                                setStaffFormData({ ...StaffFormData, staffId: '' });
                               }}
                               className="text-gray-500 hover:text-gray-700 text-xl"
                             >
@@ -1231,46 +1231,46 @@ export function AttendancePage() {
                             </button>
                           )}
                         </div>
-                        {showDialogTeacherDropdown && dialogTeacherSearchTerm.length >= 2 && (
+                        {showDialogStaffDropdown && dialogStaffSearchTerm.length >= 2 && (
                           <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-10 max-h-40 overflow-y-auto">
-                            {dialogTeachersData?.items && dialogTeachersData.items.length > 0 ? (
-                              dialogTeachersData.items.map((teacher) => (
+                            {dialogStaffsData?.items && dialogStaffsData.items.length > 0 ? (
+                              dialogStaffsData.items.map((Staff) => (
                                 <div
-                                  key={teacher.id}
+                                  key={Staff.id}
                                   onClick={() => {
-                                    setDialogSelectedTeacher(teacher);
-                                    setTeacherFormData({ ...teacherFormData, teacherId: teacher.id });
-                                    setDialogTeacherSearchTerm('');
-                                    setShowDialogTeacherDropdown(false);
+                                    setDialogSelectedStaff(Staff);
+                                    setStaffFormData({ ...StaffFormData, staffId: Staff.id });
+                                    setDialogStaffSearchTerm('');
+                                    setShowDialogStaffDropdown(false);
                                   }}
                                   className="px-3 py-2 cursor-pointer hover:bg-blue-50 border-b border-gray-100 last:border-b-0 flex items-center gap-3"
                                 >
-                                  {teacher.imagePath ? (
+                                  {Staff.imagePath ? (
                                     <div className="flex-shrink-0 h-8 w-8 rounded-full overflow-hidden bg-gray-100">
                                       <img
-                                        src={`${(import.meta.env.VITE_API_URL || 'http://localhost:5208/api').replace('/api', '')}${teacher.imagePath}`}
-                                        alt={`${teacher.firstName} ${teacher.lastName}`}
+                                        src={`${(import.meta.env.VITE_API_URL || 'http://localhost:5208/api').replace('/api', '')}${Staff.imagePath}`}
+                                        alt={`${Staff.firstName} ${Staff.lastName}`}
                                         className="w-full h-full object-cover"
                                       />
                                     </div>
                                   ) : (
                                     <div className="flex-shrink-0 h-8 w-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white font-bold text-xs">
-                                      {teacher.firstName[0]}{teacher.lastName[0]}
+                                      {Staff.firstName[0]}{Staff.lastName[0]}
                                     </div>
                                   )}
                                   <div className="flex-1">
-                                    <p className="font-medium text-gray-900 text-sm">{teacher.firstName} {teacher.lastName}</p>
-                                    <p className="text-xs text-gray-500">{teacher.email}</p>
+                                    <p className="font-medium text-gray-900 text-sm">{Staff.firstName} {Staff.lastName}</p>
+                                    <p className="text-xs text-gray-500">{Staff.email}</p>
                                   </div>
                                 </div>
                               ))
                             ) : (
-                              <div className="px-3 py-2 text-gray-500 text-sm">No teachers found</div>
+                              <div className="px-3 py-2 text-gray-500 text-sm">No Staffs found</div>
                             )}
                           </div>
                         )}
-                        {dialogSelectedTeacher && (
-                          <p className="text-sm text-blue-600 mt-1">✓ Selected: {dialogSelectedTeacher.firstName} {dialogSelectedTeacher.lastName}</p>
+                        {dialogSelectedStaff && (
+                          <p className="text-sm text-blue-600 mt-1">✓ Selected: {dialogSelectedStaff.firstName} {dialogSelectedStaff.lastName}</p>
                         )}
                       </div>
                     </div>
@@ -1280,8 +1280,8 @@ export function AttendancePage() {
                     <input
                       type="date"
                       required
-                      value={teacherFormData.attendanceDate}
-                      onChange={(e) => setTeacherFormData({ ...teacherFormData, attendanceDate: e.target.value })}
+                      value={StaffFormData.attendanceDate}
+                      onChange={(e) => setStaffFormData({ ...StaffFormData, attendanceDate: e.target.value })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     />
                   </div>
@@ -1289,8 +1289,8 @@ export function AttendancePage() {
                     <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
                     <select
                       required
-                      value={teacherFormData.status}
-                      onChange={(e) => setTeacherFormData({ ...teacherFormData, status: e.target.value as any })}
+                      value={StaffFormData.status}
+                      onChange={(e) => setStaffFormData({ ...StaffFormData, status: e.target.value as any })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     >
                       <option value="Present">Present</option>
@@ -1302,8 +1302,8 @@ export function AttendancePage() {
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Reason/Remarks (Optional)</label>
                     <textarea
-                      value={teacherFormData.reason}
-                      onChange={(e) => setTeacherFormData({ ...teacherFormData, reason: e.target.value })}
+                      value={StaffFormData.reason}
+                      onChange={(e) => setStaffFormData({ ...StaffFormData, reason: e.target.value })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       rows={3}
                     />
@@ -1321,10 +1321,10 @@ export function AttendancePage() {
                 </button>
                 <button
                   type="submit"
-                  disabled={studentCreateMutation.isPending || studentUpdateMutation.isPending || teacherCreateMutation.isPending || teacherUpdateMutation.isPending}
+                  disabled={studentCreateMutation.isPending || studentUpdateMutation.isPending || StaffCreateMutation.isPending || StaffUpdateMutation.isPending}
                   className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {studentCreateMutation.isPending || studentUpdateMutation.isPending || teacherCreateMutation.isPending || teacherUpdateMutation.isPending ? 'Saving...' : 'Save'}
+                  {studentCreateMutation.isPending || studentUpdateMutation.isPending || StaffCreateMutation.isPending || StaffUpdateMutation.isPending ? 'Saving...' : 'Save'}
                 </button>
               </div>
             </form>

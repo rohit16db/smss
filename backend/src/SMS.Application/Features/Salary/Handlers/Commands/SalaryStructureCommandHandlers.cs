@@ -156,40 +156,41 @@ public class DeleteSalaryStructureCommandHandler : IRequestHandler<DeleteSalaryS
     }
 }
 
-public class AssignSalaryStructureToTeacherCommandHandler : IRequestHandler<AssignSalaryStructureToTeacherCommand, TeacherSalaryAssignmentDto>
+public class AssignSalaryStructureToStaffCommandHandler : IRequestHandler<AssignSalaryStructureToStaffCommand, StaffSalaryAssignmentDto>
 {
     private readonly IApplicationDbContext _context;
 
-    public AssignSalaryStructureToTeacherCommandHandler(IApplicationDbContext context)
+    public AssignSalaryStructureToStaffCommandHandler(IApplicationDbContext context)
     {
         _context = context;
     }
 
-    public async Task<TeacherSalaryAssignmentDto> Handle(AssignSalaryStructureToTeacherCommand request, CancellationToken cancellationToken)
+    public async Task<StaffSalaryAssignmentDto> Handle(AssignSalaryStructureToStaffCommand request, CancellationToken cancellationToken)
     {
-        var teacher = await _context.Teachers
+        var staff = await _context.Staff
+            .Include(t => t.UserProfile)
             .Include(t => t.SalaryStructure)
-            .FirstOrDefaultAsync(t => t.Id == request.TeacherId, cancellationToken);
+            .FirstOrDefaultAsync(t => t.Id == request.StaffId, cancellationToken);
 
-        if (teacher == null)
-            throw new InvalidOperationException($"Teacher with ID {request.TeacherId} not found");
+        if (staff == null)
+            throw new InvalidOperationException($"Staff with ID {request.StaffId} not found");
 
         var structure = await _context.SalaryStructures.FindAsync(new object[] { request.SalaryStructureId }, cancellationToken);
         if (structure == null)
             throw new InvalidOperationException($"Salary structure with ID {request.SalaryStructureId} not found");
 
-        teacher.SalaryStructureId = request.SalaryStructureId;
-        teacher.SalaryStructureEffectiveDate = request.EffectiveDate;
+        staff.SalaryStructureId = request.SalaryStructureId;
+        staff.SalaryStructureEffectiveDate = request.EffectiveDate;
 
-        _context.Teachers.Update(teacher);
+        _context.Staff.Update(staff);
         await _context.SaveChangesAsync(cancellationToken);
 
-        return new TeacherSalaryAssignmentDto
+        return new StaffSalaryAssignmentDto
         {
-            TeacherId = teacher.Id,
-            TeacherName = teacher.FullName,
-            TeacherEmail = teacher.Email,
-            TeacherImagePath = teacher.ImagePath,
+            StaffId = staff.Id,
+            StaffName = staff.FullName,
+            StaffEmail = staff.UserProfile.Email,
+            StaffImagePath = staff.UserProfile.ImagePath,
             SalaryStructureId = structure.Id,
             SalaryStructureName = structure.Name,
             GrossSalary = structure.GrossSalary,
@@ -210,27 +211,28 @@ public class BulkCreateSalaryFromStructuresCommandHandler : IRequestHandler<Bulk
 
     public async Task<SalaryPaymentReportDto> Handle(BulkCreateSalaryFromStructuresCommand request, CancellationToken cancellationToken)
     {
-        var teachers = await _context.Teachers
+        var staffList = await _context.Staff
             .Include(t => t.SalaryStructure)
+            .Include(t => t.UserProfile)
             .Where(t => t.IsActive && t.SalaryStructureId != null)
             .ToListAsync(cancellationToken);
 
         var salaryPayments = new List<SalaryPayment>();
 
-        foreach (var teacher in teachers)
+        foreach (var staff in staffList)
         {
-            if (teacher.SalaryStructure == null)
+            if (staff.SalaryStructure == null)
                 continue;
 
-            var netSalary = teacher.SalaryStructure.GrossSalary - request.FixedDeductions;
+            var netSalary = staff.SalaryStructure.GrossSalary - request.FixedDeductions;
 
             var salary = new SalaryPayment
             {
                 Id = Guid.NewGuid(),
-                TeacherId = teacher.Id,
+                StaffId = staff.Id,
                 PeriodStartDate = request.PeriodStartDate,
                 PeriodEndDate = request.PeriodEndDate,
-                BaseSalary = teacher.SalaryStructure.BaseSalary,
+                BaseSalary = staff.SalaryStructure.BaseSalary,
                 Deductions = request.FixedDeductions,
                 Bonus = 0,
                 NetSalary = Math.Max(0, netSalary), // Ensure non-negative
@@ -244,15 +246,15 @@ public class BulkCreateSalaryFromStructuresCommandHandler : IRequestHandler<Bulk
         _context.SalaryPayments.AddRange(salaryPayments);
         await _context.SaveChangesAsync(cancellationToken);
 
-        var paymentDetails = salaryPayments.Select(s => MapToDto(s, teachers.First(t => t.Id == s.TeacherId))).ToList();
+        var paymentDetails = salaryPayments.Select(s => MapToDto(s, staffList.First(t => t.Id == s.StaffId))).ToList();
 
         return new SalaryPaymentReportDto
         {
             MonthStart = request.PeriodStartDate,
             MonthEnd = request.PeriodEndDate,
-            TotalTeachers = salaryPayments.Count,
-            PaidTeachers = 0,
-            PendingTeachers = salaryPayments.Count,
+            TotalStaff = salaryPayments.Count,
+            PaidStaff = 0,
+            PendingStaff = salaryPayments.Count,
             TotalBaseSalary = salaryPayments.Sum(s => s.BaseSalary),
             TotalDeductions = salaryPayments.Sum(s => s.Deductions),
             TotalBonus = 0,
@@ -261,13 +263,13 @@ public class BulkCreateSalaryFromStructuresCommandHandler : IRequestHandler<Bulk
         };
     }
 
-    private SalaryPaymentDto MapToDto(SalaryPayment salary, Teacher teacher)
+    private SalaryPaymentDto MapToDto(SalaryPayment salary, Staff staff)
     {
         return new SalaryPaymentDto
         {
             Id = salary.Id,
-            TeacherId = salary.TeacherId,
-            TeacherName = teacher.FullName,
+            StaffId = salary.StaffId,
+            StaffName = staff.FullName,
             PeriodStartDate = salary.PeriodStartDate,
             PeriodEndDate = salary.PeriodEndDate,
             BaseSalary = salary.BaseSalary,

@@ -185,10 +185,10 @@ public class SalaryExpenseSummaryDto
     /// <summary>Total deductions</summary>
     public decimal TotalDeductions { get; set; }
 
-    /// <summary>Number of teachers paid</summary>
-    public int TeacherCount { get; set; }
+    /// <summary>Number of staff paid</summary>
+    public int StaffCount { get; set; }
 
-    /// <summary>Number of teachers who got bonus</summary>
+    /// <summary>Number of staff who got bonus</summary>
     public int BonusRecipients { get; set; }
 
     /// <summary>Bonus as percentage of base salary</summary>
@@ -224,10 +224,10 @@ public class MonthlySalaryTrendDto
     /// <summary>Total deductions</summary>
     public decimal TotalDeductions { get; set; }
 
-    /// <summary>Number of teachers</summary>
-    public int TeacherCount { get; set; }
+    /// <summary>Number of staff</summary>
+    public int StaffCount { get; set; }
 
-    /// <summary>Teachers who received bonus</summary>
+    /// <summary>Staff who received bonus</summary>
     public int BonusRecipients { get; set; }
 
     /// <summary>Average salary for the month</summary>
@@ -267,13 +267,13 @@ public class SalaryComponentBreakdownDto
 /// <summary>
 /// Teacher-wise salary comparison
 /// </summary>
-public class TeacherSalaryComparisonDto
+public class StaffSalaryComparisonDto
 {
-    /// <summary>Teacher ID</summary>
-    public string TeacherId { get; set; } = string.Empty;
+    /// <summary>Staff ID</summary>
+    public string StaffId { get; set; } = string.Empty;
 
-    /// <summary>Teacher full name</summary>
-    public string TeacherName { get; set; } = string.Empty;
+    /// <summary>Staff full name</summary>
+    public string StaffName { get; set; } = string.Empty;
 
     /// <summary>Base salary</summary>
     public decimal BaseSalary { get; set; }
@@ -302,11 +302,11 @@ public class TeacherSalaryComparisonDto
 /// </summary>
 public class AttendanceToSalaryCorrelationDto
 {
-    /// <summary>Teacher ID</summary>
-    public string TeacherId { get; set; } = string.Empty;
+    /// <summary>Staff ID</summary>
+    public string StaffId { get; set; } = string.Empty;
 
-    /// <summary>Teacher name</summary>
-    public string TeacherName { get; set; } = string.Empty;
+    /// <summary>Staff name</summary>
+    public string StaffName { get; set; } = string.Empty;
 
     /// <summary>Attendance percentage</summary>
     public decimal AttendancePercentage { get; set; }

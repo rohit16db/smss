@@ -29,7 +29,7 @@ public class SalaryPaymentController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<List<SalaryPaymentDto>>> GetAllSalaryPayments(
         [FromQuery] string? status = null,
-        [FromQuery] Guid? teacherId = null,
+        [FromQuery] Guid? StaffId = null,
         [FromQuery] DateTime? periodStartDate = null,
         [FromQuery] DateTime? periodEndDate = null)
     {
@@ -38,7 +38,7 @@ public class SalaryPaymentController : ControllerBase
             var query = new GetAllSalaryPaymentsQuery
             {
                 Status = status,
-                TeacherId = teacherId,
+                StaffId = StaffId,
                 PeriodStartDate = periodStartDate,
                 PeriodEndDate = periodEndDate
             };
@@ -75,19 +75,19 @@ public class SalaryPaymentController : ControllerBase
     /// <summary>
     /// Get all salary payments for a specific teacher
     /// </summary>
-    [HttpGet("teacher/{teacherId}")]
-    public async Task<ActionResult<SalaryHistoryDto>> GetTeacherSalaryPayments(Guid teacherId)
+    [HttpGet("staff/{staffId}")]
+    public async Task<ActionResult<SalaryHistoryDto>> GetStaffSalaryPayments(Guid staffId)
     {
         try
         {
-            var query = new GetTeacherSalaryPaymentsQuery { TeacherId = teacherId };
+            var query = new GetStaffSalaryPaymentsQuery { StaffId = staffId };
             var payments = await _mediator.Send(query);
             return Ok(payments);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error retrieving salary payments for teacher: {TeacherId}", teacherId);
-            return StatusCode(500, new { message = "An error occurred while retrieving teacher salary payments" });
+            _logger.LogError(ex, "Error retrieving salary payments for staff: {StaffId}", staffId);
+            return StatusCode(500, new { message = "An error occurred while retrieving staff salary payments" });
         }
     }
 

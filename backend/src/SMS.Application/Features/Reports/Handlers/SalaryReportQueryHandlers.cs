@@ -25,18 +25,18 @@ public class GetSalaryExpenseSummaryQueryHandler : IRequestHandler<GetSalaryExpe
 
         var salaryPayments = await _context.SalaryPayments
             .Where(s => s.PeriodStartDate >= startDateOnly && s.PeriodEndDate <= endDateOnly)
-            .Include(s => s.Teacher)
-            .ThenInclude(t => t.SalaryStructure)
+            .Include(s => s.Staff)
+                .ThenInclude(t => t.SalaryStructure)
             .ToListAsync(cancellationToken);
 
         var totalNetSalary = salaryPayments.Sum(s => s.NetSalary);
         var totalBaseSalary = salaryPayments.Sum(s => s.BaseSalary);
         var totalBonus = salaryPayments.Sum(s => s.Bonus);
         var totalDeductions = salaryPayments.Sum(s => s.Deductions);
-        var teacherCount = salaryPayments.DistinctBy(s => s.TeacherId).Count();
-        var bonusRecipients = salaryPayments.Where(s => s.Bonus > 0).DistinctBy(s => s.TeacherId).Count();
+        var staffCount = salaryPayments.DistinctBy(s => s.StaffId).Count();
+        var bonusRecipients = salaryPayments.Where(s => s.Bonus > 0).DistinctBy(s => s.StaffId).Count();
 
-        var averageSalary = teacherCount > 0 ? totalNetSalary / teacherCount : 0;
+        var averageSalary = staffCount > 0 ? totalNetSalary / staffCount : 0;
         var bonusPercentage = totalBaseSalary > 0 ? (totalBonus / totalBaseSalary) * 100 : 0;
         var deductionPercentage = totalBaseSalary > 0 ? (totalDeductions / totalBaseSalary) * 100 : 0;
 
@@ -66,7 +66,7 @@ public class GetSalaryExpenseSummaryQueryHandler : IRequestHandler<GetSalaryExpe
             TotalBaseSalary = totalBaseSalary,
             TotalBonus = totalBonus,
             TotalDeductions = totalDeductions,
-            TeacherCount = teacherCount,
+            StaffCount = staffCount,
             BonusRecipients = bonusRecipients,
             BonusPercentage = (decimal)bonusPercentage,
             DeductionPercentage = (decimal)deductionPercentage,
@@ -114,7 +114,7 @@ public class GetMonthlySalaryTrendQueryHandler : IRequestHandler<GetMonthlySalar
                 TotalBaseSalary = 0,
                 TotalBonus = 0,
                 TotalDeductions = 0,
-                TeacherCount = 0,
+                StaffCount = 0,
                 BonusRecipients = 0,
                 AverageSalary = 0
             };
@@ -133,15 +133,15 @@ public class GetMonthlySalaryTrendQueryHandler : IRequestHandler<GetMonthlySalar
                 months[monthKey].TotalBaseSalary = monthPayments.Sum(s => s.BaseSalary);
                 months[monthKey].TotalBonus = monthPayments.Sum(s => s.Bonus);
                 months[monthKey].TotalDeductions = monthPayments.Sum(s => s.Deductions);
-                months[monthKey].TeacherCount = monthPayments.DistinctBy(s => s.TeacherId).Count();
-                months[monthKey].BonusRecipients = monthPayments.Where(s => s.Bonus > 0).DistinctBy(s => s.TeacherId).Count();
+                months[monthKey].StaffCount = monthPayments.DistinctBy(s => s.StaffId).Count();
+                months[monthKey].BonusRecipients = monthPayments.Where(s => s.Bonus > 0).DistinctBy(s => s.StaffId).Count();
             }
         }
 
         // Calculate averages
         foreach (var month in months.Values)
         {
-            month.AverageSalary = month.TeacherCount > 0 ? month.TotalNetSalary / month.TeacherCount : 0;
+            month.AverageSalary = month.StaffCount > 0 ? month.TotalNetSalary / month.StaffCount : 0;
         }
 
         return months.Values;
@@ -197,30 +197,32 @@ public class GetSalaryComponentBreakdownQueryHandler : IRequestHandler<GetSalary
 
 
 /// <summary>
-/// Handler for teacher-wise salary comparison query
+/// Handler for staff-wise salary comparison query
 /// </summary>
-public class GetTeacherSalaryComparisonQueryHandler : IRequestHandler<GetTeacherSalaryComparisonQuery, IEnumerable<TeacherSalaryComparisonDto>>
+public class GetStaffSalaryComparisonQueryHandler : IRequestHandler<GetStaffSalaryComparisonQuery, IEnumerable<StaffSalaryComparisonDto>>
 {
     private readonly IApplicationDbContext _context;
 
-    public GetTeacherSalaryComparisonQueryHandler(IApplicationDbContext context)
+    public GetStaffSalaryComparisonQueryHandler(IApplicationDbContext context)
     {
         _context = context;
     }
 
-    public async Task<IEnumerable<TeacherSalaryComparisonDto>> Handle(GetTeacherSalaryComparisonQuery request, CancellationToken cancellationToken)
+    public async Task<IEnumerable<StaffSalaryComparisonDto>> Handle(GetStaffSalaryComparisonQuery request, CancellationToken cancellationToken)
     {
         var startDateOnly = DateOnly.FromDateTime(request.StartDate);
         var endDateOnly = DateOnly.FromDateTime(request.EndDate);
 
         var salaryPayments = await _context.SalaryPayments
             .Where(s => s.PeriodStartDate >= startDateOnly && s.PeriodEndDate <= endDateOnly)
-            .Include(s => s.Teacher)
-            .ThenInclude(t => t.SalaryStructure)
+            .Include(s => s.Staff)
+                .ThenInclude(t => t.UserProfile)
+            .Include(s => s.Staff)
+                .ThenInclude(t => t.SalaryStructure)
             .ToListAsync(cancellationToken);
 
         var results = salaryPayments
-            .GroupBy(s => s.TeacherId)
+            .GroupBy(s => s.StaffId)
             .Select(g =>
             {
                 var firstPayment = g.First();
@@ -229,10 +231,10 @@ public class GetTeacherSalaryComparisonQueryHandler : IRequestHandler<GetTeacher
                 var totalBonus = g.Sum(s => s.Bonus);
                 var totalDeductions = g.Sum(s => s.Deductions);
 
-                return new TeacherSalaryComparisonDto
+                return new StaffSalaryComparisonDto
                 {
-                    TeacherId = firstPayment.TeacherId.ToString(),
-                    TeacherName = $"{firstPayment.Teacher?.FirstName} {firstPayment.Teacher?.LastName}",
+                    StaffId = firstPayment.StaffId.ToString(),
+                    StaffName = firstPayment.Staff?.FullName ?? "Unknown",
                     BaseSalary = totalBaseSalary,
                     Bonus = totalBonus,
                     Deductions = totalDeductions,
@@ -250,7 +252,7 @@ public class GetTeacherSalaryComparisonQueryHandler : IRequestHandler<GetTeacher
             "netsalary" => request.Descending ? results.OrderByDescending(r => r.NetSalary) : results.OrderBy(r => r.NetSalary),
             "bonus" => request.Descending ? results.OrderByDescending(r => r.Bonus) : results.OrderBy(r => r.Bonus),
             "deduction" => request.Descending ? results.OrderByDescending(r => r.Deductions) : results.OrderBy(r => r.Deductions),
-            _ => request.Descending ? results.OrderByDescending(r => r.TeacherName) : results.OrderBy(r => r.TeacherName)
+            _ => request.Descending ? results.OrderByDescending(r => r.StaffName) : results.OrderBy(r => r.StaffName)
         };
 
         return results;
@@ -277,12 +279,13 @@ public class GetAttendanceToSalaryCorrelationQueryHandler : IRequestHandler<GetA
         var startOfMonthDateOnly = DateOnly.FromDateTime(startOfMonth);
         var endOfMonthDateOnly = DateOnly.FromDateTime(endOfMonth);
 
-        // Get all teachers with their attendance and salary data
-        var teachers = await _context.Teachers
+        // Get all staff with their attendance and salary data
+        var staffMembers = await _context.Staff
+            .Include(t => t.UserProfile)
             .Include(t => t.SalaryStructure)
             .ToListAsync(cancellationToken);
 
-        var teacherAttendance = await _context.TeacherAttendances
+        var teacherAttendance = await _context.StaffAttendances
             .Where(a => a.AttendanceDate >= startOfMonthDateOnly && a.AttendanceDate <= endOfMonthDateOnly)
             .ToListAsync(cancellationToken);
 
@@ -290,23 +293,23 @@ public class GetAttendanceToSalaryCorrelationQueryHandler : IRequestHandler<GetA
             .Where(s => s.PeriodStartDate >= startOfMonthDateOnly && s.PeriodEndDate <= endOfMonthDateOnly)
             .ToListAsync(cancellationToken);
 
-        var results = teachers
-            .Select(teacher =>
+        var results = staffMembers
+            .Select(staff =>
             {
-                var attendance = teacherAttendance.Where(a => a.TeacherId == teacher.Id).ToList();
+                var attendance = teacherAttendance.Where(a => a.StaffId == staff.Id).ToList();
                 var totalDays = attendance.Count == 0 ? 1 : attendance.Count;
                 var presentDays = attendance.Count(a => a.Status.ToLower() == "present");
                 var absentDays = attendance.Count(a => a.Status.ToLower() == "absent");
                 var attendancePercentage = totalDays > 0 ? ((decimal)presentDays / totalDays) * 100 : 0;
 
                 // Get the base salary
-                var baseSalary = teacher.SalaryStructure?.BaseSalary ?? 50000m;
+                var baseSalary = staff.SalaryStructure?.BaseSalary ?? 50000m;
 
                 // Calculate deduction based on policy: 0.5% salary per day absent
                 var calculatedDeduction = (baseSalary / 30) * absentDays * 0.5m;
 
                 // Get actual deduction from salary payment
-                var actualSalaryPayment = salaryPayments.FirstOrDefault(s => s.TeacherId == teacher.Id);
+                var actualSalaryPayment = salaryPayments.FirstOrDefault(s => s.StaffId == staff.Id);
                 var actualDeduction = actualSalaryPayment?.Deductions ?? 0;
 
                 // Check for bonus eligibility (>= 90% attendance)
@@ -318,8 +321,8 @@ public class GetAttendanceToSalaryCorrelationQueryHandler : IRequestHandler<GetA
 
                 return new AttendanceToSalaryCorrelationDto
                 {
-                    TeacherId = teacher.Id.ToString(),
-                    TeacherName = $"{teacher.FirstName} {teacher.LastName}",
+                    StaffId = staff.Id.ToString(),
+                    StaffName = staff.FullName,
                     AttendancePercentage = attendancePercentage,
                     PresentDays = presentDays,
                     AbsentDays = absentDays,
@@ -342,7 +345,7 @@ public class GetAttendanceToSalaryCorrelationQueryHandler : IRequestHandler<GetA
             results = results.Where(r => r.HasDiscrepancy);
         }
 
-        return results.OrderBy(r => r.TeacherName);
+        return results.OrderBy(r => r.StaffName);
     }
 }
 

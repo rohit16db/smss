@@ -17,9 +17,12 @@ public interface IApplicationDbContext
     DbSet<Section> Sections { get; }
     DbSet<AcademicYear> AcademicYears { get; }
     DbSet<Enrollment> Enrollments { get; }    
-    // Phase 3: Teacher Management
-    DbSet<Teacher> Teachers { get; }
-    DbSet<TeacherAssignment> TeacherAssignments { get; }
+    // Phase 3: Staff Management
+    DbSet<UserProfile> UserProfiles { get; }
+    DbSet<Staff> Staff { get; }
+    DbSet<Department> Departments { get; }
+    DbSet<EducationalQualification> EducationalQualifications { get; }
+    DbSet<StaffAssignment> StaffAssignments { get; }
     DbSet<Subject> Subjects { get; }
     
     // Phase 3: Fee Management
@@ -30,7 +33,7 @@ public interface IApplicationDbContext
     
     // Phase 3: Attendance Management
     DbSet<StudentAttendance> StudentAttendances { get; }
-    DbSet<TeacherAttendance> TeacherAttendances { get; }
+    DbSet<StaffAttendance> StaffAttendances { get; }
     
     // Holiday Management
     DbSet<Holiday> Holidays { get; }

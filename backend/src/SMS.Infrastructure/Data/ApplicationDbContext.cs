@@ -23,9 +23,12 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<Section> Sections => Set<Section>();
     public DbSet<AcademicYear> AcademicYears => Set<AcademicYear>();
     public DbSet<Enrollment> Enrollments => Set<Enrollment>();    
-    // Phase 3: Teacher Management
-    public DbSet<Teacher> Teachers => Set<Teacher>();
-    public DbSet<TeacherAssignment> TeacherAssignments => Set<TeacherAssignment>();
+    // Phase 3: Staff Management
+    public DbSet<UserProfile> UserProfiles => Set<UserProfile>();
+    public DbSet<Staff> Staff => Set<Staff>();
+    public DbSet<Department> Departments => Set<Department>();
+    public DbSet<EducationalQualification> EducationalQualifications => Set<EducationalQualification>();
+    public DbSet<StaffAssignment> StaffAssignments => Set<StaffAssignment>();
     public DbSet<Subject> Subjects => Set<Subject>();
     
     // Phase 3: Fee Management
@@ -36,7 +39,7 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     
     // Phase 3: Attendance Management
     public DbSet<StudentAttendance> StudentAttendances => Set<StudentAttendance>();
-    public DbSet<TeacherAttendance> TeacherAttendances => Set<TeacherAttendance>();
+    public DbSet<StaffAttendance> StaffAttendances => Set<StaffAttendance>();
     
     // Holiday Management
     public DbSet<Holiday> Holidays => Set<Holiday>();

@@ -411,7 +411,7 @@ export default function SalaryPaymentPage() {
                         className="w-4 h-4 text-blue-600 rounded"
                       />
                     </th>
-                    <th className="px-4 py-4 text-left text-sm font-bold text-gray-700">Teacher</th>
+                    <th className="px-4 py-4 text-left text-sm font-bold text-gray-700">Staff</th>
                     <th className="px-4 py-4 text-left text-sm font-bold text-gray-700">Period</th>
                     <th className="px-4 py-4 text-right text-sm font-bold text-gray-700">Base Salary</th>
                     <th className="px-4 py-4 text-right text-sm font-bold text-gray-700">Deductions</th>
@@ -434,8 +434,8 @@ export default function SalaryPaymentPage() {
                       </td>
                       <td className="px-4 py-3">
                         <div>
-                          <p className="font-medium text-gray-900">{payment.teacherName}</p>
-                          <p className="text-sm text-gray-500">ID: {payment.teacherId.substring(0, 8)}</p>
+                          <p className="font-medium text-gray-900">{payment.staffName}</p>
+                          <p className="text-sm text-gray-500">ID: {payment.staffId.substring(0, 8)}</p>
                         </div>
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-600">
@@ -676,7 +676,7 @@ export default function SalaryPaymentPage() {
             <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-md">
               <div className="flex items-center justify-between mb-6">
                 <h3 className="text-xl font-bold bg-gradient-to-r from-purple-600 to-purple-800 bg-clip-text text-transparent">
-                  Edit Payment - {currentPayment.teacherName}
+                  Edit Payment - {currentPayment.staffName}
                 </h3>
                 <button
                   onClick={() => {

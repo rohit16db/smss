@@ -8,7 +8,7 @@ namespace SMS.Application.Features.Salary.Commands;
 /// </summary>
 public class CreateSalaryPaymentCommand : IRequest<SalaryPaymentDto>
 {
-    public Guid TeacherId { get; set; }
+    public Guid StaffId { get; set; }
     public DateOnly PeriodStartDate { get; set; }
     public DateOnly PeriodEndDate { get; set; }
     public decimal BaseSalary { get; set; }
@@ -43,15 +43,15 @@ public class MarkSalaryAsPaidCommand : IRequest<SalaryPaymentDto>
 }
 
 /// <summary>
-/// Bulk create salary payments for all active teachers
+/// Bulk create salary payments for all active staff
 /// </summary>
 public class CreateBulkSalaryPaymentsCommand : IRequest<SalaryPaymentReportDto>
 {
     public DateOnly PeriodStartDate { get; set; }
     public DateOnly PeriodEndDate { get; set; }
-    public Dictionary<Guid, decimal> BaseSalariesByTeacherId { get; set; } = new();
-    public Dictionary<Guid, decimal> DeductionsByTeacherId { get; set; } = new();
-    public Dictionary<Guid, decimal> BonusesByTeacherId { get; set; } = new();
+    public Dictionary<Guid, decimal> BaseSalariesByStaffId { get; set; } = new();
+    public Dictionary<Guid, decimal> DeductionsByStaffId { get; set; } = new();
+    public Dictionary<Guid, decimal> BonusesByStaffId { get; set; } = new();
 }
 
 /// <summary>

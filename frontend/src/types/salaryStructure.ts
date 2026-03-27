@@ -40,11 +40,11 @@ export interface UpdateSalaryStructureDto extends CreateSalaryStructureDto {
   id: string;
 }
 
-export interface TeacherSalaryAssignmentDto {
-  teacherId: string;
-  teacherName: string;
-  teacherEmail: string;
-  teacherImagePath?: string;
+export interface StaffSalaryAssignmentDto {
+  staffId: string;
+  staffName: string;
+  staffEmail: string;
+  staffImagePath?: string;
   salaryStructureId: string;
   salaryStructureName: string;
   grossSalary: number;
@@ -53,7 +53,7 @@ export interface TeacherSalaryAssignmentDto {
 }
 
 export interface AssignSalaryStructureDto {
-  teacherId: string;
+  staffId: string;
   salaryStructureId: string;
   effectiveDate: string;
 }

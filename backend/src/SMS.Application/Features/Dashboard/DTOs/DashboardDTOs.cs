@@ -32,8 +32,8 @@ public class FinancialSummaryDto
 public class AttendanceSummaryDto
 {
     public decimal AverageStudentAttendance { get; set; }
-    public decimal AverageTeacherAttendance { get; set; }
-    public int TotalTeachers { get; set; }
+    public decimal AverageStaffAttendance { get; set; }
+    public int TotalStaff { get; set; }
     public int TotalStudents { get; set; }
     public int PresentStudentsTodayCount { get; set; }
     public int AbsentStudentsTodayCount { get; set; }
@@ -45,10 +45,10 @@ public class AttendanceSummaryDto
 public class AcademicSummaryDto
 {
     public int TotalStudents { get; set; }
-    public int TotalTeachers { get; set; }
+    public int TotalStaff { get; set; }
     public int TotalClasses { get; set; }
     public int ActiveStudents { get; set; }
-    public int ActiveTeachers { get; set; }
+    public int ActiveStaff { get; set; }
 }
 
 /// <summary>
@@ -81,7 +81,7 @@ public class AttendanceTrendDto
 {
     public DateTime Date { get; set; }
     public decimal StudentAttendancePercentage { get; set; }
-    public decimal TeacherAttendancePercentage { get; set; }
+    public decimal StaffAttendancePercentage { get; set; }
 }
 
 /// <summary>

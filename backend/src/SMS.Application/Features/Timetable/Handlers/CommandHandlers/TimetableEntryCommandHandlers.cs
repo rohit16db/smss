@@ -2,6 +2,7 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using SMS.Application.Common.Interfaces;
 using SMS.Domain.Entities;
+using SMS.Domain.Enums;
 using SMS.Application.Features.Timetable.Commands;
 
 namespace SMS.Application.Features.Timetable.Handlers.CommandHandlers;
@@ -20,16 +21,25 @@ public class TimetableEntryCommandHandlers :
 
     public async Task<Guid> Handle(CreateTimetableEntryCommand request, CancellationToken cancellationToken)
     {
+        var staff = await _context.Staff
+            .FirstOrDefaultAsync(s => s.Id == request.Entry.StaffId, cancellationToken);
+        
+        if (staff == null)
+            throw new KeyNotFoundException($"Staff with ID {request.Entry.StaffId} not found");
+        
+        if (staff.RoleType != UserRole.Teacher)
+            throw new InvalidOperationException("Only staff with the 'Teacher' role can be assigned to academic timetable entries.");
+
         // Check for conflicts
         await CheckForConflicts(request.Entry.AcademicYearId, request.Entry.TimeSlotId, 
-            request.Entry.TeacherId, request.Entry.SectionId, null, cancellationToken);
+            request.Entry.StaffId, request.Entry.SectionId, null, cancellationToken);
 
         var entity = new TimetableEntry
         {
             TimeSlotId = request.Entry.TimeSlotId,
             SectionId = request.Entry.SectionId,
             SubjectId = request.Entry.SubjectId,
-            TeacherId = request.Entry.TeacherId,
+            StaffId = request.Entry.StaffId,
             RoomNumber = request.Entry.RoomNumber,
             AcademicYearId = request.Entry.AcademicYearId
         };
@@ -47,14 +57,24 @@ public class TimetableEntryCommandHandlers :
 
         if (entity == null) return false;
 
+        // Validate staff member exists and is a teacher
+        var staff = await _context.Staff
+            .FirstOrDefaultAsync(s => s.Id == request.Entry.StaffId, cancellationToken);
+        
+        if (staff == null)
+            throw new KeyNotFoundException($"Staff with ID {request.Entry.StaffId} not found");
+        
+        if (staff.RoleType != UserRole.Teacher)
+            throw new InvalidOperationException("Only staff with the 'Teacher' role can be assigned to academic timetable entries.");
+
         // Check for conflicts
         await CheckForConflicts(request.Entry.AcademicYearId, request.Entry.TimeSlotId, 
-            request.Entry.TeacherId, request.Entry.SectionId, request.Id, cancellationToken);
+            request.Entry.StaffId, request.Entry.SectionId, request.Id, cancellationToken);
 
         entity.TimeSlotId = request.Entry.TimeSlotId;
         entity.SectionId = request.Entry.SectionId;
         entity.SubjectId = request.Entry.SubjectId;
-        entity.TeacherId = request.Entry.TeacherId;
+        entity.StaffId = request.Entry.StaffId;
         entity.RoomNumber = request.Entry.RoomNumber;
         entity.AcademicYearId = request.Entry.AcademicYearId;
 
@@ -74,18 +94,18 @@ public class TimetableEntryCommandHandlers :
         return true;
     }
 
-    private async Task CheckForConflicts(Guid academicYearId, Guid timeSlotId, Guid teacherId, Guid sectionId, Guid? currentEntryId, CancellationToken cancellationToken)
+    private async Task CheckForConflicts(Guid academicYearId, Guid timeSlotId, Guid staffId, Guid sectionId, Guid? currentEntryId, CancellationToken cancellationToken)
     {
-        // 1. Teacher Conflict: Is this teacher already assigned to another class at the same time slot?
-        var teacherConflict = await _context.TimetableEntries
+        // 1. Staff Conflict: Is this staff member already assigned to another class at the same time slot?
+        var staffConflict = await _context.TimetableEntries
             .AnyAsync(t => t.AcademicYearId == academicYearId && 
                           t.TimeSlotId == timeSlotId && 
-                          t.TeacherId == teacherId && 
+                          t.StaffId == staffId && 
                           t.Id != currentEntryId, cancellationToken);
 
-        if (teacherConflict)
+        if (staffConflict)
         {
-            throw new InvalidOperationException("Teacher is already assigned to another section during this time slot.");
+            throw new InvalidOperationException("Staff member is already assigned to another section during this time slot.");
         }
 
         // 2. Section Conflict: Does this section already have a subject assigned at this time slot?

@@ -18,13 +18,16 @@ public class CreateSalaryPaymentCommandHandler : IRequestHandler<CreateSalaryPay
 
     public async Task<SalaryPaymentDto> Handle(CreateSalaryPaymentCommand request, CancellationToken cancellationToken)
     {
-        var teacher = await _context.Teachers.FindAsync(new object[] { request.TeacherId }, cancellationToken);
-        if (teacher == null)
-            throw new InvalidOperationException($"Teacher with ID {request.TeacherId} not found");
+        var staff = await _context.Staff
+            .Include(s => s.UserProfile)
+            .FirstOrDefaultAsync(s => s.Id == request.StaffId, cancellationToken);
+            
+        if (staff == null)
+            throw new InvalidOperationException($"Staff with ID {request.StaffId} not found");
 
         // Parse payment method enum
-        PaymentMethod? paymentMethod = null;
-        if (!string.IsNullOrEmpty(request.PaymentMethod) && Enum.TryParse<PaymentMethod>(request.PaymentMethod, out var pm))
+        SalaryPaymentMethod? paymentMethod = null;
+        if (!string.IsNullOrEmpty(request.PaymentMethod) && Enum.TryParse<SalaryPaymentMethod>(request.PaymentMethod, out var pm))
             paymentMethod = pm;
 
         var netSalary = request.BaseSalary - request.Deductions + request.Bonus;
@@ -32,7 +35,7 @@ public class CreateSalaryPaymentCommandHandler : IRequestHandler<CreateSalaryPay
         var salary = new SalaryPayment
         {
             Id = Guid.NewGuid(),
-            TeacherId = request.TeacherId,
+            StaffId = request.StaffId,
             PeriodStartDate = request.PeriodStartDate,
             PeriodEndDate = request.PeriodEndDate,
             BaseSalary = request.BaseSalary,
@@ -49,16 +52,16 @@ public class CreateSalaryPaymentCommandHandler : IRequestHandler<CreateSalaryPay
         _context.SalaryPayments.Add(salary);
         await _context.SaveChangesAsync(cancellationToken);
 
-        return MapToDto(salary, teacher);
+        return MapToDto(salary, staff);
     }
 
-    private SalaryPaymentDto MapToDto(SalaryPayment salary, Teacher teacher)
+    private SalaryPaymentDto MapToDto(SalaryPayment salary, Staff staff)
     {
         return new SalaryPaymentDto
         {
             Id = salary.Id,
-            TeacherId = salary.TeacherId,
-            TeacherName = $"{teacher.FirstName} {teacher.LastName}",
+            StaffId = salary.StaffId,
+            StaffName = staff.FullName,
             PeriodStartDate = salary.PeriodStartDate,
             PeriodEndDate = salary.PeriodEndDate,
             BaseSalary = salary.BaseSalary,
@@ -87,7 +90,8 @@ public class UpdateSalaryPaymentStatusCommandHandler : IRequestHandler<UpdateSal
     public async Task<SalaryPaymentDto> Handle(UpdateSalaryPaymentStatusCommand request, CancellationToken cancellationToken)
     {
         var salary = await _context.SalaryPayments
-            .Include(s => s.Teacher)
+            .Include(s => s.Staff)
+                .ThenInclude(st => st.UserProfile)
             .FirstOrDefaultAsync(s => s.Id == request.SalaryPaymentId, cancellationToken);
 
         if (salary == null)
@@ -118,8 +122,8 @@ public class UpdateSalaryPaymentStatusCommandHandler : IRequestHandler<UpdateSal
         return new SalaryPaymentDto
         {
             Id = salary.Id,
-            TeacherId = salary.TeacherId,
-            TeacherName = $"{salary.Teacher.FirstName} {salary.Teacher.LastName}",
+            StaffId = salary.StaffId,
+            StaffName = salary.Staff?.FullName,
             PeriodStartDate = salary.PeriodStartDate,
             PeriodEndDate = salary.PeriodEndDate,
             BaseSalary = salary.BaseSalary,
@@ -148,7 +152,8 @@ public class MarkSalaryAsPaidCommandHandler : IRequestHandler<MarkSalaryAsPaidCo
     public async Task<SalaryPaymentDto> Handle(MarkSalaryAsPaidCommand request, CancellationToken cancellationToken)
     {
         var salary = await _context.SalaryPayments
-            .Include(s => s.Teacher)
+            .Include(s => s.Staff)
+                .ThenInclude(st => st.UserProfile)
             .FirstOrDefaultAsync(s => s.Id == request.SalaryPaymentId, cancellationToken);
 
         if (salary == null)
@@ -157,7 +162,7 @@ public class MarkSalaryAsPaidCommandHandler : IRequestHandler<MarkSalaryAsPaidCo
         salary.Status = SalaryPaymentStatus.Paid;
         salary.PaidDate = request.PaidDate;
 
-        if (!string.IsNullOrEmpty(request.PaymentMethod) && Enum.TryParse<PaymentMethod>(request.PaymentMethod, out var pm))
+        if (!string.IsNullOrEmpty(request.PaymentMethod) && Enum.TryParse<SalaryPaymentMethod>(request.PaymentMethod, out var pm))
             salary.PaymentMethod = pm;
 
         if (!string.IsNullOrEmpty(request.ReferenceNumber))
@@ -176,8 +181,8 @@ public class MarkSalaryAsPaidCommandHandler : IRequestHandler<MarkSalaryAsPaidCo
         return new SalaryPaymentDto
         {
             Id = salary.Id,
-            TeacherId = salary.TeacherId,
-            TeacherName = $"{salary.Teacher.FirstName} {salary.Teacher.LastName}",
+            StaffId = salary.StaffId,
+            StaffName = salary.Staff?.FullName,
             PeriodStartDate = salary.PeriodStartDate,
             PeriodEndDate = salary.PeriodEndDate,
             BaseSalary = salary.BaseSalary,
@@ -205,20 +210,23 @@ public class CreateBulkSalaryPaymentsCommandHandler : IRequestHandler<CreateBulk
 
     public async Task<SalaryPaymentReportDto> Handle(CreateBulkSalaryPaymentsCommand request, CancellationToken cancellationToken)
     {
-        var teachers = await _context.Teachers.Where(t => t.IsActive).ToListAsync(cancellationToken);
+        var staffList = await _context.Staff
+            .Include(s => s.UserProfile)
+            .Where(s => s.IsActive)
+            .ToListAsync(cancellationToken);
 
         var salaryPayments = new List<SalaryPayment>();
-        foreach (var teacher in teachers)
+        foreach (var staff in staffList)
         {
-            var baseSalary = request.BaseSalariesByTeacherId.TryGetValue(teacher.Id, out var bs) ? bs : 50000m;
-            var deductions = request.DeductionsByTeacherId.TryGetValue(teacher.Id, out var d) ? d : 0m;
-            var bonus = request.BonusesByTeacherId.TryGetValue(teacher.Id, out var b) ? b : 0m;
+            var baseSalary = request.BaseSalariesByStaffId.TryGetValue(staff.Id, out var bs) ? bs : 50000m;
+            var deductions = request.DeductionsByStaffId.TryGetValue(staff.Id, out var d) ? d : 0m;
+            var bonus = request.BonusesByStaffId.TryGetValue(staff.Id, out var b) ? b : 0m;
             var netSalary = baseSalary - deductions + bonus;
 
             var salary = new SalaryPayment
             {
                 Id = Guid.NewGuid(),
-                TeacherId = teacher.Id,
+                StaffId = staff.Id,
                 PeriodStartDate = request.PeriodStartDate,
                 PeriodEndDate = request.PeriodEndDate,
                 BaseSalary = baseSalary,
@@ -239,9 +247,9 @@ public class CreateBulkSalaryPaymentsCommandHandler : IRequestHandler<CreateBulk
         {
             MonthStart = request.PeriodStartDate,
             MonthEnd = request.PeriodEndDate,
-            TotalTeachers = teachers.Count,
-            PaidTeachers = 0,
-            PendingTeachers = teachers.Count,
+            TotalStaff = staffList.Count,
+            PaidStaff = 0,
+            PendingStaff = staffList.Count,
             TotalBaseSalary = Math.Round(salaryPayments.Sum(s => s.BaseSalary), 2),
             TotalDeductions = Math.Round(salaryPayments.Sum(s => s.Deductions), 2),
             TotalBonus = Math.Round(salaryPayments.Sum(s => s.Bonus), 2),
@@ -249,8 +257,8 @@ public class CreateBulkSalaryPaymentsCommandHandler : IRequestHandler<CreateBulk
             PaymentDetails = salaryPayments.Select((s, i) => new SalaryPaymentDto
             {
                 Id = s.Id,
-                TeacherId = s.TeacherId,
-                TeacherName = $"{teachers[i].FirstName} {teachers[i].LastName}",
+                StaffId = s.StaffId,
+                StaffName = staffList[i].FullName,
                 PeriodStartDate = s.PeriodStartDate,
                 PeriodEndDate = s.PeriodEndDate,
                 BaseSalary = s.BaseSalary,
@@ -304,7 +312,8 @@ public class UpdateSalaryPaymentCommandHandler : IRequestHandler<UpdateSalaryPay
     public async Task<SalaryPaymentDto> Handle(UpdateSalaryPaymentCommand request, CancellationToken cancellationToken)
     {
         var salary = await _context.SalaryPayments
-            .Include(s => s.Teacher)
+            .Include(s => s.Staff)
+                .ThenInclude(st => st.UserProfile)
             .FirstOrDefaultAsync(s => s.Id == request.SalaryPaymentId, cancellationToken);
 
         if (salary == null)
@@ -345,8 +354,8 @@ public class UpdateSalaryPaymentCommandHandler : IRequestHandler<UpdateSalaryPay
         return new SalaryPaymentDto
         {
             Id = salary.Id,
-            TeacherId = salary.TeacherId,
-            TeacherName = salary.Teacher?.FullName ?? $"{salary.Teacher?.FirstName} {salary.Teacher?.LastName}",
+            StaffId = salary.StaffId,
+            StaffName = salary.Staff?.FullName,
             PeriodStartDate = salary.PeriodStartDate,
             PeriodEndDate = salary.PeriodEndDate,
             BaseSalary = salary.BaseSalary,

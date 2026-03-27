@@ -88,16 +88,16 @@ public class DeleteStudentAttendanceCommandValidator : AbstractValidator<DeleteS
 }
 
 /// <summary>
-/// Validator for RecordTeacherAttendanceCommand
+/// Validator for RecordStaffAttendanceCommand
 /// </summary>
-public class RecordTeacherAttendanceCommandValidator : AbstractValidator<RecordTeacherAttendanceCommand>
+public class RecordStaffAttendanceCommandValidator : AbstractValidator<RecordStaffAttendanceCommand>
 {
-    public RecordTeacherAttendanceCommandValidator()
+    public RecordStaffAttendanceCommandValidator()
     {
-        RuleFor(x => x.TeacherId)
+        RuleFor(x => x.StaffId)
             .NotEmpty()
             .Must(BeValidGuid)
-            .WithMessage("Teacher ID must be a valid GUID");
+            .WithMessage("Staff ID must be a valid GUID");
 
         RuleFor(x => x.AttendanceDate)
             .NotEmpty()
@@ -123,11 +123,11 @@ public class RecordTeacherAttendanceCommandValidator : AbstractValidator<RecordT
 }
 
 /// <summary>
-/// Validator for UpdateTeacherAttendanceCommand
+/// Validator for UpdateStaffAttendanceCommand
 /// </summary>
-public class UpdateTeacherAttendanceCommandValidator : AbstractValidator<UpdateTeacherAttendanceCommand>
+public class UpdateStaffAttendanceCommandValidator : AbstractValidator<UpdateStaffAttendanceCommand>
 {
-    public UpdateTeacherAttendanceCommandValidator()
+    public UpdateStaffAttendanceCommandValidator()
     {
         RuleFor(x => x.Id)
             .NotEmpty()
@@ -153,11 +153,11 @@ public class UpdateTeacherAttendanceCommandValidator : AbstractValidator<UpdateT
 }
 
 /// <summary>
-/// Validator for DeleteTeacherAttendanceCommand
+/// Validator for DeleteStaffAttendanceCommand
 /// </summary>
-public class DeleteTeacherAttendanceCommandValidator : AbstractValidator<DeleteTeacherAttendanceCommand>
+public class DeleteStaffAttendanceCommandValidator : AbstractValidator<DeleteStaffAttendanceCommand>
 {
-    public DeleteTeacherAttendanceCommandValidator()
+    public DeleteStaffAttendanceCommandValidator()
     {
         RuleFor(x => x.Id)
             .NotEmpty()

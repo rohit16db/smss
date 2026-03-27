@@ -1,16 +1,16 @@
-export interface TeacherAttendancePayrollDto {
+export interface StaffAttendancePayrollDto {
   id: string;
-  teacherId: string;
-  teacherName: string;
+  staffId: string;
+  staffName: string;
   attendanceDate: string;
   status: 'Present' | 'Absent' | 'Leave';
   createdAt: string;
 }
 
-export interface TeacherPayrollReportDto {
-  teacherId: string;
-  teacherName: string;
-  teacherImagePath?: string;
+export interface StaffPayrollReportDto {
+  staffId: string;
+  staffName: string;
+  staffImagePath?: string;
   baseSalary: number;
   periodStartDate: string;
   periodEndDate: string;
@@ -28,8 +28,8 @@ export interface TeacherPayrollReportDto {
 }
 
 export interface BonusEligibilityDto {
-  teacherId: string;
-  teacherName: string;
+  staffId: string;
+  staffName: string;
   attendancePercentage: number;
   bonusPercentage: number;
   bonusAmount: number;
@@ -37,9 +37,9 @@ export interface BonusEligibilityDto {
   reason: string;
 }
 
-export interface TeacherAttendanceSummaryDto {
-  teacherId: string;
-  teacherName: string;
+export interface StaffAttendanceSummaryDto {
+  staffId: string;
+  staffName: string;
   totalDays: number;
   presentDays: number;
   absentDays: number;
@@ -51,8 +51,8 @@ export interface PayrollPeriodReportDto {
   generatedAt: string;
   periodStartDate: string;
   periodEndDate: string;
-  teacherPayrolls: TeacherPayrollReportDto[];
+  staffPayrolls: StaffPayrollReportDto[];
   totalPayrollAmount: number;
   totalBonusAmount: number;
-  eligibleTeachers: number;
+  eligibleStaffs: number;
 }

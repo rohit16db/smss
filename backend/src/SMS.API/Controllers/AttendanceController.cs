@@ -278,24 +278,24 @@ public class AttendanceController : ControllerBase
 
     #endregion
 
-    #region Teacher Attendance Endpoints
+    #region Staff Attendance Endpoints
 
     /// <summary>
-    /// Record teacher attendance
+    /// Record staff attendance
     /// </summary>
-    /// <param name="dto">Teacher attendance data</param>
+    /// <param name="dto">Staff attendance data</param>
     /// <returns>Created attendance record</returns>
-    [HttpPost("teachers")]
-    [ProducesResponseType(typeof(TeacherAttendanceDto), StatusCodes.Status201Created)]
+    [HttpPost("staff")]
+    [ProducesResponseType(typeof(StaffAttendanceDto), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
-    public async Task<IActionResult> RecordTeacherAttendance([FromBody] RecordTeacherAttendanceDto dto)
+    public async Task<IActionResult> RecordStaffAttendance([FromBody] RecordStaffAttendanceDto dto)
     {
         try
         {
-            var command = new RecordTeacherAttendanceCommand
+            var command = new RecordStaffAttendanceCommand
             {
-                TeacherId = dto.TeacherId,
+                StaffId = dto.StaffId,
                 AttendanceDate = dto.AttendanceDate,
                 Status = dto.Status,
                 Reason = dto.Reason,
@@ -303,11 +303,11 @@ public class AttendanceController : ControllerBase
             };
 
             var result = await _mediator.Send(command);
-            return CreatedAtAction(nameof(GetTeacherAttendanceById), new { id = result.Id }, result);
+            return CreatedAtAction(nameof(GetStaffAttendanceById), new { id = result.Id }, result);
         }
         catch (InvalidOperationException ex)
         {
-            _logger.LogWarning(ex, "Invalid teacher attendance request");
+            _logger.LogWarning(ex, "Invalid staff attendance request");
             // Check if it's a duplicate attendance error
             if (ex.Message.Contains("already marked", StringComparison.OrdinalIgnoreCase))
             {
@@ -317,74 +317,74 @@ public class AttendanceController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error recording teacher attendance");
-            return StatusCode(StatusCodes.Status500InternalServerError, "Error recording teacher attendance");
+            _logger.LogError(ex, "Error recording staff attendance");
+            return StatusCode(StatusCodes.Status500InternalServerError, "Error recording staff attendance");
         }
     }
 
     /// <summary>
-    /// Get teacher attendance by ID
+    /// Get staff attendance by ID
     /// </summary>
     /// <param name="id">Attendance ID (GUID)</param>
-    /// <returns>Teacher attendance details</returns>
-    [HttpGet("teachers/{id}")]
-    [ProducesResponseType(typeof(TeacherAttendanceDto), StatusCodes.Status200OK)]
+    /// <returns>Staff attendance details</returns>
+    [HttpGet("staff/{id}")]
+    [ProducesResponseType(typeof(StaffAttendanceDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> GetTeacherAttendanceById(string id)
+    public async Task<IActionResult> GetStaffAttendanceById(string id)
     {
         try
         {
-            var query = new GetTeacherAttendanceByIdQuery { Id = id };
+            var query = new GetStaffAttendanceByIdQuery { Id = id };
             var result = await _mediator.Send(query);
 
             if (result == null)
-                return NotFound($"Teacher attendance with ID {id} not found");
+                return NotFound($"Staff attendance with ID {id} not found");
 
             return Ok(result);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error retrieving teacher attendance with ID {Id}", id);
-            return StatusCode(StatusCodes.Status500InternalServerError, "Error retrieving teacher attendance");
+            _logger.LogError(ex, "Error retrieving staff attendance with ID {Id}", id);
+            return StatusCode(StatusCodes.Status500InternalServerError, "Error retrieving staff attendance");
         }
     }
 
     /// <summary>
-    /// Get teacher attendance by date
+    /// Get staff attendance by date
     /// </summary>
     /// <param name="date">Attendance date</param>
-    /// <returns>List of teacher attendance records</returns>
-    [HttpGet("teachers/by-date")]
-    [ProducesResponseType(typeof(List<TeacherAttendanceDto>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetTeacherAttendanceByDate([FromQuery] DateTime date)
+    /// <returns>List of staff attendance records</returns>
+    [HttpGet("staff/by-date")]
+    [ProducesResponseType(typeof(List<StaffAttendanceDto>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetStaffAttendanceByDate([FromQuery] DateTime date)
     {
         try
         {
-            var query = new GetTeacherAttendanceByDateQuery { AttendanceDate = date };
+            var query = new GetStaffAttendanceByDateQuery { AttendanceDate = date };
             var result = await _mediator.Send(query);
             return Ok(result);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error retrieving teacher attendance for date {Date}", date);
-            return StatusCode(StatusCodes.Status500InternalServerError, "Error retrieving teacher attendance");
+            _logger.LogError(ex, "Error retrieving staff attendance for date {Date}", date);
+            return StatusCode(StatusCodes.Status500InternalServerError, "Error retrieving staff attendance");
         }
     }
 
     /// <summary>
-    /// Get teacher attendance history with pagination and filtering
+    /// Get staff attendance history with pagination and filtering
     /// </summary>
-    /// <param name="teacherId">Filter by teacher ID</param>
+    /// <param name="staffId">Filter by staff ID</param>
     /// <param name="startDate">Filter by start date</param>
     /// <param name="endDate">Filter by end date</param>
     /// <param name="status">Filter by status</param>
     /// <param name="pageNumber">Page number (default: 1)</param>
     /// <param name="pageSize">Page size (default: 10)</param>
-    /// <returns>Paginated list of teacher attendance records</returns>
-    [HttpGet("teachers/history")]
-    [ProducesResponseType(typeof(PaginatedTeacherAttendanceListDto), StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetTeacherAttendanceHistory(
-        [FromQuery] string? teacherId = null,
+    /// <returns>Paginated list of staff attendance records</returns>
+    [HttpGet("staff/history")]
+    [ProducesResponseType(typeof(PaginatedStaffAttendanceListDto), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetStaffAttendanceHistory(
+        [FromQuery] string? staffId = null,
         [FromQuery] DateTime? startDate = null,
         [FromQuery] DateTime? endDate = null,
         [FromQuery] string? status = null,
@@ -393,9 +393,9 @@ public class AttendanceController : ControllerBase
     {
         try
         {
-            var query = new GetTeacherAttendanceHistoryQuery
+            var query = new GetStaffAttendanceHistoryQuery
             {
-                TeacherId = teacherId,
+                StaffId = staffId,
                 StartDate = startDate,
                 EndDate = endDate,
                 Status = status,
@@ -408,30 +408,30 @@ public class AttendanceController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error retrieving teacher attendance history");
-            return StatusCode(StatusCodes.Status500InternalServerError, "Error retrieving teacher attendance history");
+            _logger.LogError(ex, "Error retrieving staff attendance history");
+            return StatusCode(StatusCodes.Status500InternalServerError, "Error retrieving staff attendance history");
         }
     }
 
     /// <summary>
-    /// Get teacher attendance summary statistics
+    /// Get staff attendance summary statistics
     /// </summary>
-    /// <param name="teacherId">Teacher ID (GUID)</param>
+    /// <param name="staffId">Staff ID (GUID)</param>
     /// <param name="startDate">Start date for summary</param>
     /// <param name="endDate">End date for summary</param>
     /// <returns>Attendance summary</returns>
-    [HttpGet("teachers/{teacherId}/summary")]
+    [HttpGet("staff/{staffId}/summary")]
     [ProducesResponseType(typeof(AttendanceStatisticsDto), StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetTeacherAttendanceSummary(
-        string teacherId,
+    public async Task<IActionResult> GetStaffAttendanceSummary(
+        string staffId,
         [FromQuery] DateTime? startDate = null,
         [FromQuery] DateTime? endDate = null)
     {
         try
         {
-            var query = new GetTeacherAttendanceSummaryQuery
+            var query = new GetStaffAttendanceSummaryQuery
             {
-                TeacherId = teacherId,
+                StaffId = staffId,
                 StartDate = startDate,
                 EndDate = endDate
             };
@@ -441,34 +441,34 @@ public class AttendanceController : ControllerBase
         }
         catch (InvalidOperationException ex)
         {
-            _logger.LogWarning(ex, "Invalid teacher ID: {TeacherId}", teacherId);
+            _logger.LogWarning(ex, "Invalid staff ID: {StaffId}", staffId);
             return BadRequest(ex.Message);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error retrieving teacher attendance summary for {TeacherId}", teacherId);
-            return StatusCode(StatusCodes.Status500InternalServerError, "Error retrieving teacher attendance summary");
+            _logger.LogError(ex, "Error retrieving staff attendance summary for {StaffId}", staffId);
+            return StatusCode(StatusCodes.Status500InternalServerError, "Error retrieving staff attendance summary");
         }
     }
 
     /// <summary>
-    /// Update teacher attendance record
+    /// Update staff attendance record
     /// </summary>
     /// <param name="id">Attendance ID</param>
     /// <param name="dto">Updated attendance data</param>
     /// <returns>Updated attendance record</returns>
-    [HttpPut("teachers/{id}")]
-    [ProducesResponseType(typeof(TeacherAttendanceDto), StatusCodes.Status200OK)]
+    [HttpPut("staff/{id}")]
+    [ProducesResponseType(typeof(StaffAttendanceDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> UpdateTeacherAttendance(string id, [FromBody] UpdateTeacherAttendanceDto dto)
+    public async Task<IActionResult> UpdateStaffAttendance(string id, [FromBody] UpdateStaffAttendanceDto dto)
     {
         try
         {
             if (id != dto.Id)
                 return BadRequest("ID in URL does not match ID in request body");
 
-            var command = new UpdateTeacherAttendanceCommand
+            var command = new UpdateStaffAttendanceCommand
             {
                 Id = dto.Id,
                 Status = dto.Status,
@@ -481,41 +481,41 @@ public class AttendanceController : ControllerBase
         }
         catch (InvalidOperationException ex)
         {
-            _logger.LogWarning(ex, "Teacher attendance not found: {Id}", id);
+            _logger.LogWarning(ex, "Staff attendance not found: {Id}", id);
             return NotFound(ex.Message);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error updating teacher attendance with ID {Id}", id);
-            return StatusCode(StatusCodes.Status500InternalServerError, "Error updating teacher attendance");
+            _logger.LogError(ex, "Error updating staff attendance with ID {Id}", id);
+            return StatusCode(StatusCodes.Status500InternalServerError, "Error updating staff attendance");
         }
     }
 
     /// <summary>
-    /// Delete teacher attendance record
+    /// Delete staff attendance record
     /// </summary>
     /// <param name="id">Attendance ID</param>
     /// <returns>No content on success</returns>
-    [HttpDelete("teachers/{id}")]
+    [HttpDelete("staff/{id}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> DeleteTeacherAttendance(string id)
+    public async Task<IActionResult> DeleteStaffAttendance(string id)
     {
         try
         {
-            var command = new DeleteTeacherAttendanceCommand { Id = id };
+            var command = new DeleteStaffAttendanceCommand { Id = id };
             await _mediator.Send(command);
             return NoContent();
         }
         catch (InvalidOperationException ex)
         {
-            _logger.LogWarning(ex, "Teacher attendance not found: {Id}", id);
+            _logger.LogWarning(ex, "Staff attendance not found: {Id}", id);
             return NotFound(ex.Message);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error deleting teacher attendance with ID {Id}", id);
-            return StatusCode(StatusCodes.Status500InternalServerError, "Error deleting teacher attendance");
+            _logger.LogError(ex, "Error deleting staff attendance with ID {Id}", id);
+            return StatusCode(StatusCodes.Status500InternalServerError, "Error deleting staff attendance");
         }
     }
 

@@ -19,7 +19,8 @@ public class GetSalaryPaymentQueryHandler : IRequestHandler<GetSalaryPaymentQuer
     public async Task<SalaryPaymentDto> Handle(GetSalaryPaymentQuery request, CancellationToken cancellationToken)
     {
         var salary = await _context.SalaryPayments
-            .Include(s => s.Teacher)
+            .Include(s => s.Staff)
+                .ThenInclude(s => s.UserProfile)
             .FirstOrDefaultAsync(s => s.Id == request.SalaryPaymentId, cancellationToken);
 
         if (salary == null)
@@ -33,8 +34,8 @@ public class GetSalaryPaymentQueryHandler : IRequestHandler<GetSalaryPaymentQuer
         return new SalaryPaymentDto
         {
             Id = salary.Id,
-            TeacherId = salary.TeacherId,
-            TeacherName = $"{salary.Teacher.FirstName} {salary.Teacher.LastName}",
+            StaffId = salary.StaffId,
+            StaffName = salary.Staff?.FullName ?? "Unknown",
             PeriodStartDate = salary.PeriodStartDate,
             PeriodEndDate = salary.PeriodEndDate,
             BaseSalary = salary.BaseSalary,
@@ -63,22 +64,23 @@ public class GetSalaryPaymentsByPeriodQueryHandler : IRequestHandler<GetSalaryPa
     public async Task<SalaryPaymentReportDto> Handle(GetSalaryPaymentsByPeriodQuery request, CancellationToken cancellationToken)
     {
         var salaries = await _context.SalaryPayments
-            .Include(s => s.Teacher)
+            .Include(s => s.Staff)
+                .ThenInclude(s => s.UserProfile)
             .Where(s => s.PeriodStartDate >= request.StartDate && s.PeriodEndDate <= request.EndDate)
             .OrderByDescending(s => s.PeriodStartDate)
             .ToListAsync(cancellationToken);
 
-        var totalTeachers = salaries.Select(s => s.TeacherId).Distinct().Count();
-        var paidTeachers = salaries.Count(s => s.Status == SalaryPaymentStatus.Paid);
-        var pendingTeachers = salaries.Count(s => s.Status == SalaryPaymentStatus.Pending || s.Status == SalaryPaymentStatus.Approved);
+        var totalStaff = salaries.Select(s => s.StaffId).Distinct().Count();
+        var paidStaff = salaries.Count(s => s.Status == SalaryPaymentStatus.Paid);
+        var pendingStaff = salaries.Count(s => s.Status == SalaryPaymentStatus.Pending || s.Status == SalaryPaymentStatus.Approved);
 
         return new SalaryPaymentReportDto
         {
             MonthStart = request.StartDate,
             MonthEnd = request.EndDate,
-            TotalTeachers = totalTeachers,
-            PaidTeachers = paidTeachers,
-            PendingTeachers = pendingTeachers,
+            TotalStaff = totalStaff,
+            PaidStaff = paidStaff,
+            PendingStaff = pendingStaff,
             TotalBaseSalary = Math.Round(salaries.Sum(s => s.BaseSalary), 2),
             TotalDeductions = Math.Round(salaries.Sum(s => s.Deductions), 2),
             TotalBonus = Math.Round(salaries.Sum(s => s.Bonus), 2),
@@ -92,8 +94,8 @@ public class GetSalaryPaymentsByPeriodQueryHandler : IRequestHandler<GetSalaryPa
         return new SalaryPaymentDto
         {
             Id = salary.Id,
-            TeacherId = salary.TeacherId,
-            TeacherName = $"{salary.Teacher.FirstName} {salary.Teacher.LastName}",
+            StaffId = salary.StaffId,
+            StaffName = salary.Staff?.FullName ?? "Unknown",
             PeriodStartDate = salary.PeriodStartDate,
             PeriodEndDate = salary.PeriodEndDate,
             BaseSalary = salary.BaseSalary,
@@ -110,23 +112,25 @@ public class GetSalaryPaymentsByPeriodQueryHandler : IRequestHandler<GetSalaryPa
     }
 }
 
-public class GetTeacherSalaryPaymentsQueryHandler : IRequestHandler<GetTeacherSalaryPaymentsQuery, SalaryHistoryDto>
+public class GetStaffSalaryPaymentsQueryHandler : IRequestHandler<GetStaffSalaryPaymentsQuery, SalaryHistoryDto>
 {
     private readonly IApplicationDbContext _context;
 
-    public GetTeacherSalaryPaymentsQueryHandler(IApplicationDbContext context)
+    public GetStaffSalaryPaymentsQueryHandler(IApplicationDbContext context)
     {
         _context = context;
     }
 
-    public async Task<SalaryHistoryDto> Handle(GetTeacherSalaryPaymentsQuery request, CancellationToken cancellationToken)
+    public async Task<SalaryHistoryDto> Handle(GetStaffSalaryPaymentsQuery request, CancellationToken cancellationToken)
     {
-        var teacher = await _context.Teachers.FindAsync(new object[] { request.TeacherId }, cancellationToken);
-        if (teacher == null)
-            throw new InvalidOperationException($"Teacher with ID {request.TeacherId} not found");
+        var staff = await _context.Staff
+            .Include(s => s.UserProfile)
+            .FirstOrDefaultAsync(s => s.Id == request.StaffId, cancellationToken);
+        if (staff == null)
+            throw new InvalidOperationException($"Staff with ID {request.StaffId} not found");
 
         var query = _context.SalaryPayments
-            .Where(s => s.TeacherId == request.TeacherId);
+            .Where(s => s.StaffId == request.StaffId);
 
         if (request.StartDate.HasValue)
             query = query.Where(s => s.PeriodStartDate >= request.StartDate.Value);
@@ -142,8 +146,8 @@ public class GetTeacherSalaryPaymentsQueryHandler : IRequestHandler<GetTeacherSa
 
         return new SalaryHistoryDto
         {
-            TeacherId = request.TeacherId,
-            TeacherName = $"{teacher.FirstName} {teacher.LastName}",
+            StaffId = request.StaffId,
+            StaffName = staff.FullName,
             PaymentHistory = paymentDetails,
             TotalSalaryPaid = Math.Round(salaries.Where(s => s.Status == SalaryPaymentStatus.Paid).Sum(s => s.NetSalary), 2),
             AverageMonthlySalary = salaries.Count > 0 ? Math.Round(salaries.Average(s => s.NetSalary), 2) : 0,
@@ -157,8 +161,8 @@ public class GetTeacherSalaryPaymentsQueryHandler : IRequestHandler<GetTeacherSa
         return new SalaryPaymentDto
         {
             Id = salary.Id,
-            TeacherId = salary.TeacherId,
-            TeacherName = $"{salary.Teacher?.FirstName} {salary.Teacher?.LastName}",
+            StaffId = salary.StaffId,
+            StaffName = salary.Staff?.FullName ?? "Unknown",
             PeriodStartDate = salary.PeriodStartDate,
             PeriodEndDate = salary.PeriodEndDate,
             BaseSalary = salary.BaseSalary,
@@ -187,7 +191,8 @@ public class GetPendingSalaryPaymentsQueryHandler : IRequestHandler<GetPendingSa
     public async Task<List<SalaryPaymentDto>> Handle(GetPendingSalaryPaymentsQuery request, CancellationToken cancellationToken)
     {
         var query = _context.SalaryPayments
-            .Include(s => s.Teacher)
+            .Include(s => s.Staff)
+                .ThenInclude(s => s.UserProfile)
             .Where(s => s.Status == SalaryPaymentStatus.Pending || s.Status == SalaryPaymentStatus.Approved);
 
         if (request.AsOfDate.HasValue)
@@ -205,8 +210,8 @@ public class GetPendingSalaryPaymentsQueryHandler : IRequestHandler<GetPendingSa
         return new SalaryPaymentDto
         {
             Id = salary.Id,
-            TeacherId = salary.TeacherId,
-            TeacherName = $"{salary.Teacher.FirstName} {salary.Teacher.LastName}",
+            StaffId = salary.StaffId,
+            StaffName = salary.Staff?.FullName ?? "Unknown",
             PeriodStartDate = salary.PeriodStartDate,
             PeriodEndDate = salary.PeriodEndDate,
             BaseSalary = salary.BaseSalary,
@@ -223,16 +228,16 @@ public class GetPendingSalaryPaymentsQueryHandler : IRequestHandler<GetPendingSa
     }
 }
 
-public class GetSalarySummaryQueryHandler : IRequestHandler<GetSalarySummaryQuery, SalarySummaryDto>
+public class GetStaffSalarySummaryQueryHandler : IRequestHandler<GetStaffSalarySummaryQuery, StaffSalarySummaryDto>
 {
     private readonly IApplicationDbContext _context;
 
-    public GetSalarySummaryQueryHandler(IApplicationDbContext context)
+    public GetStaffSalarySummaryQueryHandler(IApplicationDbContext context)
     {
         _context = context;
     }
 
-    public async Task<SalarySummaryDto> Handle(GetSalarySummaryQuery request, CancellationToken cancellationToken)
+    public async Task<StaffSalarySummaryDto> Handle(GetStaffSalarySummaryQuery request, CancellationToken cancellationToken)
     {
         var year = request.Year ?? DateTime.UtcNow.Year;
         var month = request.Month ?? DateTime.UtcNow.Month;
@@ -244,20 +249,20 @@ public class GetSalarySummaryQueryHandler : IRequestHandler<GetSalarySummaryQuer
             .Where(s => s.PeriodStartDate >= startDate && s.PeriodEndDate <= endDate)
             .ToListAsync(cancellationToken);
 
-        var totalTeachers = salaries.Select(s => s.TeacherId).Distinct().Count();
-        var paidTeachers = salaries.Count(s => s.Status == SalaryPaymentStatus.Paid);
-        var pendingTeachers = salaries.Count(s => s.Status == SalaryPaymentStatus.Pending || s.Status == SalaryPaymentStatus.Approved);
+        var totalStaff = salaries.Select(s => s.StaffId).Distinct().Count();
+        var paidStaff = salaries.Count(s => s.Status == SalaryPaymentStatus.Paid);
+        var pendingStaff = salaries.Count(s => s.Status == SalaryPaymentStatus.Pending || s.Status == SalaryPaymentStatus.Approved);
         var totalSalaryExpense = salaries.Sum(s => s.NetSalary);
 
-        return new SalarySummaryDto
+        return new StaffSalarySummaryDto
         {
             TotalSalaryExpense = Math.Round(totalSalaryExpense, 2),
             TotalPaid = Math.Round(salaries.Where(s => s.Status == SalaryPaymentStatus.Paid).Sum(s => s.NetSalary), 2),
             TotalPending = Math.Round(salaries.Where(s => s.Status != SalaryPaymentStatus.Paid && s.Status != SalaryPaymentStatus.Cancelled).Sum(s => s.NetSalary), 2),
-            TeacherCount = totalTeachers,
-            PaidCount = paidTeachers,
-            PendingCount = pendingTeachers,
-            AverageSalaryPerTeacher = totalTeachers > 0 ? Math.Round(totalSalaryExpense / totalTeachers, 2) : 0
+            StaffCount = totalStaff,
+            PaidCount = paidStaff,
+            PendingCount = pendingStaff,
+            AverageSalaryPerStaff = totalStaff > 0 ? Math.Round(totalSalaryExpense / totalStaff, 2) : 0
         };
     }
 }
@@ -274,15 +279,16 @@ public class GetAllSalaryPaymentsQueryHandler : IRequestHandler<GetAllSalaryPaym
     public async Task<List<SalaryPaymentDto>> Handle(GetAllSalaryPaymentsQuery request, CancellationToken cancellationToken)
     {
         var query = _context.SalaryPayments
-            .Include(sp => sp.Teacher)
+            .Include(sp => sp.Staff)
+                .ThenInclude(s => s.UserProfile)
             .AsQueryable();
 
         // Apply filters
         if (!string.IsNullOrWhiteSpace(request.Status) && Enum.TryParse<SalaryPaymentStatus>(request.Status, true, out var statusEnum))
             query = query.Where(sp => sp.Status == statusEnum);
 
-        if (request.TeacherId.HasValue)
-            query = query.Where(sp => sp.TeacherId == request.TeacherId.Value);
+        if (request.StaffId.HasValue)
+            query = query.Where(sp => sp.StaffId == request.StaffId.Value);
 
         if (request.PeriodStartDate.HasValue)
             query = query.Where(sp => sp.PeriodStartDate >= DateOnly.FromDateTime(request.PeriodStartDate.Value));
@@ -302,8 +308,8 @@ public class GetAllSalaryPaymentsQueryHandler : IRequestHandler<GetAllSalaryPaym
         return new SalaryPaymentDto
         {
             Id = payment.Id,
-            TeacherId = payment.TeacherId,
-            TeacherName = payment.Teacher?.FullName ?? $"{payment.Teacher?.FirstName} {payment.Teacher?.LastName}",
+            StaffId = payment.StaffId,
+            StaffName = payment.Staff?.FullName ?? "Unknown",
             PeriodStartDate = payment.PeriodStartDate,
             PeriodEndDate = payment.PeriodEndDate,
             BaseSalary = payment.BaseSalary,

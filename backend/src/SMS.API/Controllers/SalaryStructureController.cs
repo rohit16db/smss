@@ -9,7 +9,7 @@ namespace SMS.API.Controllers;
 
 /// <summary>
 /// Salary Structure Management API
-/// Handles salary structure definitions and teacher assignments
+/// Handles salary structure definitions and staff assignments
 /// </summary>
 [Authorize(Policy = "SalaryManageAccess")]
 [ApiController]
@@ -65,14 +65,14 @@ public class SalaryStructureController : ControllerBase
     }
 
     /// <summary>
-    /// Get salary structures applicable for a teacher
+    /// Get salary structures applicable for a staff member
     /// </summary>
-    [HttpGet("applicable/{teacherId}")]
-    public async Task<ActionResult<List<SalaryStructureDto>>> GetApplicableSalaryStructures(Guid teacherId)
+    [HttpGet("applicable/{staffId}")]
+    public async Task<ActionResult<List<SalaryStructureDto>>> GetApplicableSalaryStructures(Guid staffId)
     {
         try
         {
-            var query = new GetApplicableSalaryStructuresQuery { TeacherId = teacherId };
+            var query = new GetApplicableSalaryStructuresQuery { StaffId = staffId };
             var result = await _mediator.Send(query);
             return Ok(result);
         }
@@ -87,14 +87,14 @@ public class SalaryStructureController : ControllerBase
     }
 
     /// <summary>
-    /// Get current salary structure for a teacher
+    /// Get current salary structure for a staff member
     /// </summary>
-    [HttpGet("teacher/{teacherId}/current")]
-    public async Task<ActionResult<TeacherSalaryAssignmentDto>> GetTeacherCurrentSalaryStructure(Guid teacherId)
+    [HttpGet("Staff/{staffId}/current")]
+    public async Task<ActionResult<StaffSalaryAssignmentDto>> GetStaffCurrentSalaryStructure(Guid staffId)
     {
         try
         {
-            var query = new GetTeacherCurrentSalaryStructureQuery { TeacherId = teacherId };
+            var query = new GetStaffCurrentSalaryStructureQuery { StaffId = staffId };
             var result = await _mediator.Send(query);
             return Ok(result);
         }
@@ -109,15 +109,15 @@ public class SalaryStructureController : ControllerBase
     }
 
     /// <summary>
-    /// Get all teachers with their assigned salary structures
+    /// Get all staff members with their assigned salary structures
     /// </summary>
-    [HttpGet("teachers/assignments")]
-    public async Task<ActionResult<List<TeacherSalaryAssignmentDto>>> GetTeachersWithSalaryStructures(
+    [HttpGet("Staffs/assignments")]
+    public async Task<ActionResult<List<StaffSalaryAssignmentDto>>> GetStaffWithSalaryStructures(
         [FromQuery] bool? isActive)
     {
         try
         {
-            var query = new GetTeachersWithSalaryStructuresQuery { IsActive = isActive };
+            var query = new GetStaffWithSalaryStructuresQuery { IsActive = isActive };
             var result = await _mediator.Send(query);
             return Ok(result);
         }
@@ -229,17 +229,17 @@ public class SalaryStructureController : ControllerBase
     }
 
     /// <summary>
-    /// Assign salary structure to a teacher
+    /// Assign salary structure to a staff member
     /// </summary>
-    [HttpPost("assign-to-teacher")]
-    public async Task<ActionResult<TeacherSalaryAssignmentDto>> AssignSalaryStructureToTeacher(
+    [HttpPost("assign-to-Staff")]
+    public async Task<ActionResult<StaffSalaryAssignmentDto>> AssignSalaryStructureToStaff(
         [FromBody] AssignSalaryStructureDto dto)
     {
         try
         {
-            var command = new AssignSalaryStructureToTeacherCommand
+            var command = new AssignSalaryStructureToStaffCommand
             {
-                TeacherId = dto.TeacherId,
+                StaffId = dto.StaffId,
                 SalaryStructureId = dto.SalaryStructureId,
                 EffectiveDate = dto.EffectiveDate
             };
@@ -258,7 +258,7 @@ public class SalaryStructureController : ControllerBase
     }
 
     /// <summary>
-    /// Bulk create salary payments from structures for all teachers
+    /// Bulk create salary payments from structures for all staff members
     /// </summary>
     [HttpPost("bulk-create-salaries")]
     public async Task<ActionResult<SalaryPaymentReportDto>> BulkCreateSalaryPayments(

@@ -87,8 +87,8 @@ public class SalaryStructureDto
 /// </summary>
 public class AssignSalaryStructureDto
 {
-    [Required(ErrorMessage = "Teacher ID is required")]
-    public Guid TeacherId { get; set; }
+    [Required(ErrorMessage = "Staff ID is required")]
+    public Guid StaffId { get; set; }
 
     [Required(ErrorMessage = "Salary structure ID is required")]
     public Guid SalaryStructureId { get; set; }
@@ -100,12 +100,12 @@ public class AssignSalaryStructureDto
 /// <summary>
 /// DTO for teacher salary assignment response
 /// </summary>
-public class TeacherSalaryAssignmentDto
+public class StaffSalaryAssignmentDto
 {
-    public Guid TeacherId { get; set; }
-    public string TeacherName { get; set; } = string.Empty;
-    public string TeacherEmail { get; set; } = string.Empty;
-    public string? TeacherImagePath { get; set; }
+    public Guid StaffId { get; set; }
+    public string StaffName { get; set; } = string.Empty;
+    public string StaffEmail { get; set; } = string.Empty;
+    public string? StaffImagePath { get; set; }
     public Guid SalaryStructureId { get; set; }
     public string SalaryStructureName { get; set; } = string.Empty;
     public decimal GrossSalary { get; set; }

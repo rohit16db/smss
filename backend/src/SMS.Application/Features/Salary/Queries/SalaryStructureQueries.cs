@@ -20,25 +20,25 @@ public class GetSalaryStructureByIdQuery : IRequest<SalaryStructureDto>
 }
 
 /// <summary>
-/// Get salary structures applicable for a teacher
+/// Get salary structures applicable for a staff member
 /// </summary>
 public class GetApplicableSalaryStructuresQuery : IRequest<List<SalaryStructureDto>>
 {
-    public Guid TeacherId { get; set; }
+    public Guid StaffId { get; set; }
 }
 
 /// <summary>
-/// Get current salary structure for a teacher
+/// Get current salary structure for a staff member
 /// </summary>
-public class GetTeacherCurrentSalaryStructureQuery : IRequest<TeacherSalaryAssignmentDto>
+public class GetStaffCurrentSalaryStructureQuery : IRequest<StaffSalaryAssignmentDto>
 {
-    public Guid TeacherId { get; set; }
+    public Guid StaffId { get; set; }
 }
 
 /// <summary>
-/// Get all teachers with their assigned salary structures
+/// Get all staff with their assigned salary structures
 /// </summary>
-public class GetTeachersWithSalaryStructuresQuery : IRequest<List<TeacherSalaryAssignmentDto>>
+public class GetStaffWithSalaryStructuresQuery : IRequest<List<StaffSalaryAssignmentDto>>
 {
     public bool? IsActive { get; set; }
 }

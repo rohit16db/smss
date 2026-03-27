@@ -13,4 +13,5 @@ public class AcademicYear : BaseEntity
     public virtual ICollection<Holiday> Holidays { get; set; } = new List<Holiday>();
     public virtual ICollection<FeeStructure> FeeStructures { get; set; } = new List<FeeStructure>();
     public virtual ICollection<Exam> Exams { get; set; } = new List<Exam>();
+    public virtual ICollection<StaffAssignment> StaffAssignments { get; set; } = new List<StaffAssignment>();
 }

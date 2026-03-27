@@ -157,43 +157,44 @@ public class DeleteStudentAttendanceCommandHandler : IRequestHandler<DeleteStude
 }
 
 /// <summary>
-/// Handler for RecordTeacherAttendanceCommand
+/// Handler for RecordStaffAttendanceCommand
 /// </summary>
-public class RecordTeacherAttendanceCommandHandler : IRequestHandler<RecordTeacherAttendanceCommand, TeacherAttendanceDto>
+public class RecordStaffAttendanceCommandHandler : IRequestHandler<RecordStaffAttendanceCommand, StaffAttendanceDto>
 {
     private readonly IApplicationDbContext _context;
 
-    public RecordTeacherAttendanceCommandHandler(IApplicationDbContext context)
+    public RecordStaffAttendanceCommandHandler(IApplicationDbContext context)
     {
         _context = context;
     }
 
-    public async Task<TeacherAttendanceDto> Handle(RecordTeacherAttendanceCommand request, CancellationToken cancellationToken)
+    public async Task<StaffAttendanceDto> Handle(RecordStaffAttendanceCommand request, CancellationToken cancellationToken)
     {
-        if (!Guid.TryParse(request.TeacherId, out var teacherId))
-            throw new InvalidOperationException($"Invalid teacher ID format: {request.TeacherId}");
+        if (!Guid.TryParse(request.StaffId, out var staffId))
+            throw new InvalidOperationException($"Invalid staff ID format: {request.StaffId}");
 
         if (!Guid.TryParse(request.CreatedByUserId, out var recordedByUserId))
             throw new InvalidOperationException($"Invalid user ID format: {request.CreatedByUserId}");
 
         var attendanceDate = DateOnly.FromDateTime(request.AttendanceDate);
 
-        // Check if attendance already exists for this teacher on this date
-        var existingAttendance = await _context.TeacherAttendances
-            .FirstOrDefaultAsync(a => a.TeacherId == teacherId && 
+        // Check if attendance already exists for this staff on this date
+        var existingAttendance = await _context.StaffAttendances
+            .FirstOrDefaultAsync(a => a.StaffId == staffId && 
                                      a.AttendanceDate == attendanceDate, 
-                                cancellationToken);
+                                 cancellationToken);
 
         if (existingAttendance != null)
-            throw new InvalidOperationException($"Attendance already recorded for teacher {request.TeacherId} on {request.AttendanceDate:dd/MM/yyyy}");
+            throw new InvalidOperationException($"Attendance already recorded for staff {request.StaffId} on {request.AttendanceDate:dd/MM/yyyy}");
 
-        var teacher = await _context.Teachers
-            .FirstOrDefaultAsync(t => t.Id == teacherId, cancellationToken);
+        var staff = await _context.Staff
+            .Include(s => s.UserProfile)
+            .FirstOrDefaultAsync(t => t.Id == staffId, cancellationToken);
 
-        var attendance = new TeacherAttendance
+        var attendance = new StaffAttendance
         {
             Id = Guid.NewGuid(),
-            TeacherId = teacherId,
+            StaffId = staffId,
             AttendanceDate = attendanceDate,
             Status = request.Status.ToLower(),
             Reason = request.Reason,
@@ -203,14 +204,14 @@ public class RecordTeacherAttendanceCommandHandler : IRequestHandler<RecordTeach
             UpdatedBy = request.CreatedByUserId
         };
 
-        _context.TeacherAttendances.Add(attendance);
+        _context.StaffAttendances.Add(attendance);
         await _context.SaveChangesAsync(cancellationToken);
 
-        return new TeacherAttendanceDto
+        return new StaffAttendanceDto
         {
             Id = attendance.Id.ToString(),
-            TeacherId = attendance.TeacherId.ToString(),
-            TeacherName = teacher != null ? $"{teacher.FirstName} {teacher.LastName}" : null,
+            StaffId = attendance.StaffId.ToString(),
+            StaffName = staff?.FullName,
             AttendanceDate = attendance.AttendanceDate.ToDateTime(TimeOnly.MinValue),
             Status = attendance.Status,
             Reason = attendance.Reason,
@@ -222,39 +223,40 @@ public class RecordTeacherAttendanceCommandHandler : IRequestHandler<RecordTeach
 }
 
 /// <summary>
-/// Handler for UpdateTeacherAttendanceCommand
+/// Handler for UpdateStaffAttendanceCommand
 /// </summary>
-public class UpdateTeacherAttendanceCommandHandler : IRequestHandler<UpdateTeacherAttendanceCommand, TeacherAttendanceDto>
+public class UpdateStaffAttendanceCommandHandler : IRequestHandler<UpdateStaffAttendanceCommand, StaffAttendanceDto>
 {
     private readonly IApplicationDbContext _context;
 
-    public UpdateTeacherAttendanceCommandHandler(IApplicationDbContext context)
+    public UpdateStaffAttendanceCommandHandler(IApplicationDbContext context)
     {
         _context = context;
     }
 
-    public async Task<TeacherAttendanceDto> Handle(UpdateTeacherAttendanceCommand request, CancellationToken cancellationToken)
+    public async Task<StaffAttendanceDto> Handle(UpdateStaffAttendanceCommand request, CancellationToken cancellationToken)
     {
         if (!Guid.TryParse(request.Id, out var attendanceId))
             throw new InvalidOperationException($"Invalid attendance ID format: {request.Id}");
 
-        var attendance = await _context.TeacherAttendances
-            .Include(a => a.Teacher)
+        var attendance = await _context.StaffAttendances
+            .Include(a => a.Staff)
+                .ThenInclude(s => s.UserProfile)
             .FirstOrDefaultAsync(a => a.Id == attendanceId, cancellationToken)
-            ?? throw new InvalidOperationException($"Teacher attendance with ID {request.Id} not found");
+            ?? throw new InvalidOperationException($"Staff attendance with ID {request.Id} not found");
 
         attendance.Status = request.Status.ToLower();
         attendance.Reason = request.Reason;
         attendance.UpdatedBy = request.UpdatedByUserId;
 
-        _context.TeacherAttendances.Update(attendance);
+        _context.StaffAttendances.Update(attendance);
         await _context.SaveChangesAsync(cancellationToken);
 
-        return new TeacherAttendanceDto
+        return new StaffAttendanceDto
         {
             Id = attendance.Id.ToString(),
-            TeacherId = attendance.TeacherId.ToString(),
-            TeacherName = attendance.Teacher != null ? $"{attendance.Teacher.FirstName} {attendance.Teacher.LastName}" : null,
+            StaffId = attendance.StaffId.ToString(),
+            StaffName = attendance.Staff?.FullName,
             AttendanceDate = attendance.AttendanceDate.ToDateTime(TimeOnly.MinValue),
             Status = attendance.Status,
             Reason = attendance.Reason,
@@ -266,27 +268,27 @@ public class UpdateTeacherAttendanceCommandHandler : IRequestHandler<UpdateTeach
 }
 
 /// <summary>
-/// Handler for DeleteTeacherAttendanceCommand
+/// Handler for DeleteStaffAttendanceCommand
 /// </summary>
-public class DeleteTeacherAttendanceCommandHandler : IRequestHandler<DeleteTeacherAttendanceCommand, bool>
+public class DeleteStaffAttendanceCommandHandler : IRequestHandler<DeleteStaffAttendanceCommand, bool>
 {
     private readonly IApplicationDbContext _context;
 
-    public DeleteTeacherAttendanceCommandHandler(IApplicationDbContext context)
+    public DeleteStaffAttendanceCommandHandler(IApplicationDbContext context)
     {
         _context = context;
     }
 
-    public async Task<bool> Handle(DeleteTeacherAttendanceCommand request, CancellationToken cancellationToken)
+    public async Task<bool> Handle(DeleteStaffAttendanceCommand request, CancellationToken cancellationToken)
     {
         if (!Guid.TryParse(request.Id, out var attendanceId))
             throw new InvalidOperationException($"Invalid attendance ID format: {request.Id}");
 
-        var attendance = await _context.TeacherAttendances
+        var attendance = await _context.StaffAttendances
             .FirstOrDefaultAsync(a => a.Id == attendanceId, cancellationToken)
             ?? throw new InvalidOperationException($"Teacher attendance with ID {request.Id} not found");
 
-        _context.TeacherAttendances.Remove(attendance);
+        _context.StaffAttendances.Remove(attendance);
         await _context.SaveChangesAsync(cancellationToken);
 
         return true;

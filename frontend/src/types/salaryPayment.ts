@@ -1,7 +1,7 @@
 export interface SalaryPaymentDto {
   id: string;
-  teacherId: string;
-  teacherName: string;
+  staffId: string;
+  staffName: string;
   periodStartDate: string;
   periodEndDate: string;
   baseSalary: number;
@@ -52,8 +52,8 @@ export interface UpdateSalaryPaymentDto {
 }
 
 export interface SalaryHistoryDto {
-  teacherId: string;
-  teacherName: string;
+  staffId: string;
+  staffName: string;
   paymentHistory: SalaryPaymentDto[];
   totalSalaryPaid: number;
   averageMonthlySalary: number;

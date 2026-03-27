@@ -136,7 +136,7 @@ export const LoginPage = () => {
                 </Typography>
                 <Typography variant="body1" sx={{ opacity: 0.8, lineHeight: 1.8 }}>
                   Manage your school operations efficiently with our comprehensive platform.
-                  Track students, teachers, attendance, fees, and much more in one place.
+                  Track students, Staffs, attendance, fees, and much more in one place.
                 </Typography>
                 <Box sx={{ mt: 4, display: 'flex', gap: 3 }}>
                   <Box>
@@ -145,7 +145,7 @@ export const LoginPage = () => {
                   </Box>
                   <Box>
                     <Typography variant="h4" fontWeight="bold">50+</Typography>
-                    <Typography variant="body2" sx={{ opacity: 0.8 }}>Teachers</Typography>
+                    <Typography variant="body2" sx={{ opacity: 0.8 }}>Staffs</Typography>
                   </Box>
                   <Box>
                     <Typography variant="h4" fontWeight="bold">20+</Typography>

@@ -4,7 +4,7 @@ import toast from 'react-hot-toast';
 import { 
   timetableApi, 
   classApi, 
-  teacherApi, 
+  StaffApi, 
   subjectApi,
   type TimeSlot, 
   type CreateTimeSlotDto,
@@ -60,9 +60,9 @@ export function TimetablePage() {
 
   const isGridLoading = isLoadingSlots || (!!selectedSectionId && isLoadingEntries);
 
-  const { data: teachers } = useQuery({
-    queryKey: ['teachers'],
-    queryFn: () => teacherApi.getAll({ pageSize: 100, isActive: true }),
+  const { data: Staffs } = useQuery({
+    queryKey: ['Staffs'],
+    queryFn: () => StaffApi.getAll({ pageSize: 100, isActive: true }),
   });
 
   const { data: subjects } = useQuery({
@@ -247,7 +247,7 @@ export function TimetablePage() {
                                   <svg className="w-3.5 h-3.5 opacity-70 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                                     <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
                                   </svg>
-                                  <span className="truncate">{entry.teacherName}</span>
+                                  <span className="truncate">{entry.StaffName}</span>
                                 </div>
                                 {entry.roomNumber && (
                                   <div className="mt-auto pt-2.5 flex items-center gap-1">
@@ -404,7 +404,7 @@ export function TimetablePage() {
                 timeSlotId: selectedSlot.id,
                 sectionId: selectedSectionId,
                 subjectId: formData.get('subjectId') as string,
-                teacherId: formData.get('teacherId') as string,
+                StaffId: formData.get('StaffId') as string,
                 roomNumber: formData.get('roomNumber') as string || undefined,
                 academicYearId: activeYear!.id
               };
@@ -419,10 +419,10 @@ export function TimetablePage() {
               </div>
               
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">Teacher</label>
-                <select name="teacherId" required className="input-field">
-                  <option value="">-- Select Teacher --</option>
-                  {teachers?.items.map(t => <option key={t.id} value={t.id}>{t.firstName} {t.lastName}</option>)}
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Staff</label>
+                <select name="StaffId" required className="input-field">
+                  <option value="">-- Select Staff --</option>
+                  {Staffs?.items.map(t => <option key={t.id} value={t.id}>{t.firstName} {t.lastName}</option>)}
                 </select>
               </div>
 

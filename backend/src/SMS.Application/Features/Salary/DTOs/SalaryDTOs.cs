@@ -7,8 +7,8 @@ namespace SMS.Application.Features.Salary.DTOs;
 /// </summary>
 public class CreateSalaryPaymentDto
 {
-    [Required(ErrorMessage = "Teacher ID is required")]
-    public Guid TeacherId { get; set; }
+    [Required(ErrorMessage = "Staff ID is required")]
+    public Guid StaffId { get; set; }
 
     [Required(ErrorMessage = "Period start date is required")]
     public DateOnly PeriodStartDate { get; set; }
@@ -59,8 +59,8 @@ public class UpdateSalaryPaymentStatusDto
 public class SalaryPaymentDto
 {
     public Guid Id { get; set; }
-    public Guid TeacherId { get; set; }
-    public string TeacherName { get; set; } = string.Empty;
+    public Guid StaffId { get; set; }
+    public string StaffName { get; set; } = string.Empty;
     public DateOnly PeriodStartDate { get; set; }
     public DateOnly PeriodEndDate { get; set; }
     public decimal BaseSalary { get; set; }
@@ -83,9 +83,9 @@ public class SalaryPaymentReportDto
 {
     public DateOnly MonthStart { get; set; }
     public DateOnly MonthEnd { get; set; }
-    public int TotalTeachers { get; set; }
-    public int PaidTeachers { get; set; }
-    public int PendingTeachers { get; set; }
+    public int TotalStaff { get; set; }
+    public int PaidStaff { get; set; }
+    public int PendingStaff { get; set; }
     public decimal TotalBaseSalary { get; set; }
     public decimal TotalDeductions { get; set; }
     public decimal TotalBonus { get; set; }
@@ -98,8 +98,8 @@ public class SalaryPaymentReportDto
 /// </summary>
 public class SalaryHistoryDto
 {
-    public Guid TeacherId { get; set; }
-    public string TeacherName { get; set; } = string.Empty;
+    public Guid StaffId { get; set; }
+    public string StaffName { get; set; } = string.Empty;
     public List<SalaryPaymentDto> PaymentHistory { get; set; } = new();
     public decimal TotalSalaryPaid { get; set; }
     public decimal AverageMonthlySalary { get; set; }

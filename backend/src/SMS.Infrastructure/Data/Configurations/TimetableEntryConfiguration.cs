@@ -27,8 +27,8 @@ public class TimetableEntryConfiguration : IEntityTypeConfiguration<TimetableEnt
             .HasColumnName("subject_id")
             .IsRequired();
 
-        builder.Property(t => t.TeacherId)
-            .HasColumnName("teacher_id")
+        builder.Property(t => t.StaffId)
+            .HasColumnName("staff_id")
             .IsRequired();
 
         builder.Property(t => t.RoomNumber)
@@ -69,9 +69,9 @@ public class TimetableEntryConfiguration : IEntityTypeConfiguration<TimetableEnt
             .HasForeignKey(t => t.SubjectId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        builder.HasOne(t => t.Teacher)
+        builder.HasOne(t => t.Staff)
             .WithMany()
-            .HasForeignKey(t => t.TeacherId)
+            .HasForeignKey(t => t.StaffId)
             .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasOne(t => t.AcademicYear)
@@ -83,12 +83,12 @@ public class TimetableEntryConfiguration : IEntityTypeConfiguration<TimetableEnt
         builder.HasIndex(t => t.AcademicYearId);
         builder.HasIndex(t => t.TimeSlotId);
         builder.HasIndex(t => t.SectionId);
-        builder.HasIndex(t => t.TeacherId);
+        builder.HasIndex(t => t.StaffId);
         
         // Ensure a section doesn't have two classes at the same time
         builder.HasIndex(t => new { t.AcademicYearId, t.TimeSlotId, t.SectionId }).IsUnique();
         
-        // Ensure a teacher is not assigned to two different classes at the same time
-        builder.HasIndex(t => new { t.AcademicYearId, t.TimeSlotId, t.TeacherId }).IsUnique();
+        // Ensure a staff member is not assigned to two different classes at the same time
+        builder.HasIndex(t => new { t.AcademicYearId, t.TimeSlotId, t.StaffId }).IsUnique();
     }
 }

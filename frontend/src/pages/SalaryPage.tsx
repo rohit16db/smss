@@ -43,7 +43,7 @@ export const SalaryPage: React.FC = () => {
               Salary Management
             </h1>
             <p className="text-gray-600 mt-2">
-              Process and track teacher salary payments
+              Process and track Staff salary payments
             </p>
           </div>
         </div>
@@ -119,8 +119,8 @@ export const SalaryPage: React.FC = () => {
                     })}
                   </p>
                   <p className="text-xs text-gray-500 mt-1 font-medium">
-                    {summaryQuery.data.paidCount}/{summaryQuery.data.teacherCount}{' '}
-                    teachers
+                    {summaryQuery.data.paidCount}/{summaryQuery.data.StaffCount}{' '}
+                    Staffs
                   </p>
                 </div>
                 <div className="p-4 bg-gradient-to-br from-green-500 to-emerald-500 rounded-xl shadow-lg group-hover:scale-110 transition-transform">
@@ -141,8 +141,8 @@ export const SalaryPage: React.FC = () => {
                     })}
                   </p>
                   <p className="text-xs text-gray-500 mt-1 font-medium">
-                    {summaryQuery.data.pendingCount}/{summaryQuery.data.teacherCount}{' '}
-                    teachers
+                    {summaryQuery.data.pendingCount}/{summaryQuery.data.StaffCount}{' '}
+                    Staffs
                   </p>
                 </div>
                 <div className="p-4 bg-gradient-to-br from-orange-500 to-amber-500 rounded-xl shadow-lg group-hover:scale-110 transition-transform">
@@ -156,11 +156,11 @@ export const SalaryPage: React.FC = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-gray-600 text-sm font-semibold">
-                    Avg per Teacher
+                    Avg per Staff
                   </p>
                   <p className="text-3xl font-bold text-gray-900 mt-2">
                     ₹
-                    {summaryQuery.data.averageSalaryPerTeacher.toLocaleString(
+                    {summaryQuery.data.averageSalaryPerStaff.toLocaleString(
                       'en-IN',
                       {
                         maximumFractionDigits: 0,
@@ -299,21 +299,21 @@ export const SalaryPage: React.FC = () => {
                     </p>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-600 font-semibold">Total Teachers</p>
+                    <p className="text-sm text-gray-600 font-semibold">Total Staffs</p>
                     <p className="text-lg font-bold text-gray-900 mt-1">
-                      {salaryQuery.data.totalTeachers}
+                      {salaryQuery.data.totalStaffs}
                     </p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-600 font-semibold">Paid</p>
                     <p className="text-lg font-bold text-green-600 mt-1">
-                      {salaryQuery.data.paidTeachers}
+                      {salaryQuery.data.paidStaffs}
                     </p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-600 font-semibold">Pending</p>
                     <p className="text-lg font-bold text-orange-600 mt-1">
-                      {salaryQuery.data.pendingTeachers}
+                      {salaryQuery.data.pendingStaffs}
                     </p>
                   </div>
                 </div>

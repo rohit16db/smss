@@ -113,13 +113,14 @@ public class GetApplicableSalaryStructuresQueryHandler : IRequestHandler<GetAppl
 
     public async Task<List<SalaryStructureDto>> Handle(GetApplicableSalaryStructuresQuery request, CancellationToken cancellationToken)
     {
-        var teacher = await _context.Teachers.FindAsync(new object[] { request.TeacherId }, cancellationToken);
-        if (teacher == null)
-            throw new InvalidOperationException($"Teacher with ID {request.TeacherId} not found");
+        var staff = await _context.Staff
+            .FirstOrDefaultAsync(s => s.Id == request.StaffId, cancellationToken);
+        if (staff == null)
+            throw new InvalidOperationException($"Staff with ID {request.StaffId} not found");
 
         var structures = await _context.SalaryStructures
             .Where(s => s.IsActive)
-            .Where(s => s.MinExperienceYears <= teacher.ExperienceYears)
+            .Where(s => s.MinExperienceYears <= staff.ExperienceYears)
             .OrderByDescending(s => s.EffectiveFromDate)
             .ToListAsync(cancellationToken);
 
@@ -153,70 +154,72 @@ public class GetApplicableSalaryStructuresQueryHandler : IRequestHandler<GetAppl
     }
 }
 
-public class GetTeacherCurrentSalaryStructureQueryHandler : IRequestHandler<GetTeacherCurrentSalaryStructureQuery, TeacherSalaryAssignmentDto>
+public class GetStaffCurrentSalaryStructureQueryHandler : IRequestHandler<GetStaffCurrentSalaryStructureQuery, StaffSalaryAssignmentDto>
 {
     private readonly IApplicationDbContext _context;
 
-    public GetTeacherCurrentSalaryStructureQueryHandler(IApplicationDbContext context)
+    public GetStaffCurrentSalaryStructureQueryHandler(IApplicationDbContext context)
     {
         _context = context;
     }
 
-    public async Task<TeacherSalaryAssignmentDto> Handle(GetTeacherCurrentSalaryStructureQuery request, CancellationToken cancellationToken)
+    public async Task<StaffSalaryAssignmentDto> Handle(GetStaffCurrentSalaryStructureQuery request, CancellationToken cancellationToken)
     {
-        var teacher = await _context.Teachers
+        var staff = await _context.Staff
+            .Include(t => t.UserProfile)
             .Include(t => t.SalaryStructure)
-            .FirstOrDefaultAsync(t => t.Id == request.TeacherId, cancellationToken);
+            .FirstOrDefaultAsync(t => t.Id == request.StaffId, cancellationToken);
 
-        if (teacher == null)
-            throw new InvalidOperationException($"Teacher with ID {request.TeacherId} not found");
+        if (staff == null)
+            throw new InvalidOperationException($"Staff with ID {request.StaffId} not found");
 
-        if (teacher.SalaryStructure == null)
-            throw new InvalidOperationException($"No salary structure assigned to teacher {teacher.FullName}");
+        if (staff.SalaryStructure == null)
+            throw new InvalidOperationException($"No salary structure assigned to staff {staff.FullName}");
 
-        return new TeacherSalaryAssignmentDto
+        return new StaffSalaryAssignmentDto
         {
-            TeacherId = teacher.Id,
-            TeacherName = teacher.FullName,
-            TeacherEmail = teacher.Email,
-            TeacherImagePath = teacher.ImagePath,
-            SalaryStructureId = teacher.SalaryStructure.Id,
-            SalaryStructureName = teacher.SalaryStructure.Name,
-            GrossSalary = teacher.SalaryStructure.GrossSalary,
-            EffectiveDate = teacher.SalaryStructureEffectiveDate ?? DateOnly.FromDateTime(DateTime.UtcNow),
-            AssignedAt = teacher.SalaryStructure.CreatedAt
+            StaffId = staff.Id,
+            StaffName = staff.FullName,
+            StaffEmail = staff.UserProfile?.Email ?? string.Empty,
+            StaffImagePath = staff.UserProfile?.ImagePath,
+            SalaryStructureId = staff.SalaryStructure.Id,
+            SalaryStructureName = staff.SalaryStructure.Name,
+            GrossSalary = staff.SalaryStructure.GrossSalary,
+            EffectiveDate = staff.SalaryStructureEffectiveDate ?? DateOnly.FromDateTime(DateTime.UtcNow),
+            AssignedAt = staff.SalaryStructure.CreatedAt
         };
     }
 }
 
-public class GetTeachersWithSalaryStructuresQueryHandler : IRequestHandler<GetTeachersWithSalaryStructuresQuery, List<TeacherSalaryAssignmentDto>>
+public class GetStaffWithSalaryStructuresQueryHandler : IRequestHandler<GetStaffWithSalaryStructuresQuery, List<StaffSalaryAssignmentDto>>
 {
     private readonly IApplicationDbContext _context;
 
-    public GetTeachersWithSalaryStructuresQueryHandler(IApplicationDbContext context)
+    public GetStaffWithSalaryStructuresQueryHandler(IApplicationDbContext context)
     {
         _context = context;
     }
 
-    public async Task<List<TeacherSalaryAssignmentDto>> Handle(GetTeachersWithSalaryStructuresQuery request, CancellationToken cancellationToken)
+    public async Task<List<StaffSalaryAssignmentDto>> Handle(GetStaffWithSalaryStructuresQuery request, CancellationToken cancellationToken)
     {
-        var query = _context.Teachers
+        var query = _context.Staff
+            .Include(t => t.UserProfile)
             .Include(t => t.SalaryStructure)
             .Where(t => t.SalaryStructureId != null);
 
         if (request.IsActive.HasValue)
             query = query.Where(t => t.IsActive == request.IsActive.Value);
 
-        var teachers = await query
-            .OrderBy(t => t.FirstName)
+        var staffMembers = await query
+            .OrderBy(t => t.UserProfile.FirstName)
             .ToListAsync(cancellationToken);
 
-        return teachers.Select(t => new TeacherSalaryAssignmentDto
+        return staffMembers.Select(t => new StaffSalaryAssignmentDto
         {
-            TeacherId = t.Id,
-            TeacherName = t.FullName,
-            TeacherEmail = t.Email,
-            TeacherImagePath = t.ImagePath,
+            StaffId = t.Id,
+            StaffName = t.FullName,
+            StaffEmail = t.UserProfile?.Email ?? string.Empty,
+            StaffImagePath = t.UserProfile?.ImagePath,
             SalaryStructureId = t.SalaryStructureId ?? Guid.Empty,
             SalaryStructureName = t.SalaryStructure?.Name ?? "N/A",
             GrossSalary = t.SalaryStructure?.GrossSalary ?? 0,

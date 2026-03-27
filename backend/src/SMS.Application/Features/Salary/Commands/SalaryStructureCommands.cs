@@ -53,17 +53,17 @@ public class DeleteSalaryStructureCommand : IRequest<bool>
 }
 
 /// <summary>
-/// Assign salary structure to a teacher
+/// Assign salary structure to a staff member
 /// </summary>
-public class AssignSalaryStructureToTeacherCommand : IRequest<TeacherSalaryAssignmentDto>
+public class AssignSalaryStructureToStaffCommand : IRequest<StaffSalaryAssignmentDto>
 {
-    public Guid TeacherId { get; set; }
+    public Guid StaffId { get; set; }
     public Guid SalaryStructureId { get; set; }
     public DateOnly EffectiveDate { get; set; }
 }
 
 /// <summary>
-/// Bulk create salary payments for all teachers with assigned salary structures
+/// Bulk create salary payments for all staff with assigned salary structures
 /// </summary>
 public class BulkCreateSalaryFromStructuresCommand : IRequest<SalaryPaymentReportDto>
 {

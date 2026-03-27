@@ -7,7 +7,7 @@ using SMS.Application.Features.Payroll.Queries;
 namespace SMS.API.Controllers;
 
 /// <summary>
-/// Teacher Payroll Management API
+/// Staff Payroll Management API
 /// Handles payroll reports, bonus eligibility, and attendance summaries
 /// </summary>
 [Authorize(Policy = "PayrollAccess")]
@@ -23,11 +23,11 @@ public class PayrollController : ControllerBase
     }
 
     /// <summary>
-    /// Get teacher payroll report for a specified period
+    /// Get staff payroll report for a specified period
     /// </summary>
     /// <param name="startDate">Period start date (inclusive)</param>
     /// <param name="endDate">Period end date (inclusive)</param>
-    /// <returns>Payroll period report with all teacher salary details</returns>
+    /// <returns>Payroll period report with all staff salary details</returns>
     [HttpGet("report")]
     public async Task<ActionResult<PayrollPeriodReportDto>> GetPayrollReport(
         [FromQuery] DateOnly startDate,
@@ -40,7 +40,7 @@ public class PayrollController : ControllerBase
                 return BadRequest(new { message = "Start date must be before or equal to end date" });
             }
 
-            var query = new GetTeacherPayrollReportQuery
+            var query = new GetStaffPayrollReportQuery
             {
                 StartDate = startDate,
                 EndDate = endDate
@@ -56,12 +56,12 @@ public class PayrollController : ControllerBase
     }
 
     /// <summary>
-    /// Get bonus eligibility status for all teachers in a period
+    /// Get bonus eligibility status for all staff in a period
     /// </summary>
     /// <param name="startDate">Period start date (inclusive)</param>
     /// <param name="endDate">Period end date (inclusive)</param>
     /// <param name="bonusThresholdPercentage">Attendance threshold for bonus eligibility (default: 90)</param>
-    /// <returns>List of teachers with bonus eligibility details</returns>
+    /// <returns>List of staff with bonus eligibility details</returns>
     [HttpGet("bonus-eligibility")]
     public async Task<ActionResult<List<BonusEligibilityDto>>> GetBonusEligibility(
         [FromQuery] DateOnly startDate,
@@ -97,13 +97,13 @@ public class PayrollController : ControllerBase
     }
 
     /// <summary>
-    /// Get attendance summary for all teachers in a period
+    /// Get attendance summary for all staff in a period
     /// </summary>
     /// <param name="startDate">Period start date (inclusive)</param>
     /// <param name="endDate">Period end date (inclusive)</param>
-    /// <returns>List of teachers with attendance summary details</returns>
+    /// <returns>List of staff with attendance summary details</returns>
     [HttpGet("attendance-summary")]
-    public async Task<ActionResult<List<TeacherAttendanceSummaryDto>>> GetAttendanceSummary(
+    public async Task<ActionResult<List<StaffAttendanceSummaryDto>>> GetAttendanceSummary(
         [FromQuery] DateOnly startDate,
         [FromQuery] DateOnly endDate)
     {
@@ -114,7 +114,7 @@ public class PayrollController : ControllerBase
                 return BadRequest(new { message = "Start date must be before or equal to end date" });
             }
 
-            var query = new GetTeacherAttendanceSummaryQuery
+            var query = new GetStaffAttendanceSummaryQuery
             {
                 StartDate = startDate,
                 EndDate = endDate

@@ -81,7 +81,7 @@ export interface SalaryExpenseSummaryDto {
   totalBaseSalary: number;
   totalBonus: number;
   totalDeductions: number;
-  teacherCount: number;
+  StaffCount: number;
   bonusRecipients: number;
   bonusPercentage: number;
   deductionPercentage: number;
@@ -98,7 +98,7 @@ export interface MonthlySalaryTrendDto {
   totalBaseSalary: number;
   totalBonus: number;
   totalDeductions: number;
-  teacherCount: number;
+  StaffCount: number;
   bonusRecipients: number;
   averageSalary: number;
 }
@@ -118,11 +118,11 @@ export interface SalaryComponentBreakdownDto {
 }
 
 /**
- * Teacher-wise Salary Comparison
+ * Staff-wise Salary Comparison
  */
-export interface TeacherSalaryComparisonDto {
-  teacherId: string;
-  teacherName: string;
+export interface StaffSalaryComparisonDto {
+  StaffId: string;
+  StaffName: string;
   baseSalary: number;
   bonus: number;
   deductions: number;
@@ -136,8 +136,8 @@ export interface TeacherSalaryComparisonDto {
  * Attendance to Salary Correlation View
  */
 export interface AttendanceToSalaryCorrelationDto {
-  teacherId: string;
-  teacherName: string;
+  StaffId: string;
+  StaffName: string;
   attendancePercentage: number;
   presentDays: number;
   absentDays: number;

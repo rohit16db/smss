@@ -9,7 +9,7 @@ import { HomePage } from '../pages/HomePage';
 import * as api from '../services/api';
 import {
   mockPaginatedStudents,
-  mockPaginatedTeachers,
+  mockPaginatedStaffs,
   mockPaginatedFeeStructures,
 } from '../test/mockData';
 
@@ -17,7 +17,7 @@ vi.mock('../services/api', () => ({
   studentApi: {
     getAll: vi.fn(),
   },
-  teacherApi: {
+  StaffApi: {
     getAll: vi.fn(),
   },
   feeApi: {
@@ -33,7 +33,7 @@ describe('Dashboard Integration Tests', () => {
   it('should display correct statistics from all modules', async () => {
     // Mock API responses with known counts
     vi.mocked(api.studentApi.getAll).mockResolvedValue(mockPaginatedStudents);
-    vi.mocked(api.teacherApi.getAll).mockResolvedValue(mockPaginatedTeachers);
+    vi.mocked(api.StaffApi.getAll).mockResolvedValue(mockPaginatedStaffs);
     vi.mocked(api.feeApi.getAllStructures).mockResolvedValue(mockPaginatedFeeStructures);
 
     render(<HomePage />);
@@ -41,19 +41,19 @@ describe('Dashboard Integration Tests', () => {
     // Wait for all stats to load
     await waitFor(() => {
       // Verify module labels are present (using getAllByText since they appear in multiple places)
-      const activeTeachersLabels = screen.getAllByText('Active Teachers');
-      expect(activeTeachersLabels.length).toBeGreaterThan(0);
+      const activeStaffsLabels = screen.getAllByText('Active Staffs');
+      expect(activeStaffsLabels.length).toBeGreaterThan(0);
     });
 
     // Verify module cards are present
-    expect(screen.queryByText(/teacher management/i)).toBeTruthy();
+    expect(screen.queryByText(/Staff management/i)).toBeTruthy();
     expect(screen.queryByText(/student management/i)).toBeTruthy();
     expect(screen.queryByText(/fee management/i)).toBeTruthy();
     expect(screen.queryByText(/attendance tracking/i)).toBeTruthy();
     
     // Verify API was called
     expect(api.studentApi.getAll).toHaveBeenCalled();
-    expect(api.teacherApi.getAll).toHaveBeenCalled();
+    expect(api.StaffApi.getAll).toHaveBeenCalled();
     expect(api.feeApi.getAllStructures).toHaveBeenCalled();
   });
 
@@ -62,8 +62,8 @@ describe('Dashboard Integration Tests', () => {
     vi.mocked(api.studentApi.getAll).mockImplementation(
       () => new Promise((resolve) => setTimeout(() => resolve(mockPaginatedStudents), 100))
     );
-    vi.mocked(api.teacherApi.getAll).mockImplementation(
-      () => new Promise((resolve) => setTimeout(() => resolve(mockPaginatedTeachers), 100))
+    vi.mocked(api.StaffApi.getAll).mockImplementation(
+      () => new Promise((resolve) => setTimeout(() => resolve(mockPaginatedStaffs), 100))
     );
     vi.mocked(api.feeApi.getAllStructures).mockImplementation(
       () => new Promise((resolve) => setTimeout(() => resolve(mockPaginatedFeeStructures), 100))
@@ -76,14 +76,14 @@ describe('Dashboard Integration Tests', () => {
 
     // Wait for data to load
     await waitFor(() => {
-      const activeTeachersLabels = screen.getAllByText('Active Teachers');
-      expect(activeTeachersLabels.length).toBeGreaterThan(0);
+      const activeStaffsLabels = screen.getAllByText('Active Staffs');
+      expect(activeStaffsLabels.length).toBeGreaterThan(0);
     }, { timeout: 3000 });
   });
 
   it('should handle API errors gracefully', async () => {
     vi.mocked(api.studentApi.getAll).mockRejectedValue(new Error('Network error'));
-    vi.mocked(api.teacherApi.getAll).mockRejectedValue(new Error('Network error'));
+    vi.mocked(api.StaffApi.getAll).mockRejectedValue(new Error('Network error'));
     vi.mocked(api.feeApi.getAllStructures).mockRejectedValue(new Error('Network error'));
 
     render(<HomePage />);
@@ -94,13 +94,13 @@ describe('Dashboard Integration Tests', () => {
     });
 
     // Module cards should still render even if stats fail
-    expect(screen.queryByText(/teacher management/i)).toBeTruthy();
+    expect(screen.queryByText(/Staff management/i)).toBeTruthy();
     expect(screen.queryByText(/student management/i)).toBeTruthy();
   });
 
   it('should display navigation links to all modules', async () => {
     vi.mocked(api.studentApi.getAll).mockResolvedValue(mockPaginatedStudents);
-    vi.mocked(api.teacherApi.getAll).mockResolvedValue(mockPaginatedTeachers);
+    vi.mocked(api.StaffApi.getAll).mockResolvedValue(mockPaginatedStaffs);
     vi.mocked(api.feeApi.getAllStructures).mockResolvedValue(mockPaginatedFeeStructures);
 
     render(<HomePage />);
@@ -111,14 +111,14 @@ describe('Dashboard Integration Tests', () => {
 
     // Verify all module descriptions are present
     expect(screen.getByText(/manage student records, enrollments, and information/i)).toBeInTheDocument();
-    expect(screen.getByText(/manage teacher records, assignments, and profiles/i)).toBeInTheDocument();
+    expect(screen.getByText(/manage Staff records, assignments, and profiles/i)).toBeInTheDocument();
     expect(screen.getByText(/manage fee structures, payments, and student fees/i)).toBeInTheDocument();
-    expect(screen.getByText(/record and monitor student and teacher attendance/i)).toBeInTheDocument();
+    expect(screen.getByText(/record and monitor student and Staff attendance/i)).toBeInTheDocument();
   });
 
   it('should update statistics when data changes', async () => {
     vi.mocked(api.studentApi.getAll).mockResolvedValue(mockPaginatedStudents);
-    vi.mocked(api.teacherApi.getAll).mockResolvedValue(mockPaginatedTeachers);
+    vi.mocked(api.StaffApi.getAll).mockResolvedValue(mockPaginatedStaffs);
     vi.mocked(api.feeApi.getAllStructures).mockResolvedValue(mockPaginatedFeeStructures);
 
     const { rerender } = render(<HomePage />);
@@ -144,7 +144,7 @@ describe('Dashboard Integration Tests', () => {
 
   it('should render hero section with correct content', () => {
     vi.mocked(api.studentApi.getAll).mockResolvedValue(mockPaginatedStudents);
-    vi.mocked(api.teacherApi.getAll).mockResolvedValue(mockPaginatedTeachers);
+    vi.mocked(api.StaffApi.getAll).mockResolvedValue(mockPaginatedStaffs);
     vi.mocked(api.feeApi.getAllStructures).mockResolvedValue(mockPaginatedFeeStructures);
 
     render(<HomePage />);
@@ -156,17 +156,17 @@ describe('Dashboard Integration Tests', () => {
 
   it('should display module cards in correct order', async () => {
     vi.mocked(api.studentApi.getAll).mockResolvedValue(mockPaginatedStudents);
-    vi.mocked(api.teacherApi.getAll).mockResolvedValue(mockPaginatedTeachers);
+    vi.mocked(api.StaffApi.getAll).mockResolvedValue(mockPaginatedStaffs);
     vi.mocked(api.feeApi.getAllStructures).mockResolvedValue(mockPaginatedFeeStructures);
 
     render(<HomePage />);
 
     await waitFor(() => {
-      expect(screen.getByText(/teacher management/i)).toBeInTheDocument();
+      expect(screen.getByText(/Staff management/i)).toBeInTheDocument();
     });
 
     const moduleCards = screen.getAllByRole('heading', { level: 3 });
-    expect(moduleCards[0]).toHaveTextContent(/teacher management/i);
+    expect(moduleCards[0]).toHaveTextContent(/Staff management/i);
     expect(moduleCards[1]).toHaveTextContent(/student management/i);
     expect(moduleCards[2]).toHaveTextContent(/fee management/i);
     expect(moduleCards[3]).toHaveTextContent(/attendance tracking/i);

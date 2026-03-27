@@ -52,7 +52,7 @@ export const SalaryPaymentCard: React.FC<SalaryPaymentCardProps> = ({
       <div className="flex justify-between items-start mb-3">
         <div>
           <h3 className="text-lg font-semibold text-gray-900">
-            {salary.teacherName}
+            {salary.StaffName}
           </h3>
           <p className="text-sm text-gray-600 mt-1">
             {new Date(salary.periodStartDate).toLocaleDateString()} -{' '}

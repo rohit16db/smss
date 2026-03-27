@@ -3,7 +3,7 @@ import { api } from './api';
 import type {
   PayrollPeriodReportDto,
   BonusEligibilityDto,
-  TeacherAttendanceSummaryDto,
+  StaffAttendanceSummaryDto,
 } from '../types/payroll';
 
 export const payrollApi = {
@@ -44,8 +44,8 @@ export const payrollApi = {
   getAttendanceSummary: async (
     startDate: string,
     endDate: string
-  ): Promise<TeacherAttendanceSummaryDto[]> => {
-    const response = await api.get<TeacherAttendanceSummaryDto[]>(
+  ): Promise<StaffAttendanceSummaryDto[]> => {
+    const response = await api.get<StaffAttendanceSummaryDto[]>(
       '/v1/payroll/attendance-summary',
       {
         params: {

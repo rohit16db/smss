@@ -1,7 +1,7 @@
 export interface SalaryPaymentDto {
   id: string;
-  teacherId: string;
-  teacherName: string;
+  StaffId: string;
+  StaffName: string;
   periodStartDate: string;
   periodEndDate: string;
   baseSalary: number;
@@ -19,9 +19,9 @@ export interface SalaryPaymentDto {
 export interface SalaryPaymentReportDto {
   monthStart: string;
   monthEnd: string;
-  totalTeachers: number;
-  paidTeachers: number;
-  pendingTeachers: number;
+  totalStaffs: number;
+  paidStaffs: number;
+  pendingStaffs: number;
   totalBaseSalary: number;
   totalDeductions: number;
   totalBonus: number;
@@ -30,8 +30,8 @@ export interface SalaryPaymentReportDto {
 }
 
 export interface SalaryHistoryDto {
-  teacherId: string;
-  teacherName: string;
+  StaffId: string;
+  StaffName: string;
   paymentHistory: SalaryPaymentDto[];
   totalSalaryPaid: number;
   averageMonthlySalary: number;
@@ -43,14 +43,14 @@ export interface SalarySummaryDto {
   totalSalaryExpense: number;
   totalPaid: number;
   totalPending: number;
-  teacherCount: number;
+  StaffCount: number;
   paidCount: number;
   pendingCount: number;
-  averageSalaryPerTeacher: number;
+  averageSalaryPerStaff: number;
 }
 
 export interface CreateSalaryPaymentDto {
-  teacherId: string;
+  StaffId: string;
   periodStartDate: string;
   periodEndDate: string;
   baseSalary: number;

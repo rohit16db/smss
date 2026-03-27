@@ -59,24 +59,24 @@ export const AttendanceTrendChart: React.FC<AttendanceTrendChartProps> = ({ data
           </p>
         </div>
 
-        {/* Teacher Attendance */}
-        <div className={`${getAttendanceBgColor(data.averageTeacherAttendance)} rounded-lg p-4`}>
+        {/* Staff Attendance */}
+        <div className={`${getAttendanceBgColor(data.averageStaffAttendance)} rounded-lg p-4`}>
           <div className="flex items-start justify-between mb-3">
             <div>
-              <p className="text-sm font-medium text-gray-700">Average Teacher Attendance</p>
-              <p className={`text-3xl font-bold mt-2 ${getAttendanceColor(data.averageTeacherAttendance)}`}>
-                {data.averageTeacherAttendance.toFixed(1)}%
+              <p className="text-sm font-medium text-gray-700">Average Staff Attendance</p>
+              <p className={`text-3xl font-bold mt-2 ${getAttendanceColor(data.averageStaffAttendance)}`}>
+                {data.averageStaffAttendance.toFixed(1)}%
               </p>
             </div>
-            {data.averageTeacherAttendance >= 75 && (
-              <TrendingUp className={`w-8 h-8 ${getAttendanceColor(data.averageTeacherAttendance)}`} />
+            {data.averageStaffAttendance >= 75 && (
+              <TrendingUp className={`w-8 h-8 ${getAttendanceColor(data.averageStaffAttendance)}`} />
             )}
-            {data.averageTeacherAttendance < 75 && (
-              <AlertCircle className={`w-8 h-8 ${getAttendanceColor(data.averageTeacherAttendance)}`} />
+            {data.averageStaffAttendance < 75 && (
+              <AlertCircle className={`w-8 h-8 ${getAttendanceColor(data.averageStaffAttendance)}`} />
             )}
           </div>
           <p className="text-xs text-gray-600">
-            {data.totalTeachers} teachers tracked
+            {data.totalStaffs} Staffs tracked
           </p>
         </div>
 
