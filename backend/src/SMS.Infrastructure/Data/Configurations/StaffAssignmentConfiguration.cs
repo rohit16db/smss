@@ -24,7 +24,11 @@ public class StaffAssignmentConfiguration : IEntityTypeConfiguration<StaffAssign
         builder.Property(ta => ta.ClassId)
             .HasColumnName("class_id")
             .IsRequired();
-        
+
+        builder.Property(ta => ta.SectionId)
+            .HasColumnName("section_id")
+            .IsRequired();
+            
         builder.Property(ta => ta.SubjectId)
             .HasColumnName("subject_id")
             .IsRequired();
@@ -62,19 +66,35 @@ public class StaffAssignmentConfiguration : IEntityTypeConfiguration<StaffAssign
             .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasOne(ta => ta.AcademicYear)
-            .WithMany()
+            .WithMany(ay => ay.StaffAssignments)
             .HasForeignKey(ta => ta.AcademicYearId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasOne(ta => ta.Class)
+            .WithMany(c => c.StaffAssignments)
+            .HasForeignKey(ta => ta.ClassId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasOne(ta => ta.Subject)
+            .WithMany(s => s.StaffAssignments)
+            .HasForeignKey(ta => ta.SubjectId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasOne(ta => ta.Section)
+            .WithMany()
+            .HasForeignKey(ta => ta.SectionId)
             .OnDelete(DeleteBehavior.Restrict);
         
         // Indexes
         builder.HasIndex(ta => ta.StaffId);
         builder.HasIndex(ta => ta.ClassId);
+        builder.HasIndex(ta => ta.SectionId);
         builder.HasIndex(ta => ta.SubjectId);
         builder.HasIndex(ta => ta.AcademicYearId);
         builder.HasIndex(ta => ta.RemovalDate);
         
-        // Unique constraint: No duplicate active assignments for same (staff, class, subject)
-        builder.HasIndex(ta => new { ta.StaffId, ta.ClassId, ta.SubjectId, ta.RemovalDate })
+        // Unique constraint: No duplicate active assignments for same (staff, section, subject)
+        builder.HasIndex(ta => new { ta.StaffId, ta.SectionId, ta.SubjectId, ta.RemovalDate })
             .IsUnique()
             .HasFilter("removal_date IS NULL");
     }

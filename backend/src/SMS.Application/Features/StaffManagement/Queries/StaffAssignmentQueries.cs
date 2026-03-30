@@ -11,3 +11,12 @@ public class GetStaffAssignmentsQuery : IRequest<List<StaffAssignmentDto>>
     public Guid StaffId { get; set; }
     public bool? ActiveOnly { get; set; }
 }
+
+/// <summary>
+/// Query to get all assignments for a section
+/// </summary>
+public class GetStaffAssignmentsBySectionQuery : IRequest<List<StaffAssignmentDto>>
+{
+    public Guid SectionId { get; set; }
+    public Guid AcademicYearId { get; set; }
+}

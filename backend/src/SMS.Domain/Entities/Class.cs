@@ -26,4 +26,9 @@ public class Class : BaseEntity
     /// Enrollments linked to this class
     /// </summary>
     public ICollection<Enrollment> Enrollments { get; set; } = new List<Enrollment>();
+
+    /// <summary>
+    /// Staff assignments linked to this class
+    /// </summary>
+    public ICollection<StaffAssignment> StaffAssignments { get; set; } = new List<StaffAssignment>();
 }

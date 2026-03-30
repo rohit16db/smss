@@ -86,4 +86,18 @@ public class TimetableController : ControllerBase
     {
         return await _mediator.Send(new DeleteTimetableEntryCommand(id));
     }
+
+    [HttpGet("entries/section/{sectionId}/{academicYearId}/export")]
+    public async Task<IActionResult> ExportSectionTimetable(Guid sectionId, Guid academicYearId)
+    {
+        var pdfBytes = await _mediator.Send(new GetSectionTimetablePdfQuery(sectionId, academicYearId));
+        return File(pdfBytes, "application/pdf", $"Timetable_Section_{sectionId}.pdf");
+    }
+
+    [HttpGet("entries/staff/{staffId}/{academicYearId}/export")]
+    public async Task<IActionResult> ExportStaffTimetable(Guid staffId, Guid academicYearId)
+    {
+        var pdfBytes = await _mediator.Send(new GetStaffTimetablePdfQuery(staffId, academicYearId));
+        return File(pdfBytes, "application/pdf", $"Timetable_Staff_{staffId}.pdf");
+    }
 }

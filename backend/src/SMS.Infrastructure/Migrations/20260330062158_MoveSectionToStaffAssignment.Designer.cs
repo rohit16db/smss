@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using SMS.Infrastructure.Data;
@@ -11,9 +12,11 @@ using SMS.Infrastructure.Data;
 namespace SMS.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260330062158_MoveSectionToStaffAssignment")]
+    partial class MoveSectionToStaffAssignment
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1163,6 +1166,9 @@ namespace SMS.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("salary_structure_id");
 
+                    b.Property<Guid?>("SalaryStructureId1")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at");
@@ -1176,6 +1182,9 @@ namespace SMS.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("user_profile_id");
 
+                    b.Property<Guid?>("UserProfileId1")
+                        .HasColumnType("uuid");
+
                     b.HasKey("Id");
 
                     b.HasIndex("DepartmentId");
@@ -1186,7 +1195,11 @@ namespace SMS.Infrastructure.Migrations
 
                     b.HasIndex("SalaryStructureId");
 
+                    b.HasIndex("SalaryStructureId1");
+
                     b.HasIndex("UserProfileId");
+
+                    b.HasIndex("UserProfileId1");
 
                     b.ToTable("staff", (string)null);
                 });
@@ -1202,6 +1215,9 @@ namespace SMS.Infrastructure.Migrations
                     b.Property<Guid>("AcademicYearId")
                         .HasColumnType("uuid")
                         .HasColumnName("academic_year_id");
+
+                    b.Property<Guid?>("AcademicYearId1")
+                        .HasColumnType("uuid");
 
                     b.Property<DateOnly>("AssignmentDate")
                         .HasColumnType("date")
@@ -1251,6 +1267,8 @@ namespace SMS.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("AcademicYearId");
+
+                    b.HasIndex("AcademicYearId1");
 
                     b.HasIndex("ClassId");
 
@@ -2268,15 +2286,23 @@ namespace SMS.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.SetNull);
 
                     b.HasOne("SMS.Domain.Entities.SalaryStructure", "SalaryStructure")
-                        .WithMany("StaffMembers")
+                        .WithMany()
                         .HasForeignKey("SalaryStructureId")
                         .OnDelete(DeleteBehavior.SetNull);
 
+                    b.HasOne("SMS.Domain.Entities.SalaryStructure", null)
+                        .WithMany("StaffMembers")
+                        .HasForeignKey("SalaryStructureId1");
+
                     b.HasOne("SMS.Domain.Entities.UserProfile", "UserProfile")
-                        .WithMany("StaffRoles")
+                        .WithMany()
                         .HasForeignKey("UserProfileId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.HasOne("SMS.Domain.Entities.UserProfile", null)
+                        .WithMany("StaffRoles")
+                        .HasForeignKey("UserProfileId1");
 
                     b.Navigation("Department");
 
@@ -2288,10 +2314,14 @@ namespace SMS.Infrastructure.Migrations
             modelBuilder.Entity("SMS.Domain.Entities.StaffAssignment", b =>
                 {
                     b.HasOne("SMS.Domain.Entities.AcademicYear", "AcademicYear")
-                        .WithMany("StaffAssignments")
+                        .WithMany()
                         .HasForeignKey("AcademicYearId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.HasOne("SMS.Domain.Entities.AcademicYear", null)
+                        .WithMany("StaffAssignments")
+                        .HasForeignKey("AcademicYearId1");
 
                     b.HasOne("SMS.Domain.Entities.Class", "Class")
                         .WithMany("StaffAssignments")

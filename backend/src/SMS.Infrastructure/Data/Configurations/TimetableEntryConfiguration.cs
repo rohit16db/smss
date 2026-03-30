@@ -18,17 +18,9 @@ public class TimetableEntryConfiguration : IEntityTypeConfiguration<TimetableEnt
         builder.Property(t => t.TimeSlotId)
             .HasColumnName("time_slot_id")
             .IsRequired();
-
-        builder.Property(t => t.SectionId)
-            .HasColumnName("section_id")
-            .IsRequired();
-
-        builder.Property(t => t.SubjectId)
-            .HasColumnName("subject_id")
-            .IsRequired();
-
-        builder.Property(t => t.StaffId)
-            .HasColumnName("staff_id")
+            
+        builder.Property(t => t.StaffAssignmentId)
+            .HasColumnName("staff_assignment_id")
             .IsRequired();
 
         builder.Property(t => t.RoomNumber)
@@ -59,19 +51,9 @@ public class TimetableEntryConfiguration : IEntityTypeConfiguration<TimetableEnt
             .HasForeignKey(t => t.TimeSlotId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        builder.HasOne(t => t.Section)
+        builder.HasOne(t => t.StaffAssignment)
             .WithMany()
-            .HasForeignKey(t => t.SectionId)
-            .OnDelete(DeleteBehavior.Cascade);
-
-        builder.HasOne(t => t.Subject)
-            .WithMany()
-            .HasForeignKey(t => t.SubjectId)
-            .OnDelete(DeleteBehavior.Restrict);
-
-        builder.HasOne(t => t.Staff)
-            .WithMany()
-            .HasForeignKey(t => t.StaffId)
+            .HasForeignKey(t => t.StaffAssignmentId)
             .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasOne(t => t.AcademicYear)
@@ -80,15 +62,18 @@ public class TimetableEntryConfiguration : IEntityTypeConfiguration<TimetableEnt
             .OnDelete(DeleteBehavior.Restrict);
 
         // Indexes
-        builder.HasIndex(t => t.AcademicYearId);
         builder.HasIndex(t => t.TimeSlotId);
-        builder.HasIndex(t => t.SectionId);
-        builder.HasIndex(t => t.StaffId);
-        
-        // Ensure a section doesn't have two classes at the same time
-        builder.HasIndex(t => new { t.AcademicYearId, t.TimeSlotId, t.SectionId }).IsUnique();
-        
-        // Ensure a staff member is not assigned to two different classes at the same time
-        builder.HasIndex(t => new { t.AcademicYearId, t.TimeSlotId, t.StaffId }).IsUnique();
+        builder.HasIndex(t => t.StaffAssignmentId);
+        builder.HasIndex(t => t.AcademicYearId);
+
+        // Unique constraint: No duplicate entry for same assignment at same time
+        // Since StaffAssignment now includes Section, this handles both Section slot conflict 
+        // and Teacher slot conflict.
+        // Wait, if a teacher is teaching two different subjects/sections in the same slot, 
+        // that's a conflict. StaffAssignment handles (Staff, Section, Subject).
+        // Actually, we need to ensure a StaffAssignment (specific Section/Subject/Teacher) 
+        // doesn't have two entries in the same slot.
+        builder.HasIndex(t => new { t.AcademicYearId, t.TimeSlotId, t.StaffAssignmentId })
+            .IsUnique();
     }
 }

@@ -290,6 +290,29 @@ public class StaffController : ControllerBase
     }
 
     /// <summary>
+    /// Get assignments for a section
+    /// </summary>
+    /// <param name="sectionId">Section ID</param>
+    /// <param name="academicYearId">Academic Year ID</param>
+    /// <returns>List of staff assignments</returns>
+    [HttpGet("section/{sectionId}/{academicYearId}")]
+    [ProducesResponseType(typeof(List<StaffAssignmentDto>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetAssignmentsBySection(
+        Guid sectionId,
+        Guid academicYearId,
+        CancellationToken cancellationToken = default)
+    {
+        var query = new GetStaffAssignmentsBySectionQuery
+        {
+            SectionId = sectionId,
+            AcademicYearId = academicYearId
+        };
+
+        var result = await _mediator.Send(query, cancellationToken);
+        return Ok(result);
+    }
+
+    /// <summary>
     /// Create a new staff assignment
     /// </summary>
     /// <param name="id">Staff ID</param>
@@ -311,6 +334,7 @@ public class StaffController : ControllerBase
         {
             StaffId = staffId,
             ClassId = dto.ClassId,
+            SectionId = dto.SectionId,
             SubjectId = dto.SubjectId,
             AssignmentDate = dto.AssignmentDate
         };

@@ -50,20 +50,21 @@ public class CreateStaffAssignmentHandler : IRequestHandler<CreateStaffAssignmen
         // Check for duplicate active assignment in the current academic year
         var duplicateExists = await _context.StaffAssignments
             .AnyAsync(ta => ta.StaffId == request.StaffId 
-                && ta.ClassId == request.ClassId 
+                && ta.SectionId == request.SectionId 
                 && ta.SubjectId == request.SubjectId 
                 && ta.AcademicYearId == _academicYearContext.RequiredAcademicYearId
                 && ta.RemovalDate == null, cancellationToken);
 
         if (duplicateExists)
             throw new InvalidOperationException(
-                $"Teacher is already assigned to this class and subject combination in the current session");
+                $"Teacher is already assigned to this section and subject combination in the current session");
 
         var assignment = new StaffAssignment
         {
             Id = Guid.NewGuid(),
             StaffId = request.StaffId,
             ClassId = request.ClassId,
+            SectionId = request.SectionId,
             SubjectId = request.SubjectId,
             AcademicYearId = _academicYearContext.RequiredAcademicYearId,
             AssignmentDate = request.AssignmentDate ?? DateOnly.FromDateTime(DateTime.UtcNow),
@@ -79,6 +80,7 @@ public class CreateStaffAssignmentHandler : IRequestHandler<CreateStaffAssignmen
             Id = assignment.Id,
             StaffId = assignment.StaffId,
             ClassId = assignment.ClassId,
+            SectionId = assignment.SectionId,
             SubjectId = assignment.SubjectId,
             AssignmentDate = assignment.AssignmentDate,
             RemovalDate = assignment.RemovalDate,
@@ -139,6 +141,9 @@ public class GetStaffAssignmentsHandler : IRequestHandler<GetStaffAssignmentsQue
     {
         var query = _context.StaffAssignments
             .Include(ta => ta.Staff)
+            .Include(ta => ta.Section)
+            .Include(ta => ta.Class)
+            .Include(ta => ta.Subject)
             .Where(ta => ta.StaffId == request.StaffId && ta.AcademicYearId == _academicYearContext.RequiredAcademicYearId);
 
         if (request.ActiveOnly == true)
@@ -167,12 +172,59 @@ public class GetStaffAssignmentsHandler : IRequestHandler<GetStaffAssignmentsQue
             Id = a.Id,
             StaffId = a.StaffId,
             ClassId = a.ClassId,
+            SectionId = a.SectionId,
             SubjectId = a.SubjectId,
             AssignmentDate = a.AssignmentDate,
             RemovalDate = a.RemovalDate,
-            ClassName = classes.GetValueOrDefault(a.ClassId),
-            SubjectName = subjects.GetValueOrDefault(a.SubjectId)?.Name,
-            SubjectCode = subjects.GetValueOrDefault(a.SubjectId)?.Code,
+            ClassName = a.Class?.Name,
+            SectionName = a.Section?.SectionName,
+            SubjectName = a.Subject?.Name,
+            SubjectCode = a.Subject?.Code,
+            IsActive = a.RemovalDate == null
+        }).ToList();
+    }
+}
+
+/// <summary>
+/// Handler for getting staff assignments by section
+/// </summary>
+public class GetStaffAssignmentsBySectionHandler : IRequestHandler<GetStaffAssignmentsBySectionQuery, List<StaffAssignmentDto>>
+{
+    private readonly IApplicationDbContext _context;
+
+    public GetStaffAssignmentsBySectionHandler(IApplicationDbContext context)
+    {
+        _context = context;
+    }
+
+    public async Task<List<StaffAssignmentDto>> Handle(GetStaffAssignmentsBySectionQuery request, CancellationToken cancellationToken)
+    {
+        var assignments = await _context.StaffAssignments
+            .Include(a => a.Staff)
+                .ThenInclude(s => s.UserProfile)
+            .Include(a => a.Subject)
+            .Include(a => a.Class)
+            .Include(a => a.Section)
+            .Where(a => a.SectionId == request.SectionId && 
+                        a.AcademicYearId == request.AcademicYearId && 
+                        a.RemovalDate == null)
+            .OrderBy(a => a.Subject!.Name)
+            .ToListAsync(cancellationToken);
+
+        return assignments.Select(a => new StaffAssignmentDto
+        {
+            Id = a.Id,
+            StaffId = a.StaffId,
+            StaffName = a.Staff?.UserProfile?.FullName ?? "Unknown Staff",
+            ClassId = a.ClassId,
+            ClassName = a.Class?.Name,
+            SectionId = a.SectionId,
+            SectionName = a.Section?.SectionName,
+            SubjectId = a.SubjectId,
+            SubjectName = a.Subject?.Name,
+            SubjectCode = a.Subject?.Code,
+            AssignmentDate = a.AssignmentDate,
+            RemovalDate = a.RemovalDate,
             IsActive = a.RemovalDate == null
         }).ToList();
     }

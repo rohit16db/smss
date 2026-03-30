@@ -223,12 +223,15 @@ export type PaginatedStaffList = {
 
 export type StaffAssignment = {
   id: string;
-  StaffId: string;
+  staffId: string;
+  staffName?: string;
   classId: string;
+  sectionId: string;
   subjectId: string;
   assignmentDate: string;
   removalDate?: string;
   className?: string;
+  sectionName?: string;
   subjectName?: string;
   subjectCode?: string;
   isActive: boolean;
@@ -236,6 +239,7 @@ export type StaffAssignment = {
 
 export type CreateStaffAssignmentDto = {
   classId: string;
+  sectionId: string;
   subjectId: string;
   assignmentDate?: string;
 };
@@ -291,6 +295,11 @@ export const StaffApi = {
     const response = await api.get<StaffAssignment[]>(`/staff/${StaffId}/assignments`, {
       params: { activeOnly }
     });
+    return response.data;
+  },
+
+  getAssignmentsBySection: async (sectionId: string, academicYearId: string) => {
+    const response = await api.get<StaffAssignment[]>(`/staff/section/${sectionId}/${academicYearId}`);
     return response.data;
   },
 
@@ -1422,22 +1431,21 @@ export type TimetableEntry = {
   startTime: string;
   endTime: string;
   dayOfWeek: number;
-  sectionId: string;
-  sectionName: string;
-  className: string;
   subjectId: string;
   subjectName: string;
-  StaffId: string;
-  StaffName: string;
+  staffId: string;
+  staffName: string;
+  sectionId: string;
+  sectionName: string;
+  classId: string;
+  className: string;
   roomNumber?: string;
   academicYearId: string;
 };
 
 export type CreateTimetableEntryDto = {
   timeSlotId: string;
-  sectionId: string;
-  subjectId: string;
-  StaffId: string;
+  StaffAssignmentId: string;
   roomNumber?: string;
   academicYearId: string;
 };
@@ -1470,8 +1478,8 @@ export const timetableApi = {
     return response.data;
   },
 
-  getStaffTimetable: async (StaffId: string, academicYearId: string) => {
-    const response = await api.get<TimetableEntry[]>(`/timetable/entries/staff/${StaffId}/${academicYearId}`);
+  getStaffTimetable: async (staffId: string, academicYearId: string) => {
+    const response = await api.get<TimetableEntry[]>(`/timetable/entries/staff/${staffId}/${academicYearId}`);
     return response.data;
   },
 
@@ -1487,6 +1495,20 @@ export const timetableApi = {
 
   deleteEntry: async (id: string) => {
     await api.delete(`/timetable/entries/${id}`);
+  },
+
+  exportSectionTimetable: async (sectionId: string, academicYearId: string) => {
+    const response = await api.get(`/timetable/entries/section/${sectionId}/${academicYearId}/export`, {
+      responseType: 'blob'
+    });
+    return response.data;
+  },
+
+  exportStaffTimetable: async (staffId: string, academicYearId: string) => {
+    const response = await api.get(`/timetable/entries/staff/${staffId}/${academicYearId}/export`, {
+      responseType: 'blob'
+    });
+    return response.data;
   },
 };
 
