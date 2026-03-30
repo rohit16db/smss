@@ -10,7 +10,8 @@ namespace SMS.Application.Features.Timetable.Handlers.CommandHandlers;
 public class TimetableEntryCommandHandlers : 
     IRequestHandler<CreateTimetableEntryCommand, Guid>,
     IRequestHandler<UpdateTimetableEntryCommand, bool>,
-    IRequestHandler<DeleteTimetableEntryCommand, bool>
+    IRequestHandler<DeleteTimetableEntryCommand, bool>,
+    IRequestHandler<BulkCopyRoutineCommand, BulkCopyResultDto>
 {
     private readonly IApplicationDbContext _context;
 
@@ -35,7 +36,7 @@ public class TimetableEntryCommandHandlers :
 
         // Check for conflicts
         await CheckForConflicts(request.Entry.AcademicYearId, request.Entry.TimeSlotId, 
-            assignment.StaffId, assignment.SectionId, null, cancellationToken);
+            assignment.StaffId, assignment.SectionId, request.Entry.RoomNumber, null, cancellationToken);
 
         var entity = new TimetableEntry
         {
@@ -72,7 +73,7 @@ public class TimetableEntryCommandHandlers :
 
         // Check for conflicts
         await CheckForConflicts(request.Entry.AcademicYearId, request.Entry.TimeSlotId, 
-            assignment.StaffId, assignment.SectionId, request.Id, cancellationToken);
+            assignment.StaffId, assignment.SectionId, request.Entry.RoomNumber, request.Id, cancellationToken);
 
         entity.TimeSlotId = request.Entry.TimeSlotId;
         entity.StaffAssignmentId = request.Entry.StaffAssignmentId;
@@ -95,7 +96,92 @@ public class TimetableEntryCommandHandlers :
         return true;
     }
 
-    private async Task CheckForConflicts(Guid academicYearId, Guid timeSlotId, Guid staffId, Guid sectionId, Guid? currentEntryId, CancellationToken cancellationToken)
+    public async Task<BulkCopyResultDto> Handle(BulkCopyRoutineCommand request, CancellationToken cancellationToken)
+    {
+        var result = new BulkCopyResultDto();
+
+        // 1. Fetch source entries
+        var sourceQuery = _context.TimetableEntries
+            .Include(t => t.TimeSlot)
+            .Include(t => t.StaffAssignment)
+                .ThenInclude(a => a!.Subject)
+            .Where(t => t.AcademicYearId == request.AcademicYearId && (int)t.TimeSlot!.DayOfWeek == request.SourceDay);
+
+        if (request.SectionId.HasValue)
+            sourceQuery = sourceQuery.Where(t => t.StaffAssignment!.SectionId == request.SectionId.Value);
+        
+        if (request.StaffId.HasValue)
+            sourceQuery = sourceQuery.Where(t => t.StaffAssignment!.StaffId == request.StaffId.Value);
+
+        var sourceEntries = await sourceQuery.ToListAsync(cancellationToken);
+
+        if (!sourceEntries.Any())
+        {
+            result.Errors.Add("No routine found on the source day to copy.");
+            return result;
+        }
+
+        // 2. Process Target Days
+        foreach (var targetDay in request.TargetDays)
+        {
+            var dayLabel = ((DayOfWeek)targetDay).ToString();
+
+            foreach (var source in sourceEntries)
+            {
+                var sourceSlot = source.TimeSlot!;
+                
+                try 
+                {
+                    // Find or Create TimeSlot on Target Day
+                    var targetSlot = await _context.TimeSlots
+                        .FirstOrDefaultAsync(t => t.AcademicYearId == request.AcademicYearId && 
+                                               (int)t.DayOfWeek == targetDay &&
+                                               t.StartTime == sourceSlot.StartTime &&
+                                               t.EndTime == sourceSlot.EndTime, cancellationToken);
+                    
+                    if (targetSlot == null)
+                    {
+                        targetSlot = new TimeSlot
+                        {
+                            Name = sourceSlot.Name,
+                            StartTime = sourceSlot.StartTime,
+                            EndTime = sourceSlot.EndTime,
+                            DayOfWeek = (DayOfWeek)targetDay,
+                            IsBreak = sourceSlot.IsBreak,
+                            AcademicYearId = request.AcademicYearId
+                        };
+                        _context.TimeSlots.Add(targetSlot);
+                        await _context.SaveChangesAsync(cancellationToken); // Save to get ID
+                    }
+
+                    // Check for conflicts
+                    await CheckForConflicts(request.AcademicYearId, targetSlot.Id, 
+                        source.StaffAssignment!.StaffId, source.StaffAssignment.SectionId, source.RoomNumber, null, cancellationToken);
+
+                    var newEntry = new TimetableEntry
+                    {
+                        TimeSlotId = targetSlot.Id,
+                        StaffAssignmentId = source.StaffAssignmentId,
+                        RoomNumber = source.RoomNumber,
+                        AcademicYearId = request.AcademicYearId
+                    };
+
+                    _context.TimetableEntries.Add(newEntry);
+                    result.SuccessCount++;
+                }
+                catch (InvalidOperationException ex)
+                {
+                    result.SkippedCount++;
+                    result.Errors.Add($"{dayLabel} {sourceSlot.StartTime:hh\\:mm} ({source.StaffAssignment!.Subject?.Name}): {ex.Message}");
+                }
+            }
+        }
+
+        await _context.SaveChangesAsync(cancellationToken);
+        return result;
+    }
+
+    private async Task CheckForConflicts(Guid academicYearId, Guid timeSlotId, Guid staffId, Guid sectionId, string? roomNumber, Guid? currentEntryId, CancellationToken cancellationToken)
     {
         // 1. Staff Conflict: Is this staff member already assigned to another class at the same time slot?
         // Note: Join with StaffAssignment to get the StaffId for conflict check
@@ -122,6 +208,21 @@ public class TimetableEntryCommandHandlers :
         if (sectionConflict)
         {
             throw new InvalidOperationException("This section is already scheduled for another subject during this time slot.");
+        }
+
+        // 3. Room Conflict: Is this room already occupied during this time slot?
+        if (!string.IsNullOrWhiteSpace(roomNumber))
+        {
+            var roomConflict = await _context.TimetableEntries
+                .AnyAsync(t => t.AcademicYearId == academicYearId && 
+                              t.TimeSlotId == timeSlotId && 
+                              t.RoomNumber == roomNumber && 
+                              t.Id != currentEntryId, cancellationToken);
+
+            if (roomConflict)
+            {
+                throw new InvalidOperationException($"The room '{roomNumber}' is already occupied during this time slot.");
+            }
         }
     }
 }

@@ -27,19 +27,50 @@ public class TimetableController : ControllerBase
     [HttpPost("timeslots")]
     public async Task<ActionResult<Guid>> CreateTimeSlot(CreateTimeSlotDto timeSlot)
     {
-        return await _mediator.Send(new CreateTimeSlotCommand(timeSlot));
+        try
+        {
+            return await _mediator.Send(new CreateTimeSlotCommand(timeSlot));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(ex.Message);
+        }
     }
 
     [HttpPut("timeslots/{id}")]
     public async Task<ActionResult<bool>> UpdateTimeSlot(Guid id, CreateTimeSlotDto timeSlot)
     {
-        return await _mediator.Send(new UpdateTimeSlotCommand(id, timeSlot));
+        try
+        {
+            return await _mediator.Send(new UpdateTimeSlotCommand(id, timeSlot));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+        catch (KeyNotFoundException)
+        {
+            return NotFound();
+        }
     }
 
     [HttpDelete("timeslots/{id}")]
     public async Task<ActionResult<bool>> DeleteTimeSlot(Guid id)
     {
         return await _mediator.Send(new DeleteTimeSlotCommand(id));
+    }
+
+    [HttpPost("timeslots/bulk")]
+    public async Task<ActionResult<bool>> BulkCreateTimeSlots(BulkCreateTimeSlotsCommand command)
+    {
+        try
+        {
+            return await _mediator.Send(command);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(ex.Message);
+        }
     }
 
     // Timetable Entry Endpoints
@@ -85,6 +116,12 @@ public class TimetableController : ControllerBase
     public async Task<ActionResult<bool>> DeleteEntry(Guid id)
     {
         return await _mediator.Send(new DeleteTimetableEntryCommand(id));
+    }
+
+    [HttpPost("entries/bulk-copy")]
+    public async Task<ActionResult<BulkCopyResultDto>> BulkCopyRoutine(BulkCopyRoutineCommand command)
+    {
+        return await _mediator.Send(command);
     }
 
     [HttpGet("entries/section/{sectionId}/{academicYearId}/export")]
