@@ -10,6 +10,7 @@ public class CreateStaffAssignmentCommand : IRequest<StaffAssignmentDto>
 {
     public Guid StaffId { get; set; }
     public Guid ClassId { get; set; }
+    public Guid SectionId { get; set; }
     public Guid SubjectId { get; set; }
     public DateOnly? AssignmentDate { get; set; }
 }

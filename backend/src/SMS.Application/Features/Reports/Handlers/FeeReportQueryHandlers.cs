@@ -301,8 +301,7 @@ public class GetOutstandingFeesQueryHandler : IRequestHandler<GetOutstandingFees
                     IsActive = f.IsActive
                 };
             })
-            .Where(r => r != null)
-            .AsEnumerable();
+            .OfType<OutstandingFeeDto>();
 
         // Filter by aging bucket if provided
         if (!string.IsNullOrEmpty(request.AgingBucket))

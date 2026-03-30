@@ -72,14 +72,14 @@ public class StaffConfiguration : IEntityTypeConfiguration<Staff>
         
         // Relationships
         builder.HasOne(s => s.UserProfile)
-            .WithMany()
+            .WithMany(up => up.StaffRoles)
             .HasForeignKey(s => s.UserProfileId)
             .OnDelete(DeleteBehavior.Cascade);
             
         // Department relationship is configured in DepartmentConfiguration
 
         builder.HasOne(s => s.SalaryStructure)
-            .WithMany()
+            .WithMany(ss => ss.StaffMembers)
             .HasForeignKey(s => s.SalaryStructureId)
             .OnDelete(DeleteBehavior.SetNull);
         

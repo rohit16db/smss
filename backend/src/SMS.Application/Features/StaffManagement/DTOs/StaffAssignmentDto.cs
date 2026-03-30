@@ -10,14 +10,17 @@ public class StaffAssignmentDto
     public Guid Id { get; set; }
     public Guid StaffId { get; set; }
     public Guid ClassId { get; set; }
+    public Guid SectionId { get; set; }
     public Guid SubjectId { get; set; }
     public DateOnly AssignmentDate { get; set; }
     public DateOnly? RemovalDate { get; set; }
     
     // Additional display properties
     public string? ClassName { get; set; }
+    public string? SectionName { get; set; }
     public string? SubjectName { get; set; }
     public string? SubjectCode { get; set; }
+    public string? StaffName { get; set; }
     public bool IsActive { get; set; }
 }
 
@@ -27,6 +30,7 @@ public class StaffAssignmentDto
 public class CreateStaffAssignmentDto
 {
     public Guid ClassId { get; set; }
+    public Guid SectionId { get; set; }
     public Guid SubjectId { get; set; }
     public DateOnly? AssignmentDate { get; set; }
 }

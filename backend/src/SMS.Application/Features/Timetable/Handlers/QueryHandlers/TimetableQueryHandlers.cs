@@ -43,12 +43,16 @@ public class TimetableQueryHandlers :
     {
         return await _context.TimetableEntries
             .Include(t => t.TimeSlot)
-            .Include(t => t.Subject)
-            .Include(t => t.Staff)
-                .ThenInclude(s => s.UserProfile)
-            .Include(t => t.Section)
-                .ThenInclude(s => s!.Class)
-            .Where(t => t.AcademicYearId == request.AcademicYearId && t.SectionId == request.SectionId)
+            .Include(t => t.StaffAssignment)
+                .ThenInclude(a => a!.Staff)
+                    .ThenInclude(s => s.UserProfile)
+            .Include(t => t.StaffAssignment)
+                .ThenInclude(a => a!.Subject)
+            .Include(t => t.StaffAssignment)
+                .ThenInclude(a => a!.Section)
+            .Include(t => t.StaffAssignment)
+                .ThenInclude(a => a!.Class)
+            .Where(t => t.AcademicYearId == request.AcademicYearId && t.StaffAssignment!.SectionId == request.SectionId)
             .Select(t => new TimetableEntryDto
             {
                 Id = t.Id,
@@ -57,13 +61,15 @@ public class TimetableQueryHandlers :
                 StartTime = t.TimeSlot.StartTime,
                 EndTime = t.TimeSlot.EndTime,
                 DayOfWeek = t.TimeSlot.DayOfWeek,
-                SectionId = t.SectionId,
-                SectionName = t.Section!.SectionName,
-                ClassName = t.Section.Class!.Name,
-                SubjectId = t.SubjectId,
-                SubjectName = t.Subject!.Name,
-                StaffId = t.StaffId,
-                StaffName = t.Staff != null ? t.Staff.FullName : "Unknown",
+                SectionId = t.StaffAssignment!.SectionId,
+                SectionName = t.StaffAssignment.Section!.SectionName,
+                ClassId = t.StaffAssignment.ClassId,
+                ClassName = t.StaffAssignment.Class!.Name,
+                StaffAssignmentId = t.StaffAssignmentId,
+                SubjectId = t.StaffAssignment!.SubjectId,
+                SubjectName = t.StaffAssignment.Subject.Name,
+                StaffId = t.StaffAssignment!.StaffId,
+                StaffName = t.StaffAssignment.Staff!.FullName,
                 RoomNumber = t.RoomNumber,
                 AcademicYearId = t.AcademicYearId
             })
@@ -74,12 +80,16 @@ public class TimetableQueryHandlers :
     {
         return await _context.TimetableEntries
             .Include(t => t.TimeSlot)
-            .Include(t => t.Subject)
-            .Include(t => t.Staff)
-                .ThenInclude(s => s.UserProfile)
-            .Include(t => t.Section)
-                .ThenInclude(s => s!.Class)
-            .Where(t => t.AcademicYearId == request.AcademicYearId && t.StaffId == request.StaffId)
+            .Include(t => t.StaffAssignment)
+                .ThenInclude(a => a!.Staff)
+                    .ThenInclude(s => s.UserProfile)
+            .Include(t => t.StaffAssignment)
+                .ThenInclude(a => a!.Subject)
+            .Include(t => t.StaffAssignment)
+                .ThenInclude(a => a!.Section)
+            .Include(t => t.StaffAssignment)
+                .ThenInclude(a => a!.Class)
+            .Where(t => t.AcademicYearId == request.AcademicYearId && t.StaffAssignment!.StaffId == request.StaffId)
             .Select(t => new TimetableEntryDto
             {
                 Id = t.Id,
@@ -88,13 +98,15 @@ public class TimetableQueryHandlers :
                 StartTime = t.TimeSlot.StartTime,
                 EndTime = t.TimeSlot.EndTime,
                 DayOfWeek = t.TimeSlot.DayOfWeek,
-                SectionId = t.SectionId,
-                SectionName = t.Section!.SectionName,
-                ClassName = t.Section.Class!.Name,
-                SubjectId = t.SubjectId,
-                SubjectName = t.Subject!.Name,
-                StaffId = t.StaffId,
-                StaffName = t.Staff != null ? t.Staff.FullName : "Unknown",
+                SectionId = t.StaffAssignment!.SectionId,
+                SectionName = t.StaffAssignment.Section!.SectionName,
+                ClassId = t.StaffAssignment.ClassId,
+                ClassName = t.StaffAssignment.Class!.Name,
+                StaffAssignmentId = t.StaffAssignmentId,
+                SubjectId = t.StaffAssignment!.SubjectId,
+                SubjectName = t.StaffAssignment.Subject.Name,
+                StaffId = t.StaffAssignment!.StaffId,
+                StaffName = t.StaffAssignment.Staff!.FullName,
                 RoomNumber = t.RoomNumber,
                 AcademicYearId = t.AcademicYearId
             })

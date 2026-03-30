@@ -7,14 +7,8 @@ public class TimetableEntry : BaseEntity
     public Guid TimeSlotId { get; set; }
     public TimeSlot? TimeSlot { get; set; }
 
-    public Guid SectionId { get; set; }
-    public Section? Section { get; set; }
-
-    public Guid SubjectId { get; set; }
-    public Subject? Subject { get; set; }
-
-    public Guid StaffId { get; set; }
-    public Staff? Staff { get; set; }
+    public Guid StaffAssignmentId { get; set; }
+    public StaffAssignment? StaffAssignment { get; set; }
 
     public string? RoomNumber { get; set; }
     

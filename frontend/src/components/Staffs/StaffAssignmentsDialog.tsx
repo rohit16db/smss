@@ -15,6 +15,7 @@ export function StaffAssignmentsDialog({ Staff, open, onClose }: StaffAssignment
   const [showAssignForm, setShowAssignForm] = useState(false);
   const [formData, setFormData] = useState<CreateStaffAssignmentDto>({
     classId: '',
+    sectionId: '',
     subjectId: '',
     assignmentDate: new Date().toISOString().split('T')[0],
   });
@@ -25,6 +26,7 @@ export function StaffAssignmentsDialog({ Staff, open, onClose }: StaffAssignment
       setShowAssignForm(false);
       setFormData({
         classId: '',
+        sectionId: '',
         subjectId: '',
         assignmentDate: new Date().toISOString().split('T')[0],
       });
@@ -47,6 +49,13 @@ export function StaffAssignmentsDialog({ Staff, open, onClose }: StaffAssignment
     },
   });
 
+  // Fetch sections for the selected class
+  const { data: sectionsData } = useQuery({
+    queryKey: ['sections', formData.classId],
+    queryFn: () => classApi.getSectionsByClass(formData.classId),
+    enabled: !!formData.classId,
+  });
+
   // Fetch subjects for dropdown
   const { data: subjectsData } = useQuery({
     queryKey: ['subjects', 'active'],
@@ -63,6 +72,7 @@ export function StaffAssignmentsDialog({ Staff, open, onClose }: StaffAssignment
       setShowAssignForm(false);
       setFormData({
         classId: '',
+        sectionId: '',
         subjectId: '',
         assignmentDate: new Date().toISOString().split('T')[0],
       });
@@ -87,8 +97,8 @@ export function StaffAssignmentsDialog({ Staff, open, onClose }: StaffAssignment
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.classId || !formData.subjectId) {
-      toast.error('Please select both class and subject');
+    if (!formData.classId || !formData.sectionId || !formData.subjectId) {
+      toast.error('Please select class, section and subject');
       return;
     }
     createAssignmentMutation.mutate(formData);
@@ -150,7 +160,7 @@ export function StaffAssignmentsDialog({ Staff, open, onClose }: StaffAssignment
                   </label>
                   <select
                     value={formData.classId}
-                    onChange={(e) => setFormData({ ...formData, classId: e.target.value })}
+                    onChange={(e) => setFormData({ ...formData, classId: e.target.value, sectionId: '' })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                     required
                   >
@@ -158,6 +168,26 @@ export function StaffAssignmentsDialog({ Staff, open, onClose }: StaffAssignment
                     {classesData?.map((cls) => (
                       <option key={cls.id} value={cls.id}>
                         {cls.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Section <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    value={formData.sectionId}
+                    onChange={(e) => setFormData({ ...formData, sectionId: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    disabled={!formData.classId}
+                    required
+                  >
+                    <option value="">Select Section</option>
+                    {sectionsData?.map((sec) => (
+                      <option key={sec.id} value={sec.id}>
+                        {sec.sectionName}
                       </option>
                     ))}
                   </select>
@@ -242,7 +272,7 @@ export function StaffAssignmentsDialog({ Staff, open, onClose }: StaffAssignment
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-2">
                           <span className="text-lg font-semibold text-gray-800">
-                            {assignment.className}
+                            {assignment.className} - {assignment.sectionName}
                           </span>
                           {assignment.isActive && (
                             <span className="px-2 py-1 bg-green-500 text-white text-xs rounded-full">

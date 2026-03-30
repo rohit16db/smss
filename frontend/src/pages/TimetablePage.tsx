@@ -5,10 +5,11 @@ import {
   timetableApi, 
   classApi, 
   StaffApi, 
-  subjectApi,
+  settingsApi,
   type TimeSlot, 
   type CreateTimeSlotDto,
-  type CreateTimetableEntryDto
+  type CreateTimetableEntryDto,
+  type SchoolDto
 } from '../services/api';
 import { useAcademicYear } from '../hooks/useAcademicYear';
 import { LoadingSkeleton } from '../components/common/LoadingSkeleton';
@@ -27,8 +28,10 @@ export function TimetablePage() {
   const { activeYear } = useAcademicYear();
   const todayDayIndex = new Date().getDay();
   
+  const [viewMode, setViewMode] = useState<'section' | 'staff'>('section');
   const [selectedClassId, setSelectedClassId] = useState<string>('');
   const [selectedSectionId, setSelectedSectionId] = useState<string>('');
+  const [selectedStaffId, setSelectedStaffId] = useState<string>('');
   const [isTimeSlotDialogOpen, setIsTimeSlotDialogOpen] = useState(false);
   const [isEntryDialogOpen, setIsEntryDialogOpen] = useState(false);
   const [selectedDay, setSelectedDay] = useState<number>(1);
@@ -46,6 +49,17 @@ export function TimetablePage() {
     enabled: !!selectedClassId,
   });
 
+  const { data: schoolInfo } = useQuery<SchoolDto>({
+    queryKey: ['schoolSettings'],
+    queryFn: () => settingsApi.getSchoolSettings(),
+  });
+
+  const { data: allStaff } = useQuery({
+    queryKey: ['staff'],
+    queryFn: () => StaffApi.getAll(),
+    enabled: viewMode === 'staff',
+  });
+
   const { data: timeSlots, isLoading: isLoadingSlots } = useQuery({
     queryKey: ['timeSlots', activeYear?.id],
     queryFn: () => timetableApi.getTimeSlots(activeYear!.id),
@@ -53,22 +67,20 @@ export function TimetablePage() {
   });
 
   const { data: entries, isLoading: isLoadingEntries } = useQuery({
-    queryKey: ['timetableEntries', selectedSectionId, activeYear?.id],
-    queryFn: () => timetableApi.getSectionTimetable(selectedSectionId, activeYear!.id),
-    enabled: !!selectedSectionId && !!activeYear,
+    queryKey: ['timetableEntries', viewMode, selectedSectionId, selectedStaffId, activeYear?.id],
+    queryFn: () => viewMode === 'section' 
+      ? timetableApi.getSectionTimetable(selectedSectionId, activeYear!.id)
+      : timetableApi.getStaffTimetable(selectedStaffId, activeYear!.id),
+    enabled: (viewMode === 'section' ? !!selectedSectionId : !!selectedStaffId) && !!activeYear,
   });
 
-  const isGridLoading = isLoadingSlots || (!!selectedSectionId && isLoadingEntries);
-
-  const { data: Staffs } = useQuery({
-    queryKey: ['Staffs'],
-    queryFn: () => StaffApi.getAll({ pageSize: 100, isActive: true }),
+  const { data: staffAssignments, isLoading: isLoadingAssignments } = useQuery({
+    queryKey: ['staffAssignments', selectedSectionId, activeYear?.id],
+    queryFn: () => StaffApi.getAssignmentsBySection(selectedSectionId, activeYear!.id),
+    enabled: viewMode === 'section' && !!selectedSectionId && !!activeYear,
   });
 
-  const { data: subjects } = useQuery({
-    queryKey: ['subjects'],
-    queryFn: () => subjectApi.getActive(),
-  });
+  const isGridLoading = isLoadingSlots || (viewMode === 'section' ? (!!selectedSectionId && (isLoadingEntries || isLoadingAssignments)) : (!!selectedStaffId && isLoadingEntries));
 
   // Mutations
   const createSlotMutation = useMutation({
@@ -99,83 +111,214 @@ export function TimetablePage() {
     },
   });
 
-  // Helper to find entry for a day/slot
-  const getEntryFor = (day: number, slotId: string) => {
-    return entries?.find(e => e.dayOfWeek === day && e.timeSlotId === slotId);
+  const exportMutation = useMutation({
+    mutationFn: () => viewMode === 'section'
+      ? timetableApi.exportSectionTimetable(selectedSectionId, activeYear!.id)
+      : timetableApi.exportStaffTimetable(selectedStaffId, activeYear!.id),
+    onSuccess: (data) => {
+      const url = window.URL.createObjectURL(new Blob([data]));
+      const link = document.createElement('a');
+      link.href = url;
+      const fileName = viewMode === 'section' ? 'Section_Timetable.pdf' : 'Staff_Timetable.pdf';
+      link.setAttribute('download', fileName);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      toast.success('PDF generated successfully');
+    },
+    onError: () => toast.error('Failed to export PDF'),
+  });
+
+  const getEntryFor = (day: number, timeSlotId: string) => {
+    return entries?.find(e => e.dayOfWeek === day && e.timeSlotId === timeSlotId);
   };
+
+  // Group slots by time/name for rows
+  const timeRows = useMemo(() => {
+    if (!timeSlots) return [];
+    
+    const groups: Record<string, TimeSlot[]> = {};
+    timeSlots.forEach(slot => {
+      // Normalize times to HH:mm for reliable grouping
+      const start = slot.startTime.slice(0, 5);
+      const end = slot.endTime.slice(0, 5);
+      const key = `${start}-${end}-${slot.name.trim()}`;
+      if (!groups[key]) groups[key] = [];
+      groups[key].push(slot);
+    });
+
+    return Object.values(groups).sort((a, b) => a[0].startTime.localeCompare(b[0].startTime));
+  }, [timeSlots]);
 
   const sortedSlots = useMemo(() => {
     if (!timeSlots) return [];
-    return [...timeSlots].sort((a, b) => a.startTime.localeCompare(b.startTime));
+    return [...timeSlots].sort((a, b) => {
+      const dayDiff = a.dayOfWeek - b.dayOfWeek;
+      if (dayDiff !== 0) return dayDiff;
+      return a.startTime.localeCompare(b.startTime);
+    });
   }, [timeSlots]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="space-y-6">
+          {/* Print Header (Visible only on print) */}
+          {schoolInfo && (
+            <div className="hidden print:block border-b-2 border-blue-600 pb-6 mb-8">
+              <div className="flex justify-between items-start">
+                <div className="flex gap-6 items-center">
+                  {schoolInfo.logoBase64 && (
+                    <img 
+                      src={`data:image/png;base64,${schoolInfo.logoBase64}`} 
+                      alt="School Logo" 
+                      className="w-20 h-20 object-contain rounded-xl shadow-sm"
+                    />
+                  )}
+                  <div>
+                    <h1 className="text-3xl font-extrabold text-blue-900 tracking-tight">{schoolInfo.name}</h1>
+                    <p className="text-slate-600 text-sm mt-1 max-w-md font-medium leading-relaxed">{schoolInfo.address}</p>
+                    <div className="flex gap-4 mt-2 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                      <span>{schoolInfo.phoneNumber}</span>
+                      <span>•</span>
+                      <span>{schoolInfo.emailAddress}</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <h2 className="text-xl font-bold text-blue-800 uppercase tracking-widest italic font-serif">
+                    Weekly Timetable
+                  </h2>
+                  <p className="text-slate-500 text-xs mt-1 font-bold">Academic Year: {activeYear?.name}</p>
+                  <div className="mt-2 inline-block px-3 py-1 bg-blue-50 border border-blue-100 rounded-lg text-blue-700 text-sm font-bold shadow-sm">
+                    {viewMode === 'section' 
+                      ? `Class: ${classes?.items.find(c => c.id === selectedClassId)?.name || ''} - ${sections?.find(s => s.id === selectedSectionId)?.sectionName || ''}`
+                      : `Teacher: ${allStaff?.items.find(s => s.id === selectedStaffId)?.firstName} ${allStaff?.items.find(s => s.id === selectedStaffId)?.lastName}`
+                    }
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Header */}
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 print:hidden">
             <div>
-              <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent">
-                Timetable Management
+              <h1 className="text-4xl font-black bg-gradient-to-r from-blue-700 via-blue-800 to-indigo-900 bg-clip-text text-transparent tracking-tight">
+                Academic Timetable
               </h1>
-              <p className="text-gray-600 mt-2">Configure and manage weekly schedules for classes</p>
+              <p className="text-slate-500 mt-2 font-medium">Manage and view weekly instruction schedules</p>
             </div>
             
-            <button 
-              onClick={() => setIsTimeSlotDialogOpen(true)}
-              className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:shadow-lg hover:scale-105 transition-all duration-300 font-medium whitespace-nowrap"
-            >
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-60h6" />
-              </svg>
-              Manage Time Slots
-            </button>
+            <div className="flex items-center gap-3 w-full lg:w-auto">
+              <button 
+                onClick={() => exportMutation.mutate()}
+                disabled={exportMutation.isPending || (viewMode === 'section' ? !selectedSectionId : !selectedStaffId)}
+                className="flex items-center justify-center gap-2 px-5 py-3 bg-white border border-slate-200 text-slate-700 rounded-xl hover:bg-slate-50 hover:border-blue-300 hover:text-blue-700 hover:shadow-md transition-all duration-300 font-bold disabled:opacity-40 disabled:cursor-not-allowed group min-w-[140px]"
+              >
+                {exportMutation.isPending ? (
+                  <div className="w-5 h-5 border-2 border-slate-300 border-t-blue-600 rounded-full animate-spin" />
+                ) : (
+                  <svg className="w-5 h-5 text-slate-400 group-hover:text-blue-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                  </svg>
+                )}
+                {exportMutation.isPending ? 'Generating...' : 'Export PDF'}
+              </button>
+              
+              <button 
+                onClick={() => setIsTimeSlotDialogOpen(true)}
+                className="flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-br from-blue-600 to-indigo-700 text-white rounded-xl hover:shadow-xl hover:scale-[1.02] active:scale-95 transition-all duration-300 font-bold shadow-lg shadow-blue-500/20"
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+                Configure Slots
+              </button>
+            </div>
           </div>
 
-          {/* Main Filter */}
-          <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 flex flex-col md:flex-row gap-6 hover:shadow-xl transition-shadow duration-300">
-        <div className="flex-1">
-          <label className="block text-sm font-semibold text-gray-700 mb-2">Select Class</label>
-          <select 
-            value={selectedClassId}
-            onChange={(e) => {
-              setSelectedClassId(e.target.value);
-              setSelectedSectionId('');
-            }}
-            className="input-field w-full"
-          >
-           <option value="">-- Select Class --</option>
-            {classes?.items.map(cls => (
-              <option key={cls.id} value={cls.id}>{cls.name}</option>
-            ))}
-          </select>
-        </div>
+          {/* View Mode Toggle & Filter */}
+          <div className="bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 p-2 print:hidden">
+            <div className="flex flex-col md:flex-row gap-2">
+              {/* Mode Tabs */}
+              <div className="bg-slate-100 p-1.5 rounded-2xl flex gap-1">
+                <button 
+                  onClick={() => setViewMode('section')}
+                  className={`flex-1 px-6 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 ${viewMode === 'section' ? 'bg-white text-blue-700 shadow-md ring-1 ring-black/5' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200/50'}`}
+                >
+                  Section View
+                </button>
+                <button 
+                  onClick={() => setViewMode('staff')}
+                  className={`flex-1 px-6 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 ${viewMode === 'staff' ? 'bg-white text-blue-700 shadow-md ring-1 ring-black/5' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200/50'}`}
+                >
+                  Teacher View
+                </button>
+              </div>
 
-        <div className="flex-1">
-          <label className="block text-sm font-semibold text-gray-700 mb-2">Select Section</label>
-          <select 
-            value={selectedSectionId}
-            onChange={(e) => setSelectedSectionId(e.target.value)}
-            disabled={!selectedClassId}
-            className="input-field w-full disabled:opacity-50"
-          >
-            <option value="">-- Select Section --</option>
-            {sections?.map(sec => (
-              <option key={sec.id} value={sec.id}>{sec.sectionName}</option>
-            ))}
-          </select>
-        </div>
-      </div>
+              {/* Dynamic Filter Bar */}
+              <div className="flex-1 flex flex-col md:flex-row gap-4 p-2">
+                {viewMode === 'section' ? (
+                  <>
+                    <div className="flex-1 flex flex-col gap-1.5">
+                      <label className="px-1 text-[10px] font-black text-slate-400 uppercase tracking-widest">Target Class</label>
+                      <select 
+                        value={selectedClassId}
+                        onChange={(e) => {
+                          setSelectedClassId(e.target.value);
+                          setSelectedSectionId('');
+                        }}
+                        className="input-field-new"
+                      >
+                        <option value="">-- Select Class --</option>
+                        {classes?.items.map(cls => (
+                          <option key={cls.id} value={cls.id}>{cls.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="flex-1 flex flex-col gap-1.5">
+                      <label className="px-1 text-[10px] font-black text-slate-400 uppercase tracking-widest">Section / Room</label>
+                      <select 
+                        value={selectedSectionId}
+                        onChange={(e) => setSelectedSectionId(e.target.value)}
+                        disabled={!selectedClassId}
+                        className="input-field-new disabled:opacity-40"
+                      >
+                        <option value="">-- Select Section --</option>
+                        {sections?.map(sec => (
+                          <option key={sec.id} value={sec.id}>{sec.sectionName}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex-1 flex flex-col gap-1.5 px-2">
+                    <label className="px-1 text-[10px] font-black text-slate-400 uppercase tracking-widest">Select Faculty Member</label>
+                    <select 
+                      value={selectedStaffId}
+                      onChange={(e) => setSelectedStaffId(e.target.value)}
+                      className="input-field-new"
+                    >
+                      <option value="">-- Select Teacher --</option>
+                      {allStaff?.items.map(s => (
+                        <option key={s.id} value={s.id}>{s.firstName} {s.lastName} ({s.designation})</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
 
       {/* Timetable Grid */}
-      {selectedSectionId ? (
+      {(viewMode === 'section' ? selectedSectionId : selectedStaffId) ? (
         isGridLoading ? (
           <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden p-6">
             <LoadingSkeleton rows={5} type="table" />
           </div>
         ) : (
-        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden hover:shadow-xl transition-shadow duration-300">
+        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden hover:shadow-xl transition-shadow duration-300 print:shadow-none print:border-slate-300">
           <div className="overflow-x-auto">
             <table className="w-full border-collapse">
               <thead className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b-2 border-blue-100">
@@ -202,7 +345,7 @@ export function TimetablePage() {
                 </tr>
               </thead>
               <tbody>
-                {sortedSlots.length === 0 ? (
+                {timeRows.length === 0 ? (
                   <tr>
                     <td colSpan={7} className="p-12 text-center text-gray-400">
                       No time slots configured for {activeYear?.name}. 
@@ -210,86 +353,134 @@ export function TimetablePage() {
                     </td>
                   </tr>
                 ) : (
-                  sortedSlots.map(slot => (
-                    <tr key={slot.id} className="border-b border-gray-200 hover:bg-gray-50 transition-colors">
-                      <td className="p-4 border-r border-gray-200">
-                        <div className="font-bold text-gray-900 text-sm">{slot.name}</div>
-                        <div className="text-xs text-gray-500 font-mono">{slot.startTime.slice(0, 5)} - {slot.endTime.slice(0, 5)}</div>
-                        {slot.isBreak && <span className="mt-1 inline-block px-1.5 py-0.5 rounded text-[10px] font-bold uppercase bg-orange-100 text-orange-700">Break</span>}
-                      </td>
-                      
-                      {DAYS_OF_WEEK.map(day => {
-                        const entry = getEntryFor(day.value, slot.id);
-                        return (
-                          <td 
-                            key={`${day.value}-${slot.id}`} 
-                            className={`p-2 border-r border-gray-200 relative group min-h-[100px] transition-colors duration-200 ${slot.isBreak ? 'bg-orange-50/30' : ''} ${day.value === todayDayIndex && !slot.isBreak ? 'bg-blue-50/20' : ''}`}
-                          >
-                            {slot.isBreak ? (
-                              <div className="flex items-center justify-center h-full min-h-[60px]">
-                                <div className="text-center text-orange-400/70 font-bold text-xs italic tracking-widest uppercase">Interval</div>
-                              </div>
-                            ) : entry ? (
-                              <div className="p-3 rounded-xl bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200 shadow-sm relative group/card hover:shadow-md hover:scale-[1.03] hover:-translate-y-0.5 transition-all duration-300 z-10 hover:z-20 cursor-default flex flex-col h-full min-h-[80px] ring-1 ring-black/5 hover:ring-blue-400">
-                                <button 
-                                  onClick={() => deleteEntryMutation.mutate(entry.id)}
-                                  className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1.5 opacity-0 group-hover/card:opacity-100 transition-opacity shadow-lg hover:bg-red-600 hover:scale-110 focus:opacity-100"
-                                  title="Remove Assignment"
-                                >
-                                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" />
-                                  </svg>
-                                </button>
-                                <div className="font-bold text-blue-900 text-sm truncate group-hover/card:whitespace-normal group-hover/card:overflow-visible transition-all leading-tight">
-                                  {entry.subjectName}
+                  timeRows.map(rowSlots => {
+                    const first = rowSlots[0];
+                    return (
+                      <tr key={first.id} className="border-b border-gray-200 hover:bg-gray-50 transition-colors">
+                        <td className="p-4 border-r border-gray-200">
+                          <div className="font-bold text-gray-900 text-sm">{first.name}</div>
+                          <div className="text-xs text-gray-500 font-mono">{first.startTime.slice(0, 5)} - {first.endTime.slice(0, 5)}</div>
+                          {first.isBreak && <span className="mt-1 inline-block px-1.5 py-0.5 rounded text-[10px] font-bold uppercase bg-orange-100 text-orange-700">Break</span>}
+                        </td>
+                        
+                        {DAYS_OF_WEEK.map(day => {
+                          const daySlot = rowSlots.find(s => s.dayOfWeek === day.value);
+                          const entry = daySlot ? getEntryFor(day.value, daySlot.id) : null;
+                          
+                          return (
+                            <td 
+                              key={`${day.value}-${first.id}`} 
+                              className={`p-2 border-r border-gray-200 relative group min-h-[100px] transition-colors duration-200 ${first.isBreak ? 'bg-orange-50/30' : ''} ${day.value === todayDayIndex && !first.isBreak ? 'bg-blue-50/20' : ''}`}
+                            >
+                              {first.isBreak ? (
+                                <div className="flex items-center justify-center h-full min-h-[60px]">
+                                  <div className="text-center text-orange-400/70 font-bold text-xs italic tracking-widest uppercase">Interval</div>
                                 </div>
-                                <div className="text-xs text-blue-700 mt-1.5 flex items-center gap-1.5 opacity-90">
-                                  <svg className="w-3.5 h-3.5 opacity-70 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
-                                  </svg>
-                                  <span className="truncate">{entry.StaffName}</span>
-                                </div>
-                                {entry.roomNumber && (
-                                  <div className="mt-auto pt-2.5 flex items-center gap-1">
-                                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-white/60 text-[10px] text-blue-800 font-bold uppercase tracking-wider backdrop-blur-sm border border-blue-200/50 shadow-sm">
-                                      <svg className="w-3 h-3 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                              ) : entry ? (
+                                <div className="p-3 rounded-xl bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200 shadow-sm relative group/card hover:shadow-md hover:scale-[1.03] hover:-translate-y-0.5 transition-all duration-300 z-10 hover:z-20 cursor-default flex flex-col h-full min-h-[80px] ring-1 ring-black/5 hover:ring-blue-400">
+                                  {viewMode === 'section' ? (
+                                    <button 
+                                      onClick={() => deleteEntryMutation.mutate(entry.id)}
+                                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1.5 opacity-0 group-hover/card:opacity-100 transition-opacity shadow-lg hover:bg-red-600 hover:scale-110 focus:opacity-100 print:hidden"
+                                      title="Remove Assignment"
+                                    >
+                                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" />
                                       </svg>
-                                      {entry.roomNumber}
+                                    </button>
+                                  ) : (
+                                    <div className="absolute top-2 right-2 px-1.5 py-0.5 rounded bg-blue-600 text-[8px] font-black text-white uppercase tracking-tighter shadow-sm">
+                                      Teaching
+                                    </div>
+                                  )}
+                                  <div className="font-bold text-blue-900 text-sm truncate group-hover/card:whitespace-normal group-hover/card:overflow-visible transition-all leading-tight">
+                                    {entry.subjectName}
+                                  </div>
+                                  <div className="text-xs text-blue-700 mt-1.5 flex items-center gap-1.5 opacity-90 font-medium">
+                                    <svg className="w-3.5 h-3.5 opacity-70 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                      <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+                                    </svg>
+                                    <span className="truncate">
+                                      {viewMode === 'section' ? entry.staffName : `${entry.className} - ${entry.sectionName}`}
                                     </span>
                                   </div>
-                                )}
-                              </div>
-                            ) : (
-                              <button 
-                                onClick={() => {
-                                  setSelectedDay(day.value);
-                                  setSelectedSlot(slot);
-                                  setIsEntryDialogOpen(true);
-                                }}
-                                className="absolute inset-1.5 flex items-center justify-center rounded-xl border-2 border-dashed border-transparent hover:border-blue-300 hover:bg-blue-50/60 opacity-0 group-hover:opacity-100 transition-all duration-300 z-0"
-                                title="Assign Subject"
-                              >
-                                <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-blue-500 shadow-sm group-hover:scale-110 transition-transform duration-300">
-                                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M12 4v16m8-8H4" />
-                                  </svg>
+                                  {entry.roomNumber && (
+                                    <div className="mt-auto pt-2.5 flex items-center gap-1">
+                                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-white/60 text-[10px] text-blue-800 font-bold uppercase tracking-wider backdrop-blur-sm border border-blue-200/50 shadow-sm print:bg-slate-50 print:border-slate-300">
+                                        <svg className="w-3 h-3 text-blue-500 print:text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                                        </svg>
+                                        {entry.roomNumber}
+                                      </span>
+                                    </div>
+                                  )}
                                 </div>
-                              </button>
-                            )}
-                          </td>
-                        );
-                      })}
-                    </tr>
-                  ))
+                              ) : (
+                                <button 
+                                  onClick={async (e) => {
+                                    e.stopPropagation();
+                                    if (daySlot) {
+                                      setSelectedDay(day.value);
+                                      setSelectedSlot(daySlot);
+                                      setIsEntryDialogOpen(true);
+                                    } else {
+                                      // Auto-create slot for this day
+                                      try {
+                                        const newSlotId = await createSlotMutation.mutateAsync({
+                                          name: first.name,
+                                          dayOfWeek: day.value,
+                                          startTime: first.startTime,
+                                          endTime: first.endTime,
+                                          isBreak: first.isBreak,
+                                          academicYearId: activeYear!.id
+                                        });
+                                        
+                                        // Immediately open entry dialog with the new slot
+                                        setSelectedDay(day.value);
+                                        setSelectedSlot({
+                                          id: newSlotId,
+                                          name: first.name,
+                                          startTime: first.startTime,
+                                          endTime: first.endTime,
+                                          dayOfWeek: day.value,
+                                          isBreak: first.isBreak,
+                                          academicYearId: activeYear!.id
+                                        });
+                                        setIsEntryDialogOpen(true);
+                                        toast.success(`Initialized ${first.name} for ${day.label}`);
+                                      } catch (e) {
+                                        toast.error("Failed to auto-create time slot");
+                                      }
+                                    }
+                                  }}
+                                  disabled={createSlotMutation.isPending}
+                                  className={`absolute inset-1.5 flex items-center justify-center rounded-xl border-2 border-dashed transition-all duration-300 z-0 ${daySlot ? 'border-transparent hover:border-blue-300 hover:bg-blue-50/60 opacity-0 group-hover:opacity-100' : 'border-gray-200 opacity-40 hover:opacity-100 hover:border-blue-300'} ${createSlotMutation.isPending ? 'cursor-not-allowed' : ''}`}
+                                  title={daySlot ? "Assign Subject" : `Initialize ${first.name} for ${day.label}`}
+                                >
+                                  <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-blue-500 shadow-sm group-hover:scale-110 transition-transform duration-300 print:hidden">
+                                    {createSlotMutation.isPending ? (
+                                      <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                                    ) : (
+                                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M12 4v16m8-8H4" />
+                                      </svg>
+                                    )}
+                                  </div>
+                                </button>
+                              )}
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    );
+                  })
                 )}
               </tbody>
             </table>
           </div>
         </div>
         )
-      ) : (
-        <div className="flex flex-col items-center justify-center p-24 bg-white rounded-3xl shadow-lg border border-gray-100 hover:shadow-xl transition-shadow duration-500 group relative overflow-hidden">
+      ) : (        <div className="flex flex-col items-center justify-center p-24 bg-white rounded-3xl shadow-lg border border-gray-100 hover:shadow-xl transition-shadow duration-500 group relative overflow-hidden print:hidden">
           <div className="absolute inset-0 bg-gradient-to-br from-blue-50/50 to-indigo-50/50 transform scale-[0.98] group-hover:scale-100 transition-transform duration-700 rounded-3xl -z-10"></div>
           
           <div className="w-24 h-24 bg-gradient-to-br from-blue-100 to-indigo-100 text-blue-600 rounded-3xl flex items-center justify-center mb-6 shadow-inner relative group-hover:shadow-lg transition-shadow duration-500">
@@ -300,13 +491,72 @@ export function TimetablePage() {
           </div>
           
           <h3 className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent mb-3">
-            Configure Timetable
+            {viewMode === 'section' ? 'Configure Section Timetable' : 'Faculty Workload View'}
           </h3>
           <p className="text-gray-500 max-w-md text-center font-medium leading-relaxed">
-            Select a class and section from the filters above to view, modify, or manage its weekly instruction schedule.
+            {viewMode === 'section' 
+              ? 'Select a class and section from the filters above to view or manage its weekly instruction schedule.'
+              : 'Select a faculty member to see their consolidated teaching schedule across all classes and sessions.'}
           </p>
         </div>
       )}
+
+      <style dangerouslySetInnerHTML={{ __html: `
+        @media print {
+          @page {
+            size: A4 landscape;
+            margin: 10mm;
+          }
+          body {
+            background: white !important;
+            padding: 0 !important;
+          }
+          .min-h-screen {
+            min-height: auto !important;
+            background: white !important;
+          }
+          .max-w-7xl {
+            max-width: 100% !important;
+            padding: 0 !important;
+            margin: 0 !important;
+          }
+          table {
+            border: 1px solid #e2e8f0 !important;
+            width: 100% !important;
+            table-layout: fixed !important;
+          }
+          th, td {
+            border: 1px solid #e2e8f0 !important;
+            padding: 6px !important;
+          }
+          .bg-gradient-to-br, .bg-gradient-to-r {
+            background: #f8fafc !important;
+            -webkit-print-color-adjust: exact;
+          }
+          .text-transparent {
+            color: #1e3a8a !important;
+            -webkit-fill-color: initial !important;
+          }
+          .rounded-2xl, .rounded-xl, .rounded-3xl {
+            border-radius: 4px !important;
+          }
+          .shadow-lg, .shadow-xl, .shadow-sm {
+            shadow: none !important;
+            box-shadow: none !important;
+          }
+          button, .print-hidden {
+            display: none !important;
+          }
+        }
+        .input-field-new {
+          @apply w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-700 focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all outline-none appearance-none;
+          background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748b'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+          background-repeat: no-repeat;
+          background-position: right 1rem center;
+          background-size: 1.25rem;
+        }
+      `}} />
+
 
       {/* TimeSlot Management Dialog */}
       {isTimeSlotDialogOpen && (
@@ -402,30 +652,29 @@ export function TimetablePage() {
               const formData = new FormData(e.currentTarget);
               const data: CreateTimetableEntryDto = {
                 timeSlotId: selectedSlot.id,
-                sectionId: selectedSectionId,
-                subjectId: formData.get('subjectId') as string,
-                StaffId: formData.get('StaffId') as string,
+                StaffAssignmentId: formData.get('staffAssignmentId') as string,
                 roomNumber: formData.get('roomNumber') as string || undefined,
                 academicYearId: activeYear!.id
               };
               createEntryMutation.mutate(data);
             }} className="space-y-4">
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">Subject</label>
-                <select name="subjectId" required className="input-field">
-                  <option value="">-- Select Subject --</option>
-                  {subjects?.map(s => <option key={s.id} value={s.id}>{s.name} ({s.code})</option>)}
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Subject Assignment</label>
+                <select name="staffAssignmentId" required className="input-field">
+                  <option value="">-- Select Subject & Teacher --</option>
+                  {staffAssignments?.map(a => (
+                    <option key={a.id} value={a.id}>
+                      {a.subjectName} - {a.staffName}
+                    </option>
+                  ))}
                 </select>
+                {staffAssignments?.length === 0 && (
+                  <p className="mt-1 text-xs text-amber-600 font-medium">
+                    No teaching assignments found for this section. Please create assignments in Staff Management first.
+                  </p>
+                )}
               </div>
               
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">Staff</label>
-                <select name="StaffId" required className="input-field">
-                  <option value="">-- Select Staff --</option>
-                  {Staffs?.items.map(t => <option key={t.id} value={t.id}>{t.firstName} {t.lastName}</option>)}
-                </select>
-              </div>
-
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1">Room Number (Optional)</label>
                 <input name="roomNumber" className="input-field" placeholder="e.g. Lab 1, Room 202" />
@@ -435,7 +684,7 @@ export function TimetablePage() {
                 <button type="button" onClick={() => setIsEntryDialogOpen(false)} className="flex-1 btn-secondary">Cancel</button>
                 <button 
                   type="submit" 
-                  disabled={createEntryMutation.isPending}
+                  disabled={createEntryMutation.isPending || !staffAssignments?.length}
                   className="flex-1 btn-primary"
                 >
                   {createEntryMutation.isPending ? 'Assigning...' : 'Assign Subject'}

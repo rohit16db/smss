@@ -14,8 +14,20 @@ public class StaffAssignment : BaseEntity
     /// <summary>Class ID (from existing class entity)</summary>
     public Guid ClassId { get; set; }
     
+    /// <summary>Navigation property to the class</summary>
+    public Class? Class { get; set; }
+
+    /// <summary>Section ID (from existing section entity)</summary>
+    public Guid SectionId { get; set; }
+
+    /// <summary>Navigation property to the section</summary>
+    public Section? Section { get; set; }
+    
     /// <summary>Subject ID (from existing subject entity)</summary>
     public Guid SubjectId { get; set; }
+    
+    /// <summary>Navigation property to the subject</summary>
+    public Subject? Subject { get; set; }
     
     /// <summary>
     /// Academic year Id this assignment applies to
