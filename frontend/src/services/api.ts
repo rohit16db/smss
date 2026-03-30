@@ -1524,6 +1524,7 @@ export const timetableApi = {
     });
     return response.data;
   },
+<<<<<<< HEAD
 
   bulkCreateTimeSlots: async (data: { academicYearId: string, sourceDay: number, targetDays: number[] }) => {
     const response = await api.post<boolean>(`/timetable/timeslots/bulk`, data);
@@ -1534,6 +1535,8 @@ export const timetableApi = {
     const response = await api.post<BulkCopyResultDto>(`/timetable/entries/bulk-copy`, data);
     return response.data;
   },
+=======
+>>>>>>> 90688a7e68c05fadc5d6a6a57bf6b6921a510a0e
 };
 
 // Department Types

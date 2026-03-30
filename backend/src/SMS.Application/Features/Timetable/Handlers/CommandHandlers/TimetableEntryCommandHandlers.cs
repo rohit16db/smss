@@ -33,6 +33,17 @@ public class TimetableEntryCommandHandlers :
 
         if (assignment.RemovalDate != null)
             throw new InvalidOperationException("Cannot schedule for a removed staff assignment.");
+        var assignment = await _context.StaffAssignments
+            .FirstOrDefaultAsync(a => a.Id == request.Entry.StaffAssignmentId, cancellationToken);
+
+        if (assignment == null)
+            throw new KeyNotFoundException($"Staff Assignment with ID {request.Entry.StaffAssignmentId} not found");
+
+        if (assignment.AcademicYearId != request.Entry.AcademicYearId)
+            throw new InvalidOperationException("Staff Assignment academic year does not match the timetable entry academic year.");
+
+        if (assignment.RemovalDate != null)
+            throw new InvalidOperationException("Cannot schedule for a removed staff assignment.");
 
         // Check for conflicts
         await CheckForConflicts(request.Entry.AcademicYearId, request.Entry.TimeSlotId, 
@@ -41,6 +52,7 @@ public class TimetableEntryCommandHandlers :
         var entity = new TimetableEntry
         {
             TimeSlotId = request.Entry.TimeSlotId,
+            StaffAssignmentId = request.Entry.StaffAssignmentId,
             StaffAssignmentId = request.Entry.StaffAssignmentId,
             RoomNumber = request.Entry.RoomNumber,
             AcademicYearId = request.Entry.AcademicYearId
@@ -70,12 +82,24 @@ public class TimetableEntryCommandHandlers :
 
         if (assignment.RemovalDate != null)
             throw new InvalidOperationException("Cannot schedule for a removed staff assignment.");
+        var assignment = await _context.StaffAssignments
+            .FirstOrDefaultAsync(a => a.Id == request.Entry.StaffAssignmentId, cancellationToken);
+
+        if (assignment == null)
+            throw new KeyNotFoundException($"Staff Assignment with ID {request.Entry.StaffAssignmentId} not found");
+
+        if (assignment.AcademicYearId != request.Entry.AcademicYearId)
+            throw new InvalidOperationException("Staff Assignment academic year does not match the timetable entry academic year.");
+
+        if (assignment.RemovalDate != null)
+            throw new InvalidOperationException("Cannot schedule for a removed staff assignment.");
 
         // Check for conflicts
         await CheckForConflicts(request.Entry.AcademicYearId, request.Entry.TimeSlotId, 
             assignment.StaffId, assignment.SectionId, request.Entry.RoomNumber, request.Id, cancellationToken);
 
         entity.TimeSlotId = request.Entry.TimeSlotId;
+        entity.StaffAssignmentId = request.Entry.StaffAssignmentId;
         entity.StaffAssignmentId = request.Entry.StaffAssignmentId;
         entity.RoomNumber = request.Entry.RoomNumber;
         entity.AcademicYearId = request.Entry.AcademicYearId;
@@ -185,10 +209,13 @@ public class TimetableEntryCommandHandlers :
     {
         // 1. Staff Conflict: Is this staff member already assigned to another class at the same time slot?
         // Note: Join with StaffAssignment to get the StaffId for conflict check
+        // Note: Join with StaffAssignment to get the StaffId for conflict check
         var staffConflict = await _context.TimetableEntries
+            .Include(t => t.StaffAssignment)
             .Include(t => t.StaffAssignment)
             .AnyAsync(t => t.AcademicYearId == academicYearId && 
                           t.TimeSlotId == timeSlotId && 
+                          t.StaffAssignment!.StaffId == staffId && 
                           t.StaffAssignment!.StaffId == staffId && 
                           t.Id != currentEntryId, cancellationToken);
 
@@ -200,8 +227,10 @@ public class TimetableEntryCommandHandlers :
         // 2. Section Conflict: Does this section already have a subject assigned at this time slot?
         var sectionConflict = await _context.TimetableEntries
             .Include(t => t.StaffAssignment)
+            .Include(t => t.StaffAssignment)
             .AnyAsync(t => t.AcademicYearId == academicYearId && 
                           t.TimeSlotId == timeSlotId && 
+                          t.StaffAssignment!.SectionId == sectionId && 
                           t.StaffAssignment!.SectionId == sectionId && 
                           t.Id != currentEntryId, cancellationToken);
 
