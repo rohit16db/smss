@@ -54,6 +54,12 @@ public interface IApplicationDbContext
     DbSet<TimeSlot> TimeSlots { get; }
     DbSet<TimetableEntry> TimetableEntries { get; }
     
+    // Phase: Transport Management
+    DbSet<Vehicle> Vehicles { get; }
+    DbSet<TransportRoute> TransportRoutes { get; }
+    DbSet<RouteStop> RouteStops { get; }
+    DbSet<StudentTransportAssignment> StudentTransportAssignments { get; }
+
     // School Configuration
     DbSet<School> Schools { get; }
 

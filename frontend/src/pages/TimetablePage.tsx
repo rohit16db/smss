@@ -6,7 +6,6 @@ import {
   classApi,
   StaffApi,
   settingsApi,
-  settingsApi,
   type TimeSlot,
   type CreateTimeSlotDto,
   type CreateTimetableEntryDto,
@@ -31,10 +30,8 @@ export function TimetablePage() {
   const todayDayIndex = new Date().getDay();
 
   const [viewMode, setViewMode] = useState<'section' | 'staff'>('section');
-  const [viewMode, setViewMode] = useState<'section' | 'staff'>('section');
   const [selectedClassId, setSelectedClassId] = useState<string>('');
   const [selectedSectionId, setSelectedSectionId] = useState<string>('');
-  const [selectedStaffId, setSelectedStaffId] = useState<string>('');
   const [selectedStaffId, setSelectedStaffId] = useState<string>('');
   const [isTimeSlotDialogOpen, setIsTimeSlotDialogOpen] = useState(false);
   const [isEntryDialogOpen, setIsEntryDialogOpen] = useState(false);
@@ -81,17 +78,6 @@ export function TimetablePage() {
     enabled: viewMode === 'staff',
   });
 
-  const { data: schoolInfo } = useQuery<SchoolDto>({
-    queryKey: ['schoolSettings'],
-    queryFn: () => settingsApi.getSchoolSettings(),
-  });
-
-  const { data: allStaff } = useQuery({
-    queryKey: ['staff'],
-    queryFn: () => StaffApi.getAll(),
-    enabled: viewMode === 'staff',
-  });
-
   const { data: timeSlots, isLoading: isLoadingSlots } = useQuery({
     queryKey: ['timeSlots', activeYear?.id],
     queryFn: () => timetableApi.getTimeSlots(activeYear!.id),
@@ -105,24 +91,13 @@ export function TimetablePage() {
       : timetableApi.getStaffTimetable(selectedStaffId, activeYear!.id),
     enabled: (viewMode === 'section' ? !!selectedSectionId : !!selectedStaffId) && !!activeYear,
   });
-  queryKey: ['timetableEntries', viewMode, selectedSectionId, selectedStaffId, activeYear?.id],
-    queryFn: () => viewMode === 'section'
-      ? timetableApi.getSectionTimetable(selectedSectionId, activeYear!.id)
-      : timetableApi.getStaffTimetable(selectedStaffId, activeYear!.id),
-      enabled: (viewMode === 'section' ? !!selectedSectionId : !!selectedStaffId) && !!activeYear,
-  });
 
-const { data: staffAssignments, isLoading: isLoadingAssignments } = useQuery({
-  queryKey: ['staffAssignments', selectedSectionId, activeYear?.id],
-  queryFn: () => StaffApi.getAssignmentsBySection(selectedSectionId, activeYear!.id),
-  enabled: viewMode === 'section' && !!selectedSectionId && !!activeYear,
   const { data: staffAssignments, isLoading: isLoadingAssignments } = useQuery({
     queryKey: ['staffAssignments', selectedSectionId, activeYear?.id],
     queryFn: () => StaffApi.getAssignmentsBySection(selectedSectionId, activeYear!.id),
     enabled: viewMode === 'section' && !!selectedSectionId && !!activeYear,
   });
 
-  const isGridLoading = isLoadingSlots || (viewMode === 'section' ? (!!selectedSectionId && (isLoadingEntries || isLoadingAssignments)) : (!!selectedStaffId && isLoadingEntries));
   const isGridLoading = isLoadingSlots || (viewMode === 'section' ? (!!selectedSectionId && (isLoadingEntries || isLoadingAssignments)) : (!!selectedStaffId && isLoadingEntries));
 
   // Mutations
@@ -227,30 +202,8 @@ const { data: staffAssignments, isLoading: isLoadingAssignments } = useQuery({
     return Object.values(groups).sort((a, b) => a[0].startTime.localeCompare(b[0].startTime));
   }, [timeSlots]);
 
-  // Group slots by time/name for rows
-  const timeRows = useMemo(() => {
-    if (!timeSlots) return [];
-
-    const groups: Record<string, TimeSlot[]> = {};
-    timeSlots.forEach(slot => {
-      // Normalize times to HH:mm for reliable grouping
-      const start = slot.startTime.slice(0, 5);
-      const end = slot.endTime.slice(0, 5);
-      const key = `${start}-${end}-${slot.name.trim()}`;
-      if (!groups[key]) groups[key] = [];
-      groups[key].push(slot);
-    });
-
-    return Object.values(groups).sort((a, b) => a[0].startTime.localeCompare(b[0].startTime));
-  }, [timeSlots]);
-
   const sortedSlots = useMemo(() => {
     if (!timeSlots) return [];
-    return [...timeSlots].sort((a, b) => {
-      const dayDiff = a.dayOfWeek - b.dayOfWeek;
-      if (dayDiff !== 0) return dayDiff;
-      return a.startTime.localeCompare(b.startTime);
-    });
     return [...timeSlots].sort((a, b) => {
       const dayDiff = a.dayOfWeek - b.dayOfWeek;
       if (dayDiff !== 0) return dayDiff;
@@ -299,57 +252,14 @@ const { data: staffAssignments, isLoading: isLoadingAssignments } = useQuery({
               </div>
             </div>
           )}
-
-          {/* Print Header (Visible only on print) */}
-          {schoolInfo && (
-            <div className="hidden print:block border-b-2 border-blue-600 pb-6 mb-8">
-              <div className="flex justify-between items-start">
-                <div className="flex gap-6 items-center">
-                  {schoolInfo.logoBase64 && (
-                    <img
-                      src={`data:image/png;base64,${schoolInfo.logoBase64}`}
-                      alt="School Logo"
-                      className="w-20 h-20 object-contain rounded-xl shadow-sm"
-                    />
-                  )}
-                  <div>
-                    <h1 className="text-3xl font-extrabold text-blue-900 tracking-tight">{schoolInfo.name}</h1>
-                    <p className="text-slate-600 text-sm mt-1 max-w-md font-medium leading-relaxed">{schoolInfo.address}</p>
-                    <div className="flex gap-4 mt-2 text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                      <span>{schoolInfo.phoneNumber}</span>
-                      <span>•</span>
-                      <span>{schoolInfo.emailAddress}</span>
-                    </div>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <h2 className="text-xl font-bold text-blue-800 uppercase tracking-widest italic font-serif">
-                    Weekly Timetable
-                  </h2>
-                  <p className="text-slate-500 text-xs mt-1 font-bold">Academic Year: {activeYear?.name}</p>
-                  <div className="mt-2 inline-block px-3 py-1 bg-blue-50 border border-blue-100 rounded-lg text-blue-700 text-sm font-bold shadow-sm">
-                    {viewMode === 'section'
-                      ? `Class: ${classes?.items.find(c => c.id === selectedClassId)?.name || ''} - ${sections?.find(s => s.id === selectedSectionId)?.sectionName || ''}`
-                      : `Teacher: ${allStaff?.items.find(s => s.id === selectedStaffId)?.firstName} ${allStaff?.items.find(s => s.id === selectedStaffId)?.lastName}`
-                    }
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
           {/* Header */}
           <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 print:hidden">
-            <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 print:hidden">
-              <div>
-                <h1 className="text-4xl font-black bg-gradient-to-r from-blue-700 via-blue-800 to-indigo-900 bg-clip-text text-transparent tracking-tight">
-                  Academic Timetable
-                  <h1 className="text-4xl font-black bg-gradient-to-r from-blue-700 via-blue-800 to-indigo-900 bg-clip-text text-transparent tracking-tight">
-                    Academic Timetable
-                  </h1>
-                  <p className="text-slate-500 mt-2 font-medium">Manage and view weekly instruction schedules</p>
-                  <p className="text-slate-500 mt-2 font-medium">Manage and view weekly instruction schedules</p>
-              </div>
+            <div>
+              <h1 className="text-4xl font-black bg-gradient-to-r from-blue-700 via-blue-800 to-indigo-900 bg-clip-text text-transparent tracking-tight">
+                Academic Timetable
+              </h1>
+              <p className="text-slate-500 mt-2 font-medium">Manage and view weekly instruction schedules</p>
+            </div>
 
               <div className="flex items-center gap-3 w-full lg:w-auto">
                 <button
@@ -471,78 +381,7 @@ const { data: staffAssignments, isLoading: isLoadingAssignments } = useQuery({
                 </div>
               </div>
             </div>
-            {/* View Mode Toggle & Filter */}
-            <div className="bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 p-2 print:hidden">
-              <div className="flex flex-col md:flex-row gap-2">
-                {/* Mode Tabs */}
-                <div className="bg-slate-100 p-1.5 rounded-2xl flex gap-1">
-                  <button
-                    onClick={() => setViewMode('section')}
-                    className={`flex-1 px-6 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 ${viewMode === 'section' ? 'bg-white text-blue-700 shadow-md ring-1 ring-black/5' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200/50'}`}
-                  >
-                    Section View
-                  </button>
-                  <button
-                    onClick={() => setViewMode('staff')}
-                    className={`flex-1 px-6 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 ${viewMode === 'staff' ? 'bg-white text-blue-700 shadow-md ring-1 ring-black/5' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200/50'}`}
-                  >
-                    Teacher View
-                  </button>
-                </div>
 
-                {/* Dynamic Filter Bar */}
-                <div className="flex-1 flex flex-col md:flex-row gap-4 p-2">
-                  {viewMode === 'section' ? (
-                    <>
-                      <div className="flex-1 flex flex-col gap-1.5">
-                        <label className="px-1 text-[10px] font-black text-slate-400 uppercase tracking-widest">Target Class</label>
-                        <select
-                          value={selectedClassId}
-                          onChange={(e) => {
-                            setSelectedClassId(e.target.value);
-                            setSelectedSectionId('');
-                          }}
-                          className="input-field-new"
-                        >
-                          <option value="">-- Select Class --</option>
-                          {classes?.items.map(cls => (
-                            <option key={cls.id} value={cls.id}>{cls.name}</option>
-                          ))}
-                        </select>
-                      </div>
-                      <div className="flex-1 flex flex-col gap-1.5">
-                        <label className="px-1 text-[10px] font-black text-slate-400 uppercase tracking-widest">Section / Room</label>
-                        <select
-                          value={selectedSectionId}
-                          onChange={(e) => setSelectedSectionId(e.target.value)}
-                          disabled={!selectedClassId}
-                          className="input-field-new disabled:opacity-40"
-                        >
-                          <option value="">-- Select Section --</option>
-                          {sections?.map(sec => (
-                            <option key={sec.id} value={sec.id}>{sec.sectionName}</option>
-                          ))}
-                        </select>
-                      </div>
-                    </>
-                  ) : (
-                    <div className="flex-1 flex flex-col gap-1.5 px-2">
-                      <label className="px-1 text-[10px] font-black text-slate-400 uppercase tracking-widest">Select Faculty Member</label>
-                      <select
-                        value={selectedStaffId}
-                        onChange={(e) => setSelectedStaffId(e.target.value)}
-                        className="input-field-new"
-                      >
-                        <option value="">-- Select Teacher --</option>
-                        {allStaff?.items.map(s => (
-                          <option key={s.id} value={s.id}>{s.firstName} {s.lastName} ({s.designation})</option>
-                        ))}
-                      </select>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
 
             {/* Timetable Grid */}
             {(viewMode === 'section' ? selectedSectionId : selectedStaffId) ? (
@@ -797,7 +636,6 @@ const { data: staffAssignments, isLoading: isLoadingAssignments } = useQuery({
               background-size: 1.25rem;
             }
           `}} />
-          </div>
         </div>
 
         {/* TimeSlot Management Dialog */}
@@ -912,114 +750,99 @@ const { data: staffAssignments, isLoading: isLoadingAssignments } = useQuery({
                 {DAYS_OF_WEEK.find(d => d.value === selectedDay)?.label} @ {selectedSlot.name} ({selectedSlot.startTime.slice(0, 5)})
               </p>
 
-              <form onSubmit={(e) => {
-                e.preventDefault();
-                const formData = new FormData(e.currentTarget);
-                const data: CreateTimetableEntryDto = {
-                  timeSlotId: selectedSlot.id,
-                  StaffAssignmentId: formData.get('staffAssignmentId') as string,
-                  StaffAssignmentId: formData.get('staffAssignmentId') as string,
-                  roomNumber: formData.get('roomNumber') as string || undefined,
-                  academicYearId: activeYear!.id
-                };
-                createEntryMutation.mutate(data);
-              }} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1">Subject Assignment</label>
-                  <select name="staffAssignmentId" required className="input-field">
-                    <option value="">-- Select Subject & Teacher --</option>
-                    {staffAssignments?.map(a => (
-                      <option key={a.id} value={a.id}>
-                        {a.subjectName} - {a.staffName}
-                      </option>
-                    ))}
-                    <label className="block text-sm font-semibold text-gray-700 mb-1">Subject Assignment</label>
-                    <select name="staffAssignmentId" required className="input-field">
-                      <option value="">-- Select Subject & Teacher --</option>
-                      {staffAssignments?.map(a => (
-                        <option key={a.id} value={a.id}>
-                          {a.subjectName} - {a.staffName}
-                        </option>
-                      ))}
-                    </select>
-                    {staffAssignments?.length === 0 && (
-                      <p className="mt-1 text-xs text-amber-600 font-medium">
-                        No teaching assignments found for this section. Please create assignments in Staff Management first.
-                      </p>
-                    )}
-                    {staffAssignments?.length === 0 && (
-                      <p className="mt-1 text-xs text-amber-600 font-medium">
-                        No teaching assignments found for this section. Please create assignments in Staff Management first.
-                      </p>
-                    )}
-                </div>
-
-
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1">Room Number (Optional)</label>
-                  <input name="roomNumber" className="input-field" placeholder="e.g. Lab 1, Room 202" />
-                </div>
-
-                <div className="pt-4 flex gap-3">
-                  <button type="button" onClick={() => setIsEntryDialogOpen(false)} className="flex-1 btn-secondary">Cancel</button>
-                  <button
-                    type="submit"
-                    disabled={createEntryMutation.isPending || !staffAssignments?.length}
-                    disabled={createEntryMutation.isPending || !staffAssignments?.length}
-                    className="flex-1 btn-primary"
-                  >
-                    {createEntryMutation.isPending ? 'Assigning...' : 'Assign Subject'}
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
-
-        {/* Bulk Sync Results Dialog */}
-        {isResultDialogOpen && bulkSyncResult && (
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-3xl shadow-2xl max-w-2xl w-full p-8 animate-slide-up max-h-[90vh] flex flex-col">
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold text-gray-900">Sync Results</h2>
-                <button onClick={() => setIsResultDialogOpen(false)} className="text-gray-400 hover:text-gray-600">
-                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-                </button>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4 mb-6">
-                <div className="p-4 bg-green-50 rounded-2xl border border-green-100">
-                  <div className="text-green-600 text-xs font-black uppercase tracking-widest mb-1">Copied Successfully</div>
-                  <div className="text-3xl font-black text-green-700">{bulkSyncResult.successCount}</div>
-                </div>
-                <div className="p-4 bg-amber-50 rounded-2xl border border-amber-100">
-                  <div className="text-amber-600 text-xs font-black uppercase tracking-widest mb-1">Skipped (Conflicts)</div>
-                  <div className="text-3xl font-black text-amber-700">{bulkSyncResult.skippedCount}</div>
-                </div>
-              </div>
-
-              {bulkSyncResult.errors.length > 0 && (
-                <div className="flex-1 overflow-y-auto">
-                  <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-3">Conflict Details</h3>
-                  <div className="space-y-2">
-                    {bulkSyncResult.errors.map((error, idx) => (
-                      <div key={idx} className="p-3 bg-red-50 text-red-700 text-sm rounded-xl border border-red-100 flex gap-3">
-                        <svg className="w-5 h-5 text-red-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        {error}
-                      </div>
-                    ))}
-                  </div>
-                </div>
+          <form onSubmit={(e) => {
+            e.preventDefault();
+            const formData = new FormData(e.currentTarget);
+            const data: CreateTimetableEntryDto = {
+              timeSlotId: selectedSlot.id,
+              StaffAssignmentId: formData.get('staffAssignmentId') as string,
+              roomNumber: formData.get('roomNumber') as string || undefined,
+              academicYearId: activeYear!.id
+            };
+            createEntryMutation.mutate(data);
+          }} className="space-y-4">
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1">Subject Assignment</label>
+              <select name="staffAssignmentId" required className="input-field">
+                <option value="">-- Select Subject & Teacher --</option>
+                {staffAssignments?.map(a => (
+                  <option key={a.id} value={a.id}>
+                    {a.subjectName} - {a.staffName}
+                  </option>
+                ))}
+              </select>
+              {staffAssignments?.length === 0 && (
+                <p className="mt-1 text-xs text-amber-600 font-medium">
+                  No teaching assignments found for this section. Please create assignments in Staff Management first.
+                </p>
               )}
+            </div>
 
-              <div className="pt-6 mt-6 border-t border-gray-100">
-                <button onClick={() => setIsResultDialogOpen(false)} className="w-full btn-primary">Close Details</button>
-              </div>
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1">Room Number (Optional)</label>
+              <input name="roomNumber" className="input-field" placeholder="e.g. Lab 1, Room 202" />
+            </div>
+
+            <div className="pt-4 flex gap-3">
+              <button type="button" onClick={() => setIsEntryDialogOpen(false)} className="flex-1 btn-secondary">Cancel</button>
+              <button
+                type="submit"
+                disabled={createEntryMutation.isPending || !staffAssignments?.length}
+                className="flex-1 btn-primary"
+              >
+                {createEntryMutation.isPending ? 'Assigning...' : 'Assign Subject'}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    )}
+
+    {/* Bulk Sync Results Dialog */}
+    {isResultDialogOpen && bulkSyncResult && (
+      <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div className="bg-white rounded-3xl shadow-2xl max-w-2xl w-full p-8 animate-slide-up max-h-[90vh] flex flex-col">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-2xl font-bold text-gray-900">Sync Results</h2>
+            <button onClick={() => setIsResultDialogOpen(false)} className="text-gray-400 hover:text-gray-600">
+              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4 mb-6">
+            <div className="p-4 bg-green-50 rounded-2xl border border-green-100">
+              <div className="text-green-600 text-xs font-black uppercase tracking-widest mb-1">Copied Successfully</div>
+              <div className="text-3xl font-black text-green-700">{bulkSyncResult.successCount}</div>
+            </div>
+            <div className="p-4 bg-amber-50 rounded-2xl border border-amber-100">
+              <div className="text-amber-600 text-xs font-black uppercase tracking-widest mb-1">Skipped (Conflicts)</div>
+              <div className="text-3xl font-black text-amber-700">{bulkSyncResult.skippedCount}</div>
             </div>
           </div>
-        )}
+
+          {bulkSyncResult.errors.length > 0 && (
+            <div className="flex-1 overflow-y-auto">
+              <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-3">Conflict Details</h3>
+              <div className="space-y-2">
+                {bulkSyncResult.errors.map((error, idx) => (
+                  <div key={idx} className="p-3 bg-red-50 text-red-700 text-sm rounded-xl border border-red-100 flex gap-3">
+                    <svg className="w-5 h-5 text-red-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    {error}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="pt-6 mt-6 border-t border-gray-100">
+            <button onClick={() => setIsResultDialogOpen(false)} className="w-full btn-primary">Close Details</button>
+          </div>
+        </div>
       </div>
-  );
+    )}
+    </div>
+  </div>
+ );
 }

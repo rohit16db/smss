@@ -60,6 +60,12 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<TimeSlot> TimeSlots => Set<TimeSlot>();
     public DbSet<TimetableEntry> TimetableEntries => Set<TimetableEntry>();
     
+    // Phase: Transport Management
+    public DbSet<Vehicle> Vehicles => Set<Vehicle>();
+    public DbSet<TransportRoute> TransportRoutes => Set<TransportRoute>();
+    public DbSet<RouteStop> RouteStops => Set<RouteStop>();
+    public DbSet<StudentTransportAssignment> StudentTransportAssignments => Set<StudentTransportAssignment>();
+
     // School Configuration
     public DbSet<School> Schools => Set<School>();
 

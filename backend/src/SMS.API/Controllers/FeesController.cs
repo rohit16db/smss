@@ -632,6 +632,39 @@ public class FeesController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Generate and download student fee details PDF
+    /// </summary>
+    /// <param name="id">Student fee ID</param>
+    /// <returns>PDF file</returns>
+    [HttpGet("student-fees/{id}/pdf")]
+    [ProducesResponseType(typeof(FileResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetStudentFeePdf([FromRoute] string id)
+    {
+        try
+        {
+            var command = new GenerateStudentFeePdfCommand
+            {
+                StudentFeeId = id
+            };
+
+            var pdf = await _mediator.Send(command);
+
+            return File(pdf, "application/pdf", $"fee-statement-{id}.pdf");
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogError(ex, "Student fee not found for PDF generation");
+            return NotFound(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error generating student fee PDF");
+            return StatusCode(StatusCodes.Status500InternalServerError, "Error generating student fee PDF");
+        }
+    }
+
     #endregion
 
 }

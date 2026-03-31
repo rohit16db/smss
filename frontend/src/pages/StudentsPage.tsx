@@ -2,6 +2,7 @@ import { useState } from 'react';
 import toast from 'react-hot-toast';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { studentApi, classApi, type CreateStudentDto, type UpdateStudentDto, type Student } from '../services/api';
+import { transportService } from '../services/transportService';
 import { LoadingSkeleton } from '../components/common/LoadingSkeleton';
 import { ImageCropModal } from '../components/common/ImageCropModal';
 
@@ -56,6 +57,13 @@ export function StudentsPage() {
     queryKey: ['sections', selectedClassId],
     queryFn: () => classApi.getSectionsByClass(selectedClassId),
     enabled: !!selectedClassId && sectionDialogOpen,
+  });
+  
+  // Transport Status Query
+  const { data: transportStatus, isLoading: isLoadingTransport } = useQuery({
+    queryKey: ['student-transport', selectedStudent?.id],
+    queryFn: () => transportService.getStudentStatus(selectedStudent!.id),
+    enabled: !!selectedStudent && openDialog,
   });
 
   // Query for student's current section
@@ -606,6 +614,53 @@ export function StudentsPage() {
                   </div>
                 </div>
               </div>
+
+              {/* Transport Information Section (View Only) */}
+              {selectedStudent && (
+                <div className="bg-white rounded-xl shadow-md border border-gray-200 p-6 hover:shadow-lg transition-shadow">
+                  <h3 className="text-xl font-bold text-gray-800 mb-5 flex items-center gap-2">
+                    <svg className="w-6 h-6 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                    </svg>
+                    Transport Details
+                  </h3>
+                  
+                  {isLoadingTransport ? (
+                    <div className="animate-pulse space-y-4">
+                      <div className="h-4 bg-gray-200 rounded w-1/4"></div>
+                      <div className="h-10 bg-gray-100 rounded"></div>
+                    </div>
+                  ) : transportStatus ? (
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      <div className="bg-orange-50 p-4 rounded-xl border border-orange-100">
+                        <div className="text-xs font-bold text-orange-600 uppercase mb-1">Assigned Route</div>
+                        <div className="text-lg font-bold text-gray-900">{transportStatus.routeName}</div>
+                      </div>
+                      <div className="bg-blue-50 p-4 rounded-xl border border-blue-100">
+                        <div className="text-xs font-bold text-blue-600 uppercase mb-1">Pick-up / Drop-off Stop</div>
+                        <div className="text-lg font-bold text-gray-900">{transportStatus.stopName}</div>
+                      </div>
+                      <div className="bg-purple-50 p-4 rounded-xl border border-purple-100">
+                        <div className="text-xs font-bold text-purple-600 uppercase mb-1">Vehicle Info</div>
+                        <div className="text-lg font-bold text-gray-900">{transportStatus.vehicleReg}</div>
+                        <div className="text-xs text-gray-500 mt-1">Bus / Van assigned to route</div>
+                      </div>
+                      
+                      <div className="col-span-1 md:col-span-3 mt-2 flex items-center gap-2 text-sm text-gray-600">
+                        <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                        </svg>
+                        Transport Subscription Active since {new Date(transportStatus.effectiveDate).toLocaleDateString()}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="bg-gray-50 border-2 border-dashed border-gray-200 rounded-xl p-8 text-center">
+                      <div className="text-gray-400 mb-2 font-medium italic">No transport assignment found for this student.</div>
+                      <p className="text-xs text-gray-500">You can enroll this student from the Transport Management dashboard.</p>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Address Information Section */}
               <div className="bg-white rounded-xl shadow-md border border-gray-200 p-6 hover:shadow-lg transition-shadow">

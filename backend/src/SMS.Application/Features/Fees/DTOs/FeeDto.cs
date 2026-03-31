@@ -277,4 +277,43 @@ public class FeeReceiptDto
     public string? SchoolEmail { get; set; }
     public string? SchoolWebsite { get; set; }
     public string? SchoolCode { get; set; }
+    public string? SchoolLogoBase64 { get; set; }
+    public List<FeeCategoryReceiptDto> Categories { get; set; } = new();
+}
+
+/// <summary>
+/// DTO for student fee statement/schedule PDF generation
+/// </summary>
+public class StudentFeeStatementDto
+{
+    public string StudentName { get; set; } = string.Empty;
+    public string EnrollmentNumber { get; set; } = string.Empty;
+    public string ClassName { get; set; } = string.Empty;
+    public string SectionName { get; set; } = string.Empty;
+    public string FeeStructureName { get; set; } = string.Empty;
+    public decimal TotalAmount { get; set; }
+    public decimal PaidAmount { get; set; }
+    public decimal BalanceAmount { get; set; }
+    public DateTime StartDate { get; set; }
+    public DateTime? EndDate { get; set; }
+    public string? Notes { get; set; }
+    
+    // School Settings
+    public string SchoolName { get; set; } = "School Management System";
+    public string SchoolAddress { get; set; } = "123 Education Street, City";
+    public string SchoolPhone { get; set; } = "+91-XXXX-XXXX";
+    public string? SchoolEmail { get; set; }
+    public string? SchoolWebsite { get; set; }
+    public string? SchoolCode { get; set; }
+    public string? SchoolLogoBase64 { get; set; }
+    public List<FeeCategoryReceiptDto> Categories { get; set; } = new();
+}
+
+/// <summary>
+/// Simplified fee category for receipt display
+/// </summary>
+public class FeeCategoryReceiptDto
+{
+    public string Category { get; set; } = string.Empty;
+    public decimal Amount { get; set; }
 }

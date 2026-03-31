@@ -700,13 +700,11 @@ public class GetFeeReceiptDataQueryHandler : IRequestHandler<GetFeeReceiptDataQu
         var payment = await _context.FeePayments
             .Include(p => p.StudentFee)
             .ThenInclude(sf => sf!.Enrollment)
-            .ThenInclude(e => e!.Student)
-            .Include(p => p.StudentFee)
-            .ThenInclude(sf => sf!.Enrollment)
             .ThenInclude(e => e!.Section)
             .ThenInclude(s => s!.Class)
             .Include(p => p.StudentFee)
             .ThenInclude(sf => sf!.FeeStructure)
+            .ThenInclude(fs => fs!.Categories)
             .FirstOrDefaultAsync(p => p.Id == paymentId, cancellationToken);
 
         if (payment?.StudentFee == null)
@@ -755,7 +753,99 @@ public class GetFeeReceiptDataQueryHandler : IRequestHandler<GetFeeReceiptDataQu
             SchoolPhone = school?.PhoneNumber ?? "+91-XXXX-XXXX",
             SchoolEmail = school?.EmailAddress,
             SchoolWebsite = school?.Website,
-            SchoolCode = school?.Code
+            SchoolCode = school?.Code,
+            SchoolLogoBase64 = school?.LogoImage != null ? Convert.ToBase64String(school.LogoImage) : null,
+            Categories = feeStructure.Categories.Select(c => new FeeCategoryReceiptDto
+            {
+                Category = c.Category,
+                Amount = c.Amount
+            }).ToList()
+        };
+    }
+}
+
+/// <summary>
+/// Handler for GetStudentFeeStatementDataQuery
+/// Retrieves comprehensive fee details for a student's assigned fee structure
+/// </summary>
+public class GetStudentFeeStatementDataQueryHandler : IRequestHandler<GetStudentFeeStatementDataQuery, StudentFeeStatementDto?>
+{
+    private readonly IApplicationDbContext _context;
+
+    public GetStudentFeeStatementDataQueryHandler(IApplicationDbContext context)
+    {
+        _context = context;
+    }
+
+    public async Task<StudentFeeStatementDto?> Handle(GetStudentFeeStatementDataQuery request, CancellationToken cancellationToken)
+    {
+        if (!Guid.TryParse(request.StudentFeeId, out var studentFeeId))
+            return null;
+
+        var studentFee = await _context.StudentFees
+            .Include(sf => sf.Enrollment)
+            .ThenInclude(e => e!.Student)
+            .Include(sf => sf.Enrollment)
+            .ThenInclude(e => e!.Section)
+            .ThenInclude(s => s!.Class)
+            .Include(sf => sf.FeeStructure)
+            .ThenInclude(fs => fs!.Categories)
+            .Include(sf => sf.Payments)
+            .FirstOrDefaultAsync(sf => sf.Id == studentFeeId, cancellationToken);
+
+        if (studentFee == null || studentFee.Enrollment?.Student == null || studentFee.FeeStructure == null)
+            return null;
+
+        var student = studentFee.Enrollment.Student;
+        var feeStructure = studentFee.FeeStructure;
+        var studentSection = studentFee.Enrollment;
+
+        var paidAmount = studentFee.Payments?.Sum(p => p.AmountPaid) ?? 0;
+        var balanceAmount = (decimal)studentFee.TotalAmount - paidAmount;
+
+        // Get active school settings
+        var school = await _context.Schools
+            .Where(s => s.IsActive)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        var categories = feeStructure.Categories.Select(c => new FeeCategoryReceiptDto
+        {
+            Category = c.Category,
+            Amount = c.Amount
+        }).ToList();
+
+        // Add Transport Fee if applicable
+        if (studentFee.TransportFeeAmount > 0)
+        {
+            categories.Add(new FeeCategoryReceiptDto
+            {
+                Category = "Transport Fee",
+                Amount = studentFee.TransportFeeAmount
+            });
+        }
+
+        return new StudentFeeStatementDto
+        {
+            StudentName = $"{student.FirstName} {student.LastName}",
+            EnrollmentNumber = student.EnrollmentNumber,
+            ClassName = studentSection.Section?.Class?.Name ?? "N/A",
+            SectionName = studentSection.Section?.SectionName ?? "N/A",
+            FeeStructureName = feeStructure.Name,
+            TotalAmount = studentFee.TotalAmount,
+            PaidAmount = paidAmount,
+            BalanceAmount = balanceAmount,
+            StartDate = studentFee.StartDate.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc),
+            EndDate = studentFee.EndDate?.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc),
+            Notes = studentFee.IsActive ? "Current Active Fee Schedule" : "Terminated Fee Schedule",
+            
+            SchoolName = school?.Name ?? "School Management System",
+            SchoolAddress = !string.IsNullOrEmpty(school?.Address) ? $"{school.Address}, {school.City}" : "123 Education Street, City",
+            SchoolPhone = school?.PhoneNumber ?? "+91-XXXX-XXXX",
+            SchoolEmail = school?.EmailAddress,
+            SchoolWebsite = school?.Website,
+            SchoolCode = school?.Code,
+            SchoolLogoBase64 = school?.LogoImage != null ? Convert.ToBase64String(school.LogoImage) : null,
+            Categories = categories
         };
     }
 }

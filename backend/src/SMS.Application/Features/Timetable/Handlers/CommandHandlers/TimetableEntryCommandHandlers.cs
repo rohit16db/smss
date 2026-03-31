@@ -33,17 +33,6 @@ public class TimetableEntryCommandHandlers :
 
         if (assignment.RemovalDate != null)
             throw new InvalidOperationException("Cannot schedule for a removed staff assignment.");
-        var assignment = await _context.StaffAssignments
-            .FirstOrDefaultAsync(a => a.Id == request.Entry.StaffAssignmentId, cancellationToken);
-
-        if (assignment == null)
-            throw new KeyNotFoundException($"Staff Assignment with ID {request.Entry.StaffAssignmentId} not found");
-
-        if (assignment.AcademicYearId != request.Entry.AcademicYearId)
-            throw new InvalidOperationException("Staff Assignment academic year does not match the timetable entry academic year.");
-
-        if (assignment.RemovalDate != null)
-            throw new InvalidOperationException("Cannot schedule for a removed staff assignment.");
 
         // Check for conflicts
         await CheckForConflicts(request.Entry.AcademicYearId, request.Entry.TimeSlotId, 
@@ -53,14 +42,12 @@ public class TimetableEntryCommandHandlers :
         {
             TimeSlotId = request.Entry.TimeSlotId,
             StaffAssignmentId = request.Entry.StaffAssignmentId,
-            StaffAssignmentId = request.Entry.StaffAssignmentId,
             RoomNumber = request.Entry.RoomNumber,
             AcademicYearId = request.Entry.AcademicYearId
         };
 
         _context.TimetableEntries.Add(entity);
         await _context.SaveChangesAsync(cancellationToken);
-
         return entity.Id;
     }
 
@@ -82,24 +69,12 @@ public class TimetableEntryCommandHandlers :
 
         if (assignment.RemovalDate != null)
             throw new InvalidOperationException("Cannot schedule for a removed staff assignment.");
-        var assignment = await _context.StaffAssignments
-            .FirstOrDefaultAsync(a => a.Id == request.Entry.StaffAssignmentId, cancellationToken);
-
-        if (assignment == null)
-            throw new KeyNotFoundException($"Staff Assignment with ID {request.Entry.StaffAssignmentId} not found");
-
-        if (assignment.AcademicYearId != request.Entry.AcademicYearId)
-            throw new InvalidOperationException("Staff Assignment academic year does not match the timetable entry academic year.");
-
-        if (assignment.RemovalDate != null)
-            throw new InvalidOperationException("Cannot schedule for a removed staff assignment.");
 
         // Check for conflicts
         await CheckForConflicts(request.Entry.AcademicYearId, request.Entry.TimeSlotId, 
             assignment.StaffId, assignment.SectionId, request.Entry.RoomNumber, request.Id, cancellationToken);
 
         entity.TimeSlotId = request.Entry.TimeSlotId;
-        entity.StaffAssignmentId = request.Entry.StaffAssignmentId;
         entity.StaffAssignmentId = request.Entry.StaffAssignmentId;
         entity.RoomNumber = request.Entry.RoomNumber;
         entity.AcademicYearId = request.Entry.AcademicYearId;
@@ -125,19 +100,17 @@ public class TimetableEntryCommandHandlers :
         var result = new BulkCopyResultDto();
 
         // 1. Fetch source entries
-        var sourceQuery = _context.TimetableEntries
+        var sourceEntries = await _context.TimetableEntries
             .Include(t => t.TimeSlot)
             .Include(t => t.StaffAssignment)
-                .ThenInclude(a => a!.Subject)
-            .Where(t => t.AcademicYearId == request.AcademicYearId && (int)t.TimeSlot!.DayOfWeek == request.SourceDay);
+            .Where(t => t.AcademicYearId == request.AcademicYearId && (int)t.TimeSlot!.DayOfWeek == request.SourceDay)
+            .ToListAsync(cancellationToken);
 
         if (request.SectionId.HasValue)
-            sourceQuery = sourceQuery.Where(t => t.StaffAssignment!.SectionId == request.SectionId.Value);
+            sourceEntries = sourceEntries.Where(t => t.StaffAssignment!.SectionId == request.SectionId.Value).ToList();
         
         if (request.StaffId.HasValue)
-            sourceQuery = sourceQuery.Where(t => t.StaffAssignment!.StaffId == request.StaffId.Value);
-
-        var sourceEntries = await sourceQuery.ToListAsync(cancellationToken);
+            sourceEntries = sourceEntries.Where(t => t.StaffAssignment!.StaffId == request.StaffId.Value).ToList();
 
         if (!sourceEntries.Any())
         {
@@ -148,8 +121,6 @@ public class TimetableEntryCommandHandlers :
         // 2. Process Target Days
         foreach (var targetDay in request.TargetDays)
         {
-            var dayLabel = ((DayOfWeek)targetDay).ToString();
-
             foreach (var source in sourceEntries)
             {
                 var sourceSlot = source.TimeSlot!;
@@ -167,36 +138,35 @@ public class TimetableEntryCommandHandlers :
                     {
                         targetSlot = new TimeSlot
                         {
-                            Name = sourceSlot.Name,
+                            AcademicYearId = request.AcademicYearId,
+                            DayOfWeek = (DayOfWeek)targetDay,
                             StartTime = sourceSlot.StartTime,
                             EndTime = sourceSlot.EndTime,
-                            DayOfWeek = (DayOfWeek)targetDay,
-                            IsBreak = sourceSlot.IsBreak,
-                            AcademicYearId = request.AcademicYearId
+                            Name = sourceSlot.Name,
+                            IsBreak = sourceSlot.IsBreak
                         };
                         _context.TimeSlots.Add(targetSlot);
-                        await _context.SaveChangesAsync(cancellationToken); // Save to get ID
+                        await _context.SaveChangesAsync(cancellationToken);
                     }
 
-                    // Check for conflicts
+                    // Check for conflicts on Target Day
                     await CheckForConflicts(request.AcademicYearId, targetSlot.Id, 
                         source.StaffAssignment!.StaffId, source.StaffAssignment.SectionId, source.RoomNumber, null, cancellationToken);
 
+                    // Create Entry
                     var newEntry = new TimetableEntry
                     {
+                        AcademicYearId = request.AcademicYearId,
                         TimeSlotId = targetSlot.Id,
                         StaffAssignmentId = source.StaffAssignmentId,
-                        RoomNumber = source.RoomNumber,
-                        AcademicYearId = request.AcademicYearId
+                        RoomNumber = source.RoomNumber
                     };
-
                     _context.TimetableEntries.Add(newEntry);
                     result.SuccessCount++;
                 }
-                catch (InvalidOperationException ex)
+                catch (Exception ex)
                 {
-                    result.SkippedCount++;
-                    result.Errors.Add($"{dayLabel} {sourceSlot.StartTime:hh\\:mm} ({source.StaffAssignment!.Subject?.Name}): {ex.Message}");
+                    result.Errors.Add($"Error copying {sourceSlot.StartTime}-{sourceSlot.EndTime} to day {targetDay}: {ex.Message}");
                 }
             }
         }
@@ -208,16 +178,9 @@ public class TimetableEntryCommandHandlers :
     private async Task CheckForConflicts(Guid academicYearId, Guid timeSlotId, Guid staffId, Guid sectionId, string? roomNumber, Guid? currentEntryId, CancellationToken cancellationToken)
     {
         // 1. Staff Conflict: Is this staff member already assigned to another class at the same time slot?
-        // Note: Join with StaffAssignment to get the StaffId for conflict check
-        // Note: Join with StaffAssignment to get the StaffId for conflict check
         var staffConflict = await _context.TimetableEntries
-            .Include(t => t.StaffAssignment)
-            .Include(t => t.StaffAssignment)
-            .AnyAsync(t => t.AcademicYearId == academicYearId && 
-                          t.TimeSlotId == timeSlotId && 
-                          t.StaffAssignment!.StaffId == staffId && 
-                          t.StaffAssignment!.StaffId == staffId && 
-                          t.Id != currentEntryId, cancellationToken);
+            .Where(t => t.AcademicYearId == academicYearId && t.TimeSlotId == timeSlotId && t.Id != currentEntryId)
+            .AnyAsync(t => _context.StaffAssignments.Any(a => a.Id == t.StaffAssignmentId && a.StaffId == staffId), cancellationToken);
 
         if (staffConflict)
         {
@@ -226,13 +189,8 @@ public class TimetableEntryCommandHandlers :
 
         // 2. Section Conflict: Does this section already have a subject assigned at this time slot?
         var sectionConflict = await _context.TimetableEntries
-            .Include(t => t.StaffAssignment)
-            .Include(t => t.StaffAssignment)
-            .AnyAsync(t => t.AcademicYearId == academicYearId && 
-                          t.TimeSlotId == timeSlotId && 
-                          t.StaffAssignment!.SectionId == sectionId && 
-                          t.StaffAssignment!.SectionId == sectionId && 
-                          t.Id != currentEntryId, cancellationToken);
+            .Where(t => t.AcademicYearId == academicYearId && t.TimeSlotId == timeSlotId && t.Id != currentEntryId)
+            .AnyAsync(t => _context.StaffAssignments.Any(a => a.Id == t.StaffAssignmentId && a.SectionId == sectionId), cancellationToken);
 
         if (sectionConflict)
         {
