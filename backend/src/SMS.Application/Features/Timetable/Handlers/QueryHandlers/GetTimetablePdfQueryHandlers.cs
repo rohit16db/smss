@@ -97,13 +97,13 @@ public class GetTimetablePdfQueryHandlers :
                         // Left: Logo
                         if (school?.LogoImage != null)
                         {
-                            row.AutoItem().PaddingRight(15).Height(60).Image(school.LogoImage).FitHeight();
+                            row.AutoItem().PaddingRight(15).Height(50).Image(school.LogoImage).FitHeight();
                         }
                         else
                         {
                             // Placeholder/Icon if no logo
-                            row.AutoItem().PaddingRight(15).Height(60).AlignMiddle().Column(c => {
-                                c.Item().Width(40).Height(40).Background(primaryColor).AlignCenter().AlignMiddle().Text("S").FontColor(Colors.White).FontSize(20).Bold();
+                            row.AutoItem().PaddingRight(15).Height(50).AlignMiddle().Column(c => {
+                                c.Item().Width(35).Height(35).Background(primaryColor).AlignCenter().AlignMiddle().Text("S").FontColor(Colors.White).FontSize(18).Bold();
                             });
                         }
 
@@ -132,11 +132,11 @@ public class GetTimetablePdfQueryHandlers :
                         });
                     });
 
-                    headerCol.Item().PaddingVertical(10).LineHorizontal(1).LineColor("#e2e8f0");
+                    headerCol.Item().PaddingVertical(5).LineHorizontal(1).LineColor("#e2e8f0");
                 });
 
                 // Content
-                page.Content().PaddingTop(10).Table(table =>
+                page.Content().PaddingTop(5).Table(table =>
                 {
                     table.ColumnsDefinition(columns =>
                     {
@@ -157,13 +157,13 @@ public class GetTimetablePdfQueryHandlers :
                                  .BorderColor("#1e3a8a")
                                  .AlignCenter()
                                  .AlignMiddle()
-                                 .PaddingVertical(8);
+                                 .PaddingVertical(4);
 
                     static IContainer BodyStyle(IContainer container) => 
                         container.Border(0.5f)
                                  .BorderColor("#cbd5e1") // Slate 300
-                                 .Padding(4)
-                                 .MinHeight(55)
+                                 .Padding(2)
+                                 .MinHeight(40)
                                  .AlignCenter()
                                  .AlignMiddle();
 

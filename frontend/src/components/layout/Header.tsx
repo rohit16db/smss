@@ -253,59 +253,59 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
                   </svg>
                 </button>
                 {academicMenuOpen && (
-                  <div className="absolute top-full left-0 mt-1 w-48 bg-white rounded-lg shadow-xl border border-gray-200 py-2 animate-fadeIn">
+                  <div className="absolute top-full left-0 mt-1 w-64 bg-white rounded-lg shadow-xl border border-gray-200 py-2 animate-fadeIn">
                     <button
                       onClick={() => navigate('/students')}
-                      className="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-colors flex items-center gap-2"
+                      className="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-colors flex items-center gap-2 whitespace-nowrap"
                     >
                       👨‍🎓 Students
                     </button>
                     <button
                       onClick={() => navigate('/staff')}
-                      className="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-colors flex items-center gap-2"
+                      className="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-colors flex items-center gap-2 whitespace-nowrap"
                     >
                       👨‍🏫 Staff Management
                     </button>
                     <button
                       onClick={() => navigate('/departments')}
-                      className="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-colors flex items-center gap-2"
+                      className="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-colors flex items-center gap-2 whitespace-nowrap"
                     >
                       🏢 Departments
                     </button>
                     <button
                       onClick={() => navigate('/classes')}
-                      className="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-colors flex items-center gap-2"
+                      className="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-colors flex items-center gap-2 whitespace-nowrap"
                     >
                       📚 Classes
                     </button>
                     <button
                       onClick={() => navigate('/subjects')}
-                      className="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-colors flex items-center gap-2"
+                      className="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-colors flex items-center gap-2 whitespace-nowrap"
                     >
                       📖 Subjects
                     </button>
                     <button
                       onClick={() => navigate('/exams')}
-                      className="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-colors flex items-center gap-2"
+                      className="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-colors flex items-center gap-2 whitespace-nowrap"
                     >
                       📝 Exams
                     </button>
                     <button
                       onClick={() => navigate('/timetable')}
-                      className="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-colors flex items-center gap-2"
+                      className="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-colors flex items-center gap-2 whitespace-nowrap"
                     >
                       📅 Timetable
                     </button>
                     <button
                       onClick={() => navigate('/transport')}
-                      className="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-colors flex items-center gap-2"
+                      className="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-colors flex items-center gap-2 whitespace-nowrap"
                     >
                       🚌 Transport Management
                     </button>
                     {(isAdmin || isClerk) && (
                       <button
                         onClick={() => navigate('/roll-numbers')}
-                        className="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-colors flex items-center gap-2"
+                        className="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-colors flex items-center gap-2 whitespace-nowrap"
                       >
                         🔢 Roll Numbers
                       </button>
@@ -313,7 +313,7 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
                     {isAdmin && (
                       <button
                         onClick={() => navigate('/holidays')}
-                        className="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-colors flex items-center gap-2"
+                        className="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-colors flex items-center gap-2 whitespace-nowrap"
                       >
                         🏖️ Holidays
                       </button>
@@ -321,7 +321,7 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
                     {(isAdmin || isClerk) && (
                       <button
                         onClick={() => navigate('/students/promote')}
-                        className="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-colors flex items-center gap-2"
+                        className="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-colors flex items-center gap-2 whitespace-nowrap"
                       >
                         🔄 Student Promotion
                       </button>
@@ -345,11 +345,11 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
                   </svg>
                 </button>
                 {financeMenuOpen && (
-                  <div className="absolute top-full left-0 mt-1 w-56 bg-white rounded-lg shadow-xl border border-gray-200 py-2 animate-fadeIn">
+                  <div className="absolute top-full left-0 mt-1 w-64 bg-white rounded-lg shadow-xl border border-gray-200 py-2 animate-fadeIn">
                     {canViewFees && (
                       <button
                         onClick={() => navigate('/fees')}
-                        className="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-colors flex items-center gap-2"
+                        className="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-colors flex items-center gap-2 whitespace-nowrap"
                       >
                         💰 Fees
                       </button>
@@ -357,7 +357,7 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
                     {canViewFees && (
                       <button
                         onClick={() => navigate('/fee-report')}
-                        className="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-colors flex items-center gap-2"
+                        className="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-colors flex items-center gap-2 whitespace-nowrap"
                       >
                         📊 Fee Report
                       </button>
@@ -365,7 +365,7 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
                     {canViewSalary && (
                       <button
                         onClick={() => navigate('/salary')}
-                        className="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-colors flex items-center gap-2"
+                        className="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-colors flex items-center gap-2 whitespace-nowrap"
                       >
                         🧾 Salary
                       </button>
@@ -373,7 +373,7 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
                     {canViewPayroll && (
                       <button
                         onClick={() => navigate('/payroll')}
-                        className="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-colors flex items-center gap-2"
+                        className="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-colors flex items-center gap-2 whitespace-nowrap"
                       >
                         💼 Payroll
                       </button>
@@ -397,29 +397,29 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
                   </svg>
                 </button>
                 {payrollMenuOpen && (
-                  <div className="absolute top-full left-0 mt-1 w-56 bg-white rounded-lg shadow-xl border border-gray-200 py-2 animate-fadeIn">
+                  <div className="absolute top-full left-0 mt-1 w-64 bg-white rounded-lg shadow-xl border border-gray-200 py-2 animate-fadeIn">
                     <button
                       onClick={() => navigate('/salary-structures')}
-                      className="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-colors flex items-center gap-2"
+                      className="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-colors flex items-center gap-2 whitespace-nowrap"
                     >
                       📊 Salary Structures
                     </button>
                     <button
                       onClick={() => navigate('/staff-salary-assignment')}
-                      className="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-colors flex items-center gap-2"
+                      className="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-colors flex items-center gap-2 whitespace-nowrap"
                     >
                       👥 Staff Assignments
                     </button>
                     <button
                       onClick={() => navigate('/bulk-salary-processing')}
-                      className="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-colors flex items-center gap-2"
+                      className="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-colors flex items-center gap-2 whitespace-nowrap"
                     >
                       🔄 Bulk Processing
                     </button>
                     <hr className="my-1 border-gray-200" />
                     <button
                       onClick={() => navigate('/salary-payments')}
-                      className="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-colors flex items-center gap-2"
+                      className="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-colors flex items-center gap-2 whitespace-nowrap"
                     >
                       💰 Payment Management
                     </button>
@@ -442,24 +442,24 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
                   </svg>
                 </button>
                 {reportsMenuOpen && (
-                  <div className="absolute top-full left-0 mt-1 w-56 bg-white rounded-lg shadow-xl border border-gray-200 py-2 animate-fadeIn">
+                  <div className="absolute top-full left-0 mt-1 w-64 bg-white rounded-lg shadow-xl border border-gray-200 py-2 animate-fadeIn">
                     {canViewFees && (
                       <>
                         <button
                           onClick={() => navigate('/outstanding-fees')}
-                          className="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-colors flex items-center gap-2"
+                          className="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-colors flex items-center gap-2 whitespace-nowrap"
                         >
                           ⚠️ Outstanding Fees
                         </button>
                         <button
                           onClick={() => navigate('/staff-salary-comparison')}
-                          className="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-colors flex items-center gap-2"
+                          className="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-colors flex items-center gap-2 whitespace-nowrap"
                         >
                           📈 Salary Comparison
                         </button>
                         <button
                           onClick={() => navigate('/budget-vs-actual')}
-                          className="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-colors flex items-center gap-2"
+                          className="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-colors flex items-center gap-2 whitespace-nowrap"
                         >
                           📊 Budget vs Actual
                         </button>
@@ -470,7 +470,7 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
                         {canViewFees && <hr className="my-1 border-gray-200" />}
                         <button
                           onClick={() => navigate('/attendance-reports')}
-                          className="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-colors flex items-center gap-2"
+                          className="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-colors flex items-center gap-2 whitespace-nowrap"
                         >
                           📅 Attendance Reports
                         </button>
@@ -533,7 +533,7 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
                           }`}
                         >
                           <div className="flex flex-col">
-                            <span className="font-bold flex items-center gap-2">
+                            <span className="font-bold flex items-center gap-2 whitespace-nowrap">
                               {year.name}
                               {year.isActive && (
                                 <span className="px-1.5 py-0.5 rounded-md bg-green-100 text-green-700 text-[9px] font-black uppercase tracking-tighter">Active</span>
@@ -590,7 +590,7 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
                         navigate('/admin/academic-years');
                         setUserMenuOpen(false);
                       }}
-                      className="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-colors flex items-center gap-2"
+                      className="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-colors flex items-center gap-2 whitespace-nowrap"
                     >
                       📅 Academic Years
                     </button>
@@ -599,7 +599,7 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
                         navigate('/admin/settings');
                         setUserMenuOpen(false);
                       }}
-                      className="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-colors flex items-center gap-2"
+                      className="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-colors flex items-center gap-2 whitespace-nowrap"
                     >
                       ⚙️ Settings
                     </button>
@@ -611,7 +611,7 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
                     navigate('/change-password');
                     setUserMenuOpen(false);
                   }}
-                  className="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-colors flex items-center gap-2"
+                  className="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-colors flex items-center gap-2 whitespace-nowrap"
                 >
                   🔒 Change Password
                 </button>
@@ -621,7 +621,7 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
                     setUserMenuOpen(false);
                     handleLogout();
                   }}
-                  className="w-full text-left px-4 py-2 hover:bg-red-50 text-gray-700 hover:text-red-600 transition-colors flex items-center gap-2"
+                  className="w-full text-left px-4 py-2 hover:bg-red-50 text-gray-700 hover:text-red-600 transition-colors flex items-center gap-2 whitespace-nowrap"
                 >
                   🚪 Logout
                 </button>

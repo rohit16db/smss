@@ -261,6 +261,7 @@ public class FeeReceiptDto
     public string EnrollmentNumber { get; set; } = string.Empty;
     public string ClassName { get; set; } = string.Empty;
     public string SectionName { get; set; } = string.Empty;
+    public string AcademicYear { get; set; } = string.Empty;
     public string FeeStructureName { get; set; } = string.Empty;
     public decimal AmountPaid { get; set; }
     public DateTime PaymentDate { get; set; }
@@ -290,6 +291,7 @@ public class StudentFeeStatementDto
     public string EnrollmentNumber { get; set; } = string.Empty;
     public string ClassName { get; set; } = string.Empty;
     public string SectionName { get; set; } = string.Empty;
+    public string AcademicYear { get; set; } = string.Empty;
     public string FeeStructureName { get; set; } = string.Empty;
     public decimal TotalAmount { get; set; }
     public decimal PaidAmount { get; set; }

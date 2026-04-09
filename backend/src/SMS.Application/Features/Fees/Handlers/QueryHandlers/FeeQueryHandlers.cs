@@ -699,12 +699,18 @@ public class GetFeeReceiptDataQueryHandler : IRequestHandler<GetFeeReceiptDataQu
         // Get the payment with related student fee, student, structure, and section
         var payment = await _context.FeePayments
             .Include(p => p.StudentFee)
-            .ThenInclude(sf => sf!.Enrollment)
-            .ThenInclude(e => e!.Section)
-            .ThenInclude(s => s!.Class)
+                .ThenInclude(sf => sf!.Enrollment)
+                    .ThenInclude(e => e!.Student)
             .Include(p => p.StudentFee)
-            .ThenInclude(sf => sf!.FeeStructure)
-            .ThenInclude(fs => fs!.Categories)
+                .ThenInclude(sf => sf!.Enrollment)
+                    .ThenInclude(e => e!.AcademicYear)
+            .Include(p => p.StudentFee)
+                .ThenInclude(sf => sf!.Enrollment)
+                    .ThenInclude(e => e!.Section)
+                        .ThenInclude(s => s!.Class)
+            .Include(p => p.StudentFee)
+                .ThenInclude(sf => sf!.FeeStructure)
+                    .ThenInclude(fs => fs!.Categories)
             .FirstOrDefaultAsync(p => p.Id == paymentId, cancellationToken);
 
         if (payment?.StudentFee == null)
@@ -713,6 +719,7 @@ public class GetFeeReceiptDataQueryHandler : IRequestHandler<GetFeeReceiptDataQu
         var studentFee = payment.StudentFee;
         var student = studentFee.Enrollment?.Student;
         var feeStructure = studentFee.FeeStructure;
+        var academicYear = studentFee.Enrollment?.AcademicYear?.Name ?? "N/A";
 
         if (student == null || feeStructure == null)
             return null;
@@ -733,13 +740,14 @@ public class GetFeeReceiptDataQueryHandler : IRequestHandler<GetFeeReceiptDataQu
             .Where(s => s.IsActive)
             .FirstOrDefaultAsync(cancellationToken);
 
-        return new FeeReceiptDto
+        var receipt = new FeeReceiptDto
         {
             ReceiptNumber = payment.ReceiptNumber,
             StudentName = $"{student.FirstName} {student.LastName}",
             EnrollmentNumber = student.EnrollmentNumber,
             ClassName = studentSection?.Section?.Class?.Name ?? "N/A",
             SectionName = studentSection?.Section?.SectionName ?? "N/A",
+            AcademicYear = academicYear,
             FeeStructureName = feeStructure.Name,
             AmountPaid = payment.AmountPaid,
             PaymentDate = payment.PaymentDate.ToDateTime(TimeOnly.MinValue),
@@ -761,6 +769,18 @@ public class GetFeeReceiptDataQueryHandler : IRequestHandler<GetFeeReceiptDataQu
                 Amount = c.Amount
             }).ToList()
         };
+
+        // Add Transport Fee if applicable to the categories list
+        if (studentFee.TransportFeeAmount > 0)
+        {
+            receipt.Categories.Add(new FeeCategoryReceiptDto
+            {
+                Category = "Transport Fee",
+                Amount = studentFee.TransportFeeAmount
+            });
+        }
+
+        return receipt;
     }
 }
 
@@ -784,12 +804,14 @@ public class GetStudentFeeStatementDataQueryHandler : IRequestHandler<GetStudent
 
         var studentFee = await _context.StudentFees
             .Include(sf => sf.Enrollment)
-            .ThenInclude(e => e!.Student)
+                .ThenInclude(e => e!.Student)
             .Include(sf => sf.Enrollment)
-            .ThenInclude(e => e!.Section)
-            .ThenInclude(s => s!.Class)
+                .ThenInclude(e => e!.AcademicYear)
+            .Include(sf => sf.Enrollment)
+                .ThenInclude(e => e!.Section)
+                    .ThenInclude(s => s!.Class)
             .Include(sf => sf.FeeStructure)
-            .ThenInclude(fs => fs!.Categories)
+                .ThenInclude(fs => fs!.Categories)
             .Include(sf => sf.Payments)
             .FirstOrDefaultAsync(sf => sf.Id == studentFeeId, cancellationToken);
 
@@ -799,6 +821,7 @@ public class GetStudentFeeStatementDataQueryHandler : IRequestHandler<GetStudent
         var student = studentFee.Enrollment.Student;
         var feeStructure = studentFee.FeeStructure;
         var studentSection = studentFee.Enrollment;
+        var academicYear = studentFee.Enrollment?.AcademicYear?.Name ?? "N/A";
 
         var paidAmount = studentFee.Payments?.Sum(p => p.AmountPaid) ?? 0;
         var balanceAmount = (decimal)studentFee.TotalAmount - paidAmount;
@@ -830,6 +853,7 @@ public class GetStudentFeeStatementDataQueryHandler : IRequestHandler<GetStudent
             EnrollmentNumber = student.EnrollmentNumber,
             ClassName = studentSection.Section?.Class?.Name ?? "N/A",
             SectionName = studentSection.Section?.SectionName ?? "N/A",
+            AcademicYear = academicYear,
             FeeStructureName = feeStructure.Name,
             TotalAmount = studentFee.TotalAmount,
             PaidAmount = paidAmount,

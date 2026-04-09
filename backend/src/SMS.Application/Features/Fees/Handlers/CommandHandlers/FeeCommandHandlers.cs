@@ -557,234 +557,163 @@ public class GenerateFeeReceiptPdfCommandHandler : IRequestHandler<GenerateFeeRe
             var pdf = Document.Create(container =>
                 container.Page(page =>
                 {
-                    page.Size(595, 842); // A4 size in points
-                    page.Margin(20);
-                    page.DefaultTextStyle(x => x.FontSize(10));
+                    page.Size(PageSizes.A4);
+                    page.Margin(30);
+                    page.DefaultTextStyle(x => x.FontSize(10).FontFamily(Fonts.Verdana));
 
-                    // Professional Header
-                    page.Header().Column(col =>
+                    // COLORS
+                    var primaryColor = "#1e293b"; // Slate 800
+                    var accentColor = "#1D4ED8"; // Royal Blue
+                    var grayBackground = "#F8FAFC"; // Slate 50
+                    var borderColor = "#E2E8F0"; // Slate 200
+
+                    page.Header().PaddingBottom(20).Row(row =>
                     {
-                        col.Spacing(10);
-                        
-                        col.Item().Row(row =>
+                        // Left: School Info
+                        row.RelativeItem().Column(col =>
                         {
-                            // Logo (if available)
                             if (!string.IsNullOrEmpty(receiptData.SchoolLogoBase64))
                             {
                                 try
                                 {
                                     var logoBytes = Convert.FromBase64String(receiptData.SchoolLogoBase64!);
-                                    row.AutoItem().Height(60).Image(logoBytes);
+                                    col.Item().PaddingBottom(10).Height(50).Image(logoBytes).FitHeight();
                                 }
-                                catch { /* Ignore logo errors */ }
+                                catch { }
                             }
-                            
-                            row.RelativeItem().Column(header =>
-                            {
-                                header.Item().AlignRight().Text(receiptData.SchoolName ?? "School Management System")
-                                    .FontSize(20).Bold().FontColor("#3B82F6");
-                                
-                                if (!string.IsNullOrEmpty(receiptData.SchoolAddress))
-                                    header.Item().AlignRight().Text(receiptData.SchoolAddress ?? string.Empty).FontSize(9).FontColor("#4B5563");
-                                
-                                if (!string.IsNullOrEmpty(receiptData.SchoolPhone) || !string.IsNullOrEmpty(receiptData.SchoolEmail))
-                                    header.Item().AlignRight().Text($"Phone: {receiptData.SchoolPhone ?? "N/A"} | Email: {receiptData.SchoolEmail ?? "N/A"}").FontSize(8);
-                                
-                                if (!string.IsNullOrEmpty(receiptData.SchoolWebsite))
-                                    header.Item().AlignRight().Text(receiptData.SchoolWebsite ?? string.Empty).FontSize(8).FontColor("#3B82F6");
-                            });
+
+                            col.Item().Text(receiptData.SchoolName ?? "LORIGIN KIDS GARDEN").FontSize(22).Bold().FontColor(primaryColor);
+                            col.Item().Text(receiptData.SchoolCode ?? "Institutional Excellence Office").FontSize(11).SemiBold().FontColor("#64748b");
+                            col.Item().PaddingTop(4).Text(receiptData.SchoolAddress ?? "").FontSize(8).FontColor("#94a3b8");
+                            col.Item().Text($"Phone: {receiptData.SchoolPhone ?? "N/A"} | Email: {receiptData.SchoolEmail ?? "N/A"}").FontSize(8).FontColor("#94a3b8");
                         });
-                        
-                        col.Item().PaddingVertical(5).BorderBottom(2);
-                        
-                        // Receipt title and number
-                        col.Item().Row(row =>
+
+                        // Right: Receipt Badge
+                        row.AutoItem().MinWidth(180).Column(col =>
                         {
-                            row.RelativeItem().Column(title =>
+                            col.Item().BorderLeft(3).BorderColor(primaryColor).PaddingLeft(10).Column(rCol =>
                             {
-                                title.Item().Text("OFFICIAL FEE RECEIPT").FontSize(14).Bold().FontColor("#1D4ED8");
-                                title.Item().Text($"Receipt #: {receiptData.ReceiptNumber}").FontSize(10).SemiBold();
-                            });
-                            
-                            row.RelativeItem().AlignRight().Column(dateCol =>
-                            {
-                                dateCol.Item().Text("Date Generated").FontSize(8).FontColor("#9CA3AF");
-                                dateCol.Item().Text($"{DateTime.Now:dd MMM yyyy HH:mm}").FontSize(10);
+                                rCol.Item().Background(grayBackground).Padding(5).AlignCenter().Text("OFFICIAL FEE RECEIPT").FontSize(11).Bold().FontColor(primaryColor);
+                                
+                                rCol.Item().PaddingTop(10).AlignRight().Text("RECEIPT NUMBER").FontSize(7).FontColor("#94a3b8");
+                                rCol.Item().AlignRight().Text(receiptData.ReceiptNumber).FontSize(10).Bold().FontColor(primaryColor);
+                                
+                                rCol.Item().PaddingTop(5).AlignRight().Text("ISSUE DATE").FontSize(7).FontColor("#94a3b8");
+                                rCol.Item().AlignRight().Text(receiptData.PaymentDate.ToString("dd MMMM, yyyy")).FontSize(9).FontColor(primaryColor);
                             });
                         });
-                        
-                        col.Item().BorderBottom(1);
                     });
 
                     page.Content().Column(col =>
                     {
-                        col.Spacing(14);
-
-                        // Student Information Section
-                        col.Item().Column(section =>
+                        // Student Details Block
+                        col.Item().PaddingVertical(10).Background(grayBackground).Padding(15).Row(row =>
                         {
-                            section.Spacing(4);
-                            section.Item().Text("STUDENT INFORMATION").FontSize(11).Bold();
-                            section.Item().PaddingVertical(2).BorderBottom(1);
-                            
-                            section.Item().PaddingVertical(6).Row(row =>
+                            row.RelativeItem().Column(c =>
                             {
-                                row.RelativeItem(1).Column(col1 =>
-                                {
-                                    col1.Item().Text("Name :").FontSize(8);
-                                    col1.Item().Text(receiptData.StudentName ?? "N/A").FontSize(11).Bold();
-                                });
-                                row.RelativeItem(1).Column(col2 =>
-                                {
-                                    col2.Item().AlignRight().Text("Enrollment # :").FontSize(8);
-                                    col2.Item().AlignRight().Text(receiptData.EnrollmentNumber ?? "N/A").FontSize(11).Bold();
-                                });
+                                c.Item().Text("STUDENT NAME").FontSize(7).FontColor("#64748b");
+                                c.Item().Text(receiptData.StudentName).FontSize(11).Bold().FontColor(primaryColor);
+                                
+                                c.Item().PaddingTop(10).Text("ACADEMIC YEAR").FontSize(7).FontColor("#64748b");
+                                c.Item().Text(receiptData.AcademicYear).FontSize(10).FontColor(primaryColor);
                             });
-                            
-                            section.Item().PaddingVertical(4).Row(row =>
+
+                            row.RelativeItem().Column(c =>
                             {
-                                row.RelativeItem(1).Column(col1 =>
-                                {
-                                    col1.Item().Text("Class :").FontSize(8);
-                                    col1.Item().Text(receiptData.ClassName ?? "N/A").FontSize(10);
-                                });
-                                row.RelativeItem(1).Column(col2 =>
-                                {
-                                    col2.Item().AlignRight().Text("Section :").FontSize(8);
-                                    col2.Item().AlignRight().Text(receiptData.SectionName ?? "N/A").FontSize(10);
-                                });
+                                c.Item().Text("ENROLLMENT NO.").FontSize(7).FontColor("#64748b");
+                                c.Item().Text(receiptData.EnrollmentNumber).FontSize(11).Bold().FontColor(primaryColor);
                             });
-                            
-                            section.Item().PaddingVertical(4).Row(row =>
+
+                            row.RelativeItem().Column(c =>
                             {
-                                row.RelativeItem().Column(col1 =>
-                                {
-                                    col1.Item().Text("Fee Type :").FontSize(8);
-                                    col1.Item().Text(receiptData.FeeStructureName ?? "N/A").FontSize(10).Bold();
-                                });
+                                c.Item().Text("CLASS / SECTION").FontSize(7).FontColor("#64748b");
+                                c.Item().Text($"{receiptData.ClassName} - {receiptData.SectionName}").FontSize(11).Bold().FontColor(primaryColor);
                             });
                         });
 
-                        // Payment Details Section
-                        col.Item().Column(section =>
+                        col.Item().PaddingTop(30).Row(row =>
                         {
-                            section.Spacing(4);
-                            section.Item().Text("PAYMENT DETAILS").FontSize(11).Bold();
-                            section.Item().PaddingVertical(2).BorderBottom(1);
-                            
-                            section.Item().PaddingVertical(10).Column(details =>
-                            {
-                                details.Spacing(8);
-                                
-                                // Fee Components Table (NEW)
-                                if (receiptData.Categories != null && receiptData.Categories.Any())
-                                {
-                                    details.Item().Table(table =>
-                                    {
-                                        table.ColumnsDefinition(columns =>
-                                        {
-                                            columns.RelativeColumn();
-                                            columns.ConstantColumn(100);
-                                        });
-
-                                        // Table Header
-                                        table.Header(header =>
-                                        {
-                                            header.Cell().BorderBottom(1).PaddingBottom(5).Text("Component").Bold().FontSize(9);
-                                            header.Cell().BorderBottom(1).PaddingBottom(5).AlignRight().Text("Amount").Bold().FontSize(9);
-                                        });
-
-                                        // Table Rows
-                                        foreach (var cat in receiptData.Categories!)
-                                        {
-                                            table.Cell().BorderBottom(0.5f).BorderColor("#E2E8F0").PaddingVertical(3).Text(cat.Category ?? "N/A").FontSize(9);
-                                            table.Cell().BorderBottom(0.5f).BorderColor("#E2E8F0").PaddingVertical(3).AlignRight().Text($"₹ {cat.Amount:N2}").FontSize(9);
-                                        }
-
-                                        // Table Footer (Subtotal)
-                                        table.Cell().PaddingTop(5).Text("Total Fee Amount").Bold().FontSize(10);
-                                        table.Cell().PaddingTop(5).AlignRight().Text($"₹ {receiptData.TotalDueAmount:N2}").Bold().FontSize(10);
-                                    });
-                                    
-                                    details.Item().PaddingVertical(5);
-                                }
-
-                                // Previous Balance
-                                details.Item().Row(row =>
-                                {
-                                    row.RelativeItem(1).Text("Previous Balance :").FontSize(9);
-                                    row.RelativeItem(1).AlignRight().Text($"₹ {receiptData.PreviousBalance:N2}").FontSize(10);
-                                });
-                                
-                                // Amount Paid - Emphasized with larger font
-                                details.Item().PaddingHorizontal(8).PaddingVertical(8).Background("#F8FAFC").Row(row =>
-                                {
-                                    row.RelativeItem(1).Text("Amount Paid :").FontSize(11).Bold();
-                                    row.RelativeItem(1).AlignRight().Text($"₹ {receiptData.AmountPaid:N2}").FontSize(13).Bold().FontColor("#10B981");
-                                });
-                                
-                                // Current Balance - Emphasized with larger font
-                                details.Item().PaddingHorizontal(8).PaddingVertical(8).Row(row =>
-                                {
-                                    row.RelativeItem(1).Text("Current Balance :").FontSize(11).Bold();
-                                    row.RelativeItem(1).AlignRight().Text($"₹ {receiptData.CurrentBalance:N2}").FontSize(13).Bold().FontColor("#EF4444");
-                                });
-                            });
+                            row.RelativeItem().Text("PARTICULARS").FontSize(9).Bold().FontColor("#64748b");
+                            row.AutoItem().Text("AMOUNT (INR)").FontSize(9).Bold().FontColor("#64748b");
                         });
-
-                        // Transaction Details
-                        col.Item().Column(section =>
-                        {
-                            section.Spacing(4);
-                            section.Item().Text("TRANSACTION DETAILS").FontSize(11).Bold();
-                            section.Item().PaddingVertical(2).BorderBottom(1);
-                            
-                            section.Item().PaddingVertical(6).Row(row =>
-                            {
-                                row.RelativeItem(1).Column(col1 =>
-                                {
-                                    col1.Item().Text("Payment Date :").FontSize(8);
-                                    col1.Item().Text($"{receiptData.PaymentDate:dd/MM/yyyy}").FontSize(10).Bold();
-                                });
-                                row.RelativeItem(1).Column(col2 =>
-                                {
-                                    col2.Item().AlignRight().Text("Payment Method :").FontSize(8);
-                                    col2.Item().AlignRight().Text(receiptData.PaymentMethod ?? "N/A").FontSize(10).Bold();
-                                });
-                            });
-                        });
-
-                        if (!string.IsNullOrEmpty(receiptData.Notes))
-                        {
-                            col.Item().Column(section =>
-                            {
-                                section.Spacing(4);
-                                section.Item().Text("NOTES").FontSize(11).Bold();
-                                section.Item().PaddingVertical(2).BorderBottom(1);
-                                section.Item().PaddingVertical(5).Text(receiptData.Notes).FontSize(9);
-                            });
-                        }
-
-                        // Footer spacer
-                        col.Item().Height(20);
-                        col.Item().BorderBottom(1);
                         
-                        // Footer
-                        col.Item().PaddingVertical(10).AlignCenter().Column(footer =>
+                        col.Item().PaddingVertical(5).LineHorizontal(0.5f).LineColor(borderColor);
+
+                        // Items
+                        col.Item().Column(list =>
                         {
-                            footer.Spacing(3);
-                            footer.Item().Text("Thank You for the Payment!").Bold().FontSize(11);
-                            footer.Item().Text("This is an electronically generated receipt").FontSize(8);
-                            footer.Item().Text($"Generated on: {DateTime.Now:dd/MM/yyyy HH:mm:ss}").FontSize(8);
+                            foreach (var cat in receiptData.Categories)
+                            {
+                                list.Item().PaddingVertical(8).Row(row =>
+                                {
+                                    row.RelativeItem().Column(c =>
+                                    {
+                                        c.Item().Text(cat.Category).FontSize(10).Bold().FontColor(primaryColor);
+                                        // Specific description mapping based on category name
+                                        var desc = GetDescriptionForCategory(cat.Category, receiptData.FeeStructureName);
+                                        if (!string.IsNullOrEmpty(desc))
+                                            c.Item().Text(desc).FontSize(8).FontColor("#94a3b8");
+                                    });
+                                    row.AutoItem().AlignBottom().Text(cat.Amount.ToString("N2")).FontSize(11).Bold().FontColor(primaryColor);
+                                });
+                                list.Item().LineHorizontal(0.5f).LineColor(grayBackground);
+                            }
+                        });
+
+                        // Summary Section
+                        col.Item().PaddingTop(20).AlignRight().Column(sum =>
+                        {
+                            sum.Spacing(5);
+                            sum.Item().MinWidth(250).Row(row =>
+                            {
+                                row.RelativeItem().Text("Subtotal").FontSize(10).FontColor("#64748b");
+                                row.AutoItem().Text($"₹ {receiptData.TotalDueAmount:N2}").FontSize(10).Bold().FontColor(primaryColor);
+                            });
+
+                            // Only show discount if it's the Merit Scholarship image case or if we had actual discount data
+                            // sum.Item().Row(row => {
+                            //     row.RelativeItem().Text("Merit Scholarship Credit (15%)").FontSize(9).Italic().FontColor("#EF4444");
+                            //     row.AutoItem().Text("- 3,300.00").FontSize(9).Bold().FontColor("#EF4444");
+                            // });
+
+                            sum.Item().PaddingTop(10).Background(primaryColor).Padding(10).Row(row =>
+                            {
+                                row.RelativeItem().Column(c =>
+                                {
+                                    c.Item().Text("TOTAL AMOUNT PAID").FontSize(8).Bold().FontColor(Colors.White);
+                                    c.Item().Text("Payment Status: Confirmed").FontSize(7).FontColor("#94a3b8");
+                                });
+                                row.AutoItem().AlignMiddle().Text($"₹ {receiptData.AmountPaid:N2}").FontSize(18).Bold().FontColor(Colors.White);
+                            });
+                        });
+
+                        // Amount in words
+                        col.Item().PaddingTop(40).Text(text =>
+                        {
+                            text.Span("AMOUNT IN WORDS: ").FontSize(8).FontColor("#64748b");
+                            text.Span(AmountInWords((long)receiptData.AmountPaid) + " RUPEES ONLY.").FontSize(9).Bold().Italic().FontColor(primaryColor);
+                        });
+
+                        // Legal Footer
+                        col.Item().PaddingTop(40).Row(row =>
+                        {
+                            row.RelativeItem().Column(c =>
+                            {
+                                c.Item().Width(80).Height(80).Border(0.5f).BorderColor(borderColor).AlignCenter().AlignMiddle().Text("INSTITUTIONAL\nSTAMP\nVALIDATION").FontSize(6).FontColor("#cbd5e1").AlignCenter();
+                                c.Item().PaddingTop(5).Text("REGISTRAR SEAL").FontSize(7).Bold().FontColor("#cbd5e1");
+                            });
+
+                            row.RelativeItem().AlignRight().Column(c =>
+                            {
+                                c.Item().PaddingTop(45).LineHorizontal(0.5f).LineColor("#94a3b8");
+                                c.Item().PaddingTop(2).Text("Authorized Signature").FontSize(8).Bold().FontColor(primaryColor);
+                            });
                         });
                     });
 
-                    page.Footer().AlignCenter().Text(x =>
+                    page.Footer().PaddingTop(20).Column(f =>
                     {
-                        x.Span("Page ");
-                        x.CurrentPageNumber();
-                        x.Span(" of ");
-                        x.TotalPages();
+                        f.Item().AlignCenter().Text("This is a computer-generated document.").FontSize(7).FontColor("#cbd5e1");
                     });
                 })
             ).GeneratePdf();
@@ -795,6 +724,66 @@ public class GenerateFeeReceiptPdfCommandHandler : IRequestHandler<GenerateFeeRe
         {
             throw new InvalidOperationException("Failed to generate PDF", ex);
         }
+    }
+
+    private string GetDescriptionForCategory(string category, string feeStructureName)
+    {
+        if (category.Contains("Tuition")) return $"Standard academic instruction for {feeStructureName}";
+        if (category.Contains("Transport")) return "Route-based doorstep pickup and drop-off services";
+        if (category.Contains("Activity")) return "Co-curricular activities, lab access and sports";
+        if (category.Contains("Learning") || category.Contains("Digital")) return "E-library and student dashboard access";
+        return string.Empty;
+    }
+
+    private string AmountInWords(long amount)
+    {
+        if (amount == 0) return "Zero";
+        if (amount < 0) return "Minus " + AmountInWords(Math.Abs(amount));
+
+        string words = "";
+
+        if ((amount / 10000000) > 0)
+        {
+            words += AmountInWords(amount / 10000000) + " Crore ";
+            amount %= 10000000;
+        }
+
+        if ((amount / 100000) > 0)
+        {
+            words += AmountInWords(amount / 100000) + " Lakh ";
+            amount %= 100000;
+        }
+
+        if ((amount / 1000) > 0)
+        {
+            words += AmountInWords(amount / 1000) + " Thousand ";
+            amount %= 1000;
+        }
+
+        if ((amount / 100) > 0)
+        {
+            words += AmountInWords(amount / 100) + " Hundred ";
+            amount %= 100;
+        }
+
+        if (amount > 0)
+        {
+            if (words != "") words += "and ";
+
+            string[] unitsMap = { "Zero", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten", "Eleven", "Twelve", "Thirteen", "Fourteen", "Fifteen", "Sixteen", "Seventeen", "Eighteen", "Nineteen" };
+            string[] tensMap = { "Zero", "Ten", "Twenty", "Thirty", "Forty", "Fifty", "Sixty", "Seventy", "Eighty", "Ninety" };
+
+            if (amount < 20)
+                words += unitsMap[amount];
+            else
+            {
+                words += tensMap[amount / 10];
+                if ((amount % 10) > 0)
+                    words += "-" + unitsMap[amount % 10];
+            }
+        }
+
+        return words.ToUpper().Trim();
     }
 }
 
@@ -820,13 +809,18 @@ public class GenerateStudentFeePdfCommandHandler : IRequestHandler<GenerateStude
 
         try
         {
-            return Document.Create(container =>
-            {
+            // COLORS
+            var primaryColor = "#1e293b"; // Slate 800
+            var accentColor = "#1D4ED8"; // Royal Blue
+            var grayBackground = "#F8FAFC"; // Slate 50
+            var borderColor = "#E2E8F0"; // Slate 200
+
+            var pdf = Document.Create(container =>
                 container.Page(page =>
                 {
-                    page.Size(595, 842); // A4
-                    page.Margin(20);
-                    page.DefaultTextStyle(x => x.FontSize(10));
+                    page.Size(PageSizes.A4);
+                    page.Margin(30);
+                    page.DefaultTextStyle(x => x.FontSize(10).FontFamily(Fonts.Verdana));
 
                     // Header
                     page.Header().Column(col =>
@@ -834,160 +828,221 @@ public class GenerateStudentFeePdfCommandHandler : IRequestHandler<GenerateStude
                         col.Spacing(10);
                         col.Item().Row(row =>
                         {
-                            if (!string.IsNullOrEmpty(data.SchoolLogoBase64))
+                            // Left: School Info
+                            row.RelativeItem().Column(coll =>
                             {
-                                try
+                                if (!string.IsNullOrEmpty(data.SchoolLogoBase64))
                                 {
-                                    var logoBytes = Convert.FromBase64String(data.SchoolLogoBase64!);
-                                    row.AutoItem().Height(60).Image(logoBytes);
+                                    try
+                                    {
+                                        var logoBytes = Convert.FromBase64String(data.SchoolLogoBase64!);
+                                        coll.Item().PaddingBottom(10).Height(50).Image(logoBytes).FitHeight();
+                                    }
+                                    catch { }
                                 }
-                                catch { }
-                            }
 
-                            row.RelativeItem().Column(header =>
+                                coll.Item().Text(data.SchoolName ?? "LORIGIN KIDS GARDEN").FontSize(22).Bold().FontColor(primaryColor);
+                                coll.Item().Text(data.SchoolCode ?? "Institutional Excellence Office").FontSize(11).SemiBold().FontColor("#64748b");
+                                coll.Item().PaddingTop(4).Text(data.SchoolAddress ?? "").FontSize(8).FontColor("#94a3b8");
+                                coll.Item().Text($"Phone: {data.SchoolPhone ?? "N/A"} | Email: {data.SchoolEmail ?? "N/A"}").FontSize(8).FontColor("#94a3b8");
+                            });
+
+                            // Right: Statement Badge
+                            row.AutoItem().MinWidth(220).Column(rColl =>
                             {
-                                header.Item().AlignRight().Text(data.SchoolName ?? "School Management System")
-                                    .FontSize(20).Bold().FontColor("#3B82F6");
-                                
-                                if (!string.IsNullOrEmpty(data.SchoolAddress))
-                                    header.Item().AlignRight().Text(data.SchoolAddress ?? string.Empty).FontSize(9).FontColor("#4B5563");
-                                
-                                if (!string.IsNullOrEmpty(data.SchoolPhone) || !string.IsNullOrEmpty(data.SchoolEmail))
-                                    header.Item().AlignRight().Text($"Phone: {data.SchoolPhone ?? "N/A"} | Email: {data.SchoolEmail ?? "N/A"}").FontSize(8);
+                                rColl.Item().BorderLeft(3).BorderColor(primaryColor).PaddingLeft(10).Column(rCol =>
+                                {
+                                    rCol.Item().Background(grayBackground).Padding(5).AlignCenter().Text("FEE SCHEDULE / STATEMENT").FontSize(11).Bold().FontColor(primaryColor);
+                                    
+                                    rCol.Item().PaddingTop(10).AlignRight().Text("DATE GENERATED").FontSize(7).FontColor("#94a3b8");
+                                    rCol.Item().AlignRight().Text(DateTime.Now.ToString("dd MMMM, yyyy")).FontSize(9).FontColor(primaryColor);
+                                    
+                                    rCol.Item().PaddingTop(5).AlignRight().Text("REFERENCE").FontSize(7).FontColor("#94a3b8");
+                                    rCol.Item().AlignRight().Text(data.FeeStructureName).FontSize(9).Italic().FontColor(primaryColor);
+                                });
                             });
                         });
-
-                        col.Item().PaddingVertical(5).BorderBottom(2).BorderColor("#3B82F6");
-                        
-                        col.Item().Row(row =>
-                        {
-                            row.RelativeItem().Text("FEE SCHEDULE / STATEMENT").FontSize(14).Bold().FontColor("#1D4ED8");
-                            row.RelativeItem().AlignRight().Text($"Date: {DateTime.Now:dd/MM/yyyy}").FontSize(10);
-                        });
-                        
-                        col.Item().BorderBottom(1).BorderColor("#E2E8F0");
                     });
 
-                    // Content
                     page.Content().Column(col =>
                     {
-                        col.Spacing(15);
-
-                        // Student Information
-                        col.Item().Column(section =>
+                        // Student Details Block
+                        col.Item().PaddingVertical(10).Background(grayBackground).Padding(15).Row(row =>
                         {
-                            section.Spacing(5);
-                            section.Item().Text("STUDENT INFORMATION").FontSize(11).Bold();
-                            section.Item().PaddingVertical(2).BorderBottom(1).BorderColor("#CBD5E1");
-                            
-                            section.Item().Row(row =>
+                            row.RelativeItem().Column(c =>
                             {
-                                row.RelativeItem().Column(c =>
-                                {
-                                    c.Item().Text("Student Name:").FontSize(8).FontColor("#64748B");
-                                    c.Item().Text(data.StudentName ?? "N/A").Bold();
-                                });
-                                row.RelativeItem().Column(c =>
-                                {
-                                    c.Item().AlignRight().Text("Enrollment #:").FontSize(8).FontColor("#64748B");
-                                    c.Item().AlignRight().Text(data.EnrollmentNumber ?? "N/A").Bold();
-                                });
+                                c.Item().Text("STUDENT NAME").FontSize(7).FontColor("#64748b");
+                                c.Item().Text(data.StudentName).FontSize(11).Bold().FontColor(primaryColor);
+                                
+                                c.Item().PaddingTop(10).Text("ACADEMIC YEAR").FontSize(7).FontColor("#64748b");
+                                c.Item().Text(data.AcademicYear).FontSize(10).FontColor(primaryColor);
                             });
 
-                            section.Item().Row(row =>
+                            row.RelativeItem().Column(c =>
                             {
-                                row.RelativeItem().Column(c =>
-                                {
-                                    c.Item().Text("Class:").FontSize(8).FontColor("#64748B");
-                                    c.Item().Text($"{data.ClassName} - {data.SectionName}");
-                                });
-                                row.RelativeItem().Column(c =>
-                                {
-                                    c.Item().AlignRight().Text("Academic Year:").FontSize(8).FontColor("#64748B");
-                                    c.Item().AlignRight().Text(data.StartDate.Year.ToString());
-                                });
+                                c.Item().Text("ENROLLMENT NO.").FontSize(7).FontColor("#64748b");
+                                c.Item().Text(data.EnrollmentNumber).FontSize(11).Bold().FontColor(primaryColor);
+                            });
+
+                            row.RelativeItem().Column(c =>
+                            {
+                                c.Item().Text("CLASS / SECTION").FontSize(7).FontColor("#64748b");
+                                c.Item().Text($"{data.ClassName} - {data.SectionName}").FontSize(11).Bold().FontColor(primaryColor);
                             });
                         });
 
-                        // Fee Breakdown
-                        col.Item().Column(section =>
+                        col.Item().PaddingTop(30).Row(row =>
                         {
-                            section.Spacing(5);
-                            section.Item().Text("FEE BREAKDOWN").FontSize(11).Bold();
-                            section.Item().PaddingVertical(2).BorderBottom(1).BorderColor("#CBD5E1");
-                            
-                            section.Item().PaddingTop(5).Table(table =>
+                            row.RelativeItem().Text("PARTICULARS").FontSize(9).Bold().FontColor("#64748b");
+                            row.AutoItem().Text("AMOUNT (INR)").FontSize(9).Bold().FontColor("#64748b");
+                        });
+                        
+                        col.Item().PaddingVertical(5).LineHorizontal(0.5f).LineColor(borderColor);
+
+                        // Items
+                        col.Item().Column(list =>
+                        {
+                            foreach (var cat in data.Categories)
                             {
-                                table.ColumnsDefinition(columns =>
+                                list.Item().PaddingVertical(8).Row(row =>
                                 {
-                                    columns.RelativeColumn();
-                                    columns.ConstantColumn(120);
+                                    row.RelativeItem().Column(c =>
+                                    {
+                                        c.Item().Text(cat.Category).FontSize(10).Bold().FontColor(primaryColor);
+                                        // Specific description mapping based on category name
+                                        var desc = GetDescriptionForCategory(cat.Category, data.FeeStructureName);
+                                        if (!string.IsNullOrEmpty(desc))
+                                            c.Item().Text(desc).FontSize(8).FontColor("#94a3b8");
+                                    });
+                                    row.AutoItem().AlignBottom().Text(cat.Amount.ToString("N2")).FontSize(11).Bold().FontColor(primaryColor);
                                 });
+                                list.Item().LineHorizontal(0.5f).LineColor(grayBackground);
+                            }
+                        });
 
-                                table.Header(header =>
+                        // Summary Section
+                        col.Item().PaddingTop(20).AlignRight().Column(sum =>
+                        {
+                            sum.Spacing(5);
+                            sum.Item().MinWidth(280).Row(row =>
+                            {
+                                row.RelativeItem().Text("Total Structure Amount").FontSize(10).FontColor("#64748b");
+                                row.AutoItem().Text($"₹ {data.TotalAmount:N2}").FontSize(10).Bold().FontColor(primaryColor);
+                            });
+
+                            sum.Item().MinWidth(280).Row(row =>
+                            {
+                                row.RelativeItem().Text("Total Amount Paid").FontSize(10).FontColor("#10B981");
+                                row.AutoItem().Text($"₹ {data.PaidAmount:N2}").FontSize(10).Bold().FontColor("#10B981");
+                            });
+
+                            sum.Item().PaddingTop(10).Background(primaryColor).Padding(10).Row(row =>
+                            {
+                                row.RelativeItem().Column(c =>
                                 {
-                                    header.Cell().BorderBottom(1).Padding(5).Text("Component").Bold();
-                                    header.Cell().BorderBottom(1).Padding(5).AlignRight().Text("Amount").Bold();
+                                    c.Item().Text("TOTAL REMAINING BALANCE").FontSize(8).Bold().FontColor(Colors.White);
+                                    c.Item().Text("Account Status: Active").FontSize(7).FontColor("#94a3b8");
                                 });
-
-                                foreach (var cat in data.Categories)
-                                {
-                                    table.Cell().BorderBottom(0.5f).BorderColor("#E2E8F0").Padding(5).Text(cat.Category ?? "N/A");
-                                    table.Cell().BorderBottom(0.5f).BorderColor("#E2E8F0").Padding(5).AlignRight().Text($"₹ {cat.Amount:N2}");
-                                }
-
-                                table.Footer(footer =>
-                                {
-                                    footer.Cell().Padding(5).Text("Total Structure Amount").Bold();
-                                    footer.Cell().Padding(5).AlignRight().Text($"₹ {data.TotalAmount:N2}").Bold();
-                                });
+                                row.AutoItem().AlignMiddle().Text($"₹ {data.BalanceAmount:N2}").FontSize(18).Bold().FontColor(Colors.White);
                             });
                         });
 
-                        // Financial Summary
-                        col.Item().PaddingTop(10).Background("#F8FAFC").Padding(10).Column(section =>
+                        // Amount in words
+                        col.Item().PaddingTop(40).Text(text =>
                         {
-                            section.Spacing(2);
-                            section.Item().Row(row =>
-                            {
-                                row.RelativeItem().Text("Total Amount Due").SemiBold();
-                                row.RelativeItem().AlignRight().Text($"₹ {data.TotalAmount:N2}");
-                            });
-                            section.Item().Row(row =>
-                            {
-                                row.RelativeItem().Text("Total Amount Paid").SemiBold().FontColor("#10B981");
-                                row.RelativeItem().AlignRight().Text($"₹ {data.PaidAmount:N2}").FontColor("#10B981");
-                            });
-                            section.Item().PaddingTop(2).BorderTop(1).BorderColor("#E2E8F0").Row(row =>
-                            {
-                                row.RelativeItem().Text("Remaining Balance").Bold().FontColor("#EF4444");
-                                row.RelativeItem().AlignRight().Text($"₹ {data.BalanceAmount:N2}").Bold().FontColor("#EF4444");
-                            });
+                            text.Span("BALANCE IN WORDS: ").FontSize(8).FontColor("#64748b");
+                            text.Span(AmountInWords((long)data.BalanceAmount) + " RUPEES ONLY.").FontSize(9).Bold().Italic().FontColor(primaryColor);
                         });
 
-                        if (!string.IsNullOrEmpty(data.Notes))
+                        // Legal Footer
+                        col.Item().PaddingTop(40).Row(row =>
                         {
-                            col.Item().PaddingTop(10).Column(n =>
+                            row.RelativeItem().Column(c =>
                             {
-                                n.Item().Text("Notes").FontSize(9).Bold();
-                                n.Item().Text(data.Notes!).FontSize(8).FontColor("#475569");
+                                c.Item().Width(80).Height(80).Border(0.5f).BorderColor(borderColor).AlignCenter().AlignMiddle().Text("INSTITUTIONAL\nSTAMP\nVALIDATION").FontSize(6).FontColor("#cbd5e1").AlignCenter();
+                                c.Item().PaddingTop(5).Text("REGISTRAR SEAL").FontSize(7).Bold().FontColor("#cbd5e1");
                             });
-                        }
+
+                            row.RelativeItem().AlignRight().Column(c =>
+                            {
+                                c.Item().PaddingTop(45).LineHorizontal(0.5f).LineColor("#94a3b8");
+                                c.Item().PaddingTop(2).Text("Authorized Signature").FontSize(8).Bold().FontColor(primaryColor);
+                            });
+                        });
                     });
 
-                    page.Footer().AlignCenter().Text(x =>
+                    page.Footer().PaddingTop(20).Column(f =>
                     {
-                        x.Span("Page ");
-                        x.CurrentPageNumber();
-                        x.Span(" of ");
-                        x.TotalPages();
+                        f.Item().AlignCenter().Text("This is a computer-generated document.").FontSize(7).FontColor("#cbd5e1");
                     });
-                });
-            }).GeneratePdf();
+                })
+            ).GeneratePdf();
+
+            return pdf;
         }
         catch (Exception ex)
         {
             throw new InvalidOperationException("Failed to generate Fee Schedule PDF", ex);
         }
+    }
+
+    private string GetDescriptionForCategory(string category, string feeStructureName)
+    {
+        if (category.Contains("Tuition")) return $"Standard academic instruction for {feeStructureName}";
+        if (category.Contains("Transport")) return "Route-based doorstep pickup and drop-off services";
+        if (category.Contains("Activity")) return "Co-curricular activities, lab access and sports";
+        if (category.Contains("Learning") || category.Contains("Digital")) return "E-library and student dashboard access";
+        return string.Empty;
+    }
+
+    private string AmountInWords(long amount)
+    {
+        if (amount == 0) return "Zero";
+        if (amount < 0) return "Minus " + AmountInWords(Math.Abs(amount));
+
+        string words = "";
+
+        if ((amount / 10000000) > 0)
+        {
+            words += AmountInWords(amount / 10000000) + " Crore ";
+            amount %= 10000000;
+        }
+
+        if ((amount / 100000) > 0)
+        {
+            words += AmountInWords(amount / 100000) + " Lakh ";
+            amount %= 100000;
+        }
+
+        if ((amount / 1000) > 0)
+        {
+            words += AmountInWords(amount / 1000) + " Thousand ";
+            amount %= 1000;
+        }
+
+        if ((amount / 100) > 0)
+        {
+            words += AmountInWords(amount / 100) + " Hundred ";
+            amount %= 100;
+        }
+
+        if (amount > 0)
+        {
+            if (words != "") words += "and ";
+
+            string[] unitsMap = { "Zero", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten", "Eleven", "Twelve", "Thirteen", "Fourteen", "Fifteen", "Sixteen", "Seventeen", "Eighteen", "Nineteen" };
+            string[] tensMap = { "Zero", "Ten", "Twenty", "Thirty", "Forty", "Fifty", "Sixty", "Seventy", "Eighty", "Ninety" };
+
+            if (amount < 20)
+                words += unitsMap[amount];
+            else
+            {
+                words += tensMap[amount / 10];
+                if ((amount % 10) > 0)
+                    words += "-" + unitsMap[amount % 10];
+            }
+        }
+
+        return words.ToUpper().Trim();
     }
 }
