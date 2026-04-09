@@ -33,10 +33,25 @@ public class StudentFeeConfiguration : IEntityTypeConfiguration<StudentFee>
             .HasColumnName("end_date")
             .IsRequired(false);
         
-        builder.Property(sf => sf.TotalAmount)
-            .HasColumnName("total_amount")
+        builder.Property(sf => sf.StructureAmount)
+            .HasColumnName("structure_amount")
             .HasPrecision(12, 2)
             .IsRequired();
+
+        builder.Property(sf => sf.TransportFeeAmount)
+            .HasColumnName("transport_fee_amount")
+            .HasPrecision(12, 2)
+            .HasDefaultValue(0)
+            .IsRequired();
+
+        builder.Property(sf => sf.PaidAmount)
+            .HasColumnName("paid_amount")
+            .HasPrecision(12, 2)
+            .HasDefaultValue(0)
+            .IsRequired();
+
+        builder.Ignore(sf => sf.TotalAmount);
+        builder.Ignore(sf => sf.BalanceAmount);
         
         builder.Property(sf => sf.IsActive)
             .HasColumnName("is_active")

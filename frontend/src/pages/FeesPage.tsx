@@ -622,6 +622,25 @@ function StudentFeesTab() {
     }
   };
 
+  const handleDownloadFeeDetails = async (id: string, studentName: string) => {
+    try {
+      const data = await feeApi.downloadStudentFeePdf(id);
+      const blob = new Blob([data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `Fee_Details_${studentName.replace(/\s+/g, '_')}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode?.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      toast.success('Fee details downloaded successfully!');
+    } catch (error) {
+      console.error('Failed to download fee details', error);
+      toast.error('Failed to download fee details');
+    }
+  };
+
   const totalPages = Math.ceil((data?.totalCount || 0) / rowsPerPage);
   
   // Derive structures and sections from query data
@@ -751,16 +770,27 @@ function StudentFeesTab() {
                           </span>
                         </td>
                         <td className="px-6 py-4 text-right">
-                          <button
-                            onClick={() => handleTerminate(fee.id)}
-                            disabled={!fee.isActive}
-                            className="text-orange-600 hover:text-orange-900 p-2 hover:bg-orange-50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                            title="Terminate"
-                      >
-                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                          </button>
+                          <div className="flex gap-2 justify-end">
+                            <button
+                              onClick={() => handleDownloadFeeDetails(fee.id, fee.studentName)}
+                              className="text-blue-600 hover:text-blue-900 p-2 hover:bg-blue-50 rounded-lg transition-colors"
+                              title="Download Fee Details"
+                            >
+                              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                              </svg>
+                            </button>
+                            <button
+                              onClick={() => handleTerminate(fee.id)}
+                              disabled={!fee.isActive}
+                              className="text-orange-600 hover:text-orange-900 p-2 hover:bg-orange-50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                              title="Terminate"
+                            >
+                              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                              </svg>
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))
@@ -1179,11 +1209,16 @@ function PaymentsTab() {
 
   const recordMutation = useMutation({
     mutationFn: feeApi.recordPayment,
-    onSuccess: () => {
+    onSuccess: (newPayment) => {
       toast.success('Payment recorded successfully!');
       queryClient.invalidateQueries({ queryKey: ['payments'] });
       queryClient.invalidateQueries({ queryKey: ['studentFees'] });
       handleCloseDialog();
+      
+      // Automatically download receipt
+      if (newPayment && newPayment.id) {
+        handleDownloadReceipt(newPayment.id);
+      }
     },
     onError: (error: AxiosError<{ message?: string }>) => {
       toast.error(error.response?.data?.message || 'Failed to record payment');

@@ -90,3 +90,11 @@ public class GenerateFeeReceiptPdfCommand : IRequest<byte[]>
 {
     public required string PaymentId { get; set; }
 }
+
+/// <summary>
+/// Command to generate student fee details/statement PDF
+/// </summary>
+public class GenerateStudentFeePdfCommand : IRequest<byte[]>
+{
+    public required string StudentFeeId { get; set; }
+}

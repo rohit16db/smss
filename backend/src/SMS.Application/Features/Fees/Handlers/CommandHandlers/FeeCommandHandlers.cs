@@ -1,12 +1,14 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using QuestPDF.Fluent;
+using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
 using SMS.Application.Common.Interfaces;
 using SMS.Application.Features.Fees.Commands;
 using SMS.Application.Features.Fees.DTOs;
 using SMS.Application.Features.Fees.Queries;
 using SMS.Domain.Entities;
+using System.IO;
 
 namespace SMS.Application.Features.Fees.Handlers.CommandHandlers;
 
@@ -250,7 +252,8 @@ public class AssignStudentFeeCommandHandler : IRequestHandler<AssignStudentFeeCo
             FeeStructureId = feeStructureId,
             StartDate = DateOnly.FromDateTime(request.StartDate),
             EndDate = request.EndDate.HasValue ? DateOnly.FromDateTime(request.EndDate.Value) : null,
-            TotalAmount = feeStructure.TotalAmount,
+            StructureAmount = feeStructure.TotalAmount,
+            TransportFeeAmount = 0, // Default to 0, will be updated by sync
             IsActive = true,
             CreatedBy = request.CreatedByUserId,
             UpdatedBy = request.CreatedByUserId
@@ -281,7 +284,7 @@ public class AssignStudentFeeCommandHandler : IRequestHandler<AssignStudentFeeCo
 }
 
 /// <summary>
-/// Handler for TerminateStudentFeeCommand
+/// Handler for TerminateStudentFeeCommandHandler
 /// </summary>
 public class TerminateStudentFeeCommandHandler : IRequestHandler<TerminateStudentFeeCommand, StudentFeeDto>
 {
@@ -486,7 +489,8 @@ public class BulkAssignStudentFeeCommandHandler : IRequestHandler<BulkAssignStud
                     FeeStructureId = feeStructureId,
                     StartDate = startDateOnly,
                     EndDate = endDateOnly,
-                    TotalAmount = feeStructure.TotalAmount,
+                    StructureAmount = feeStructure.TotalAmount,
+                    TransportFeeAmount = 0, // Default to 0, will be updated by sync
                     CreatedBy = request.CreatedByUserId,
                     UpdatedBy = request.CreatedByUserId
                 };
@@ -560,33 +564,56 @@ public class GenerateFeeReceiptPdfCommandHandler : IRequestHandler<GenerateFeeRe
                     // Professional Header
                     page.Header().Column(col =>
                     {
-                        col.Spacing(12);
+                        col.Spacing(10);
                         
-                        // School Header - Centered
-                        col.Item().AlignCenter().Column(header =>
+                        col.Item().Row(row =>
                         {
-                            header.Spacing(2);
-                            header.Item().Text(receiptData.SchoolName ?? "School Management System")
-                                .FontSize(16).Bold();
-                            if (!string.IsNullOrEmpty(receiptData.SchoolAddress))
-                                header.Item().Text(receiptData.SchoolAddress).FontSize(9);
-                            if (!string.IsNullOrEmpty(receiptData.SchoolPhone))
-                                header.Item().Text($"Phone: {receiptData.SchoolPhone}").FontSize(8);
+                            // Logo (if available)
+                            if (!string.IsNullOrEmpty(receiptData.SchoolLogoBase64))
+                            {
+                                try
+                                {
+                                    var logoBytes = Convert.FromBase64String(receiptData.SchoolLogoBase64!);
+                                    row.AutoItem().Height(60).Image(logoBytes);
+                                }
+                                catch { /* Ignore logo errors */ }
+                            }
+                            
+                            row.RelativeItem().Column(header =>
+                            {
+                                header.Item().AlignRight().Text(receiptData.SchoolName ?? "School Management System")
+                                    .FontSize(20).Bold().FontColor("#3B82F6");
+                                
+                                if (!string.IsNullOrEmpty(receiptData.SchoolAddress))
+                                    header.Item().AlignRight().Text(receiptData.SchoolAddress ?? string.Empty).FontSize(9).FontColor("#4B5563");
+                                
+                                if (!string.IsNullOrEmpty(receiptData.SchoolPhone) || !string.IsNullOrEmpty(receiptData.SchoolEmail))
+                                    header.Item().AlignRight().Text($"Phone: {receiptData.SchoolPhone ?? "N/A"} | Email: {receiptData.SchoolEmail ?? "N/A"}").FontSize(8);
+                                
+                                if (!string.IsNullOrEmpty(receiptData.SchoolWebsite))
+                                    header.Item().AlignRight().Text(receiptData.SchoolWebsite ?? string.Empty).FontSize(8).FontColor("#3B82F6");
+                            });
                         });
                         
-                        // Divider line
-                        col.Item().BorderBottom(2);
+                        col.Item().PaddingVertical(5).BorderBottom(2);
                         
-                        // Receipt title and number - Centered
-                        col.Item().PaddingVertical(8).AlignCenter().Column(title =>
+                        // Receipt title and number
+                        col.Item().Row(row =>
                         {
-                            title.Spacing(3);
-                            title.Item().Text("FEE RECEIPT").FontSize(16).Bold();
-                            title.Item().Text(receiptData.ReceiptNumber).FontSize(12).Bold();
+                            row.RelativeItem().Column(title =>
+                            {
+                                title.Item().Text("OFFICIAL FEE RECEIPT").FontSize(14).Bold().FontColor("#1D4ED8");
+                                title.Item().Text($"Receipt #: {receiptData.ReceiptNumber}").FontSize(10).SemiBold();
+                            });
+                            
+                            row.RelativeItem().AlignRight().Column(dateCol =>
+                            {
+                                dateCol.Item().Text("Date Generated").FontSize(8).FontColor("#9CA3AF");
+                                dateCol.Item().Text($"{DateTime.Now:dd MMM yyyy HH:mm}").FontSize(10);
+                            });
                         });
                         
-                        // Divider line
-                        col.Item().BorderBottom(2);
+                        col.Item().BorderBottom(1);
                     });
 
                     page.Content().Column(col =>
@@ -605,12 +632,12 @@ public class GenerateFeeReceiptPdfCommandHandler : IRequestHandler<GenerateFeeRe
                                 row.RelativeItem(1).Column(col1 =>
                                 {
                                     col1.Item().Text("Name :").FontSize(8);
-                                    col1.Item().Text(receiptData.StudentName).FontSize(11).Bold();
+                                    col1.Item().Text(receiptData.StudentName ?? "N/A").FontSize(11).Bold();
                                 });
                                 row.RelativeItem(1).Column(col2 =>
                                 {
                                     col2.Item().AlignRight().Text("Enrollment # :").FontSize(8);
-                                    col2.Item().AlignRight().Text(receiptData.EnrollmentNumber).FontSize(11).Bold();
+                                    col2.Item().AlignRight().Text(receiptData.EnrollmentNumber ?? "N/A").FontSize(11).Bold();
                                 });
                             });
                             
@@ -619,12 +646,12 @@ public class GenerateFeeReceiptPdfCommandHandler : IRequestHandler<GenerateFeeRe
                                 row.RelativeItem(1).Column(col1 =>
                                 {
                                     col1.Item().Text("Class :").FontSize(8);
-                                    col1.Item().Text(receiptData.ClassName).FontSize(10);
+                                    col1.Item().Text(receiptData.ClassName ?? "N/A").FontSize(10);
                                 });
                                 row.RelativeItem(1).Column(col2 =>
                                 {
                                     col2.Item().AlignRight().Text("Section :").FontSize(8);
-                                    col2.Item().AlignRight().Text(receiptData.SectionName).FontSize(10);
+                                    col2.Item().AlignRight().Text(receiptData.SectionName ?? "N/A").FontSize(10);
                                 });
                             });
                             
@@ -633,7 +660,7 @@ public class GenerateFeeReceiptPdfCommandHandler : IRequestHandler<GenerateFeeRe
                                 row.RelativeItem().Column(col1 =>
                                 {
                                     col1.Item().Text("Fee Type :").FontSize(8);
-                                    col1.Item().Text(receiptData.FeeStructureName).FontSize(10).Bold();
+                                    col1.Item().Text(receiptData.FeeStructureName ?? "N/A").FontSize(10).Bold();
                                 });
                             });
                         });
@@ -649,6 +676,39 @@ public class GenerateFeeReceiptPdfCommandHandler : IRequestHandler<GenerateFeeRe
                             {
                                 details.Spacing(8);
                                 
+                                // Fee Components Table (NEW)
+                                if (receiptData.Categories != null && receiptData.Categories.Any())
+                                {
+                                    details.Item().Table(table =>
+                                    {
+                                        table.ColumnsDefinition(columns =>
+                                        {
+                                            columns.RelativeColumn();
+                                            columns.ConstantColumn(100);
+                                        });
+
+                                        // Table Header
+                                        table.Header(header =>
+                                        {
+                                            header.Cell().BorderBottom(1).PaddingBottom(5).Text("Component").Bold().FontSize(9);
+                                            header.Cell().BorderBottom(1).PaddingBottom(5).AlignRight().Text("Amount").Bold().FontSize(9);
+                                        });
+
+                                        // Table Rows
+                                        foreach (var cat in receiptData.Categories!)
+                                        {
+                                            table.Cell().BorderBottom(0.5f).BorderColor("#E2E8F0").PaddingVertical(3).Text(cat.Category ?? "N/A").FontSize(9);
+                                            table.Cell().BorderBottom(0.5f).BorderColor("#E2E8F0").PaddingVertical(3).AlignRight().Text($"₹ {cat.Amount:N2}").FontSize(9);
+                                        }
+
+                                        // Table Footer (Subtotal)
+                                        table.Cell().PaddingTop(5).Text("Total Fee Amount").Bold().FontSize(10);
+                                        table.Cell().PaddingTop(5).AlignRight().Text($"₹ {receiptData.TotalDueAmount:N2}").Bold().FontSize(10);
+                                    });
+                                    
+                                    details.Item().PaddingVertical(5);
+                                }
+
                                 // Previous Balance
                                 details.Item().Row(row =>
                                 {
@@ -657,24 +717,17 @@ public class GenerateFeeReceiptPdfCommandHandler : IRequestHandler<GenerateFeeRe
                                 });
                                 
                                 // Amount Paid - Emphasized with larger font
-                                details.Item().PaddingHorizontal(8).PaddingVertical(8).Row(row =>
+                                details.Item().PaddingHorizontal(8).PaddingVertical(8).Background("#F8FAFC").Row(row =>
                                 {
                                     row.RelativeItem(1).Text("Amount Paid :").FontSize(11).Bold();
-                                    row.RelativeItem(1).AlignRight().Text($"₹ {receiptData.AmountPaid:N2}").FontSize(13).Bold();
+                                    row.RelativeItem(1).AlignRight().Text($"₹ {receiptData.AmountPaid:N2}").FontSize(13).Bold().FontColor("#10B981");
                                 });
                                 
                                 // Current Balance - Emphasized with larger font
                                 details.Item().PaddingHorizontal(8).PaddingVertical(8).Row(row =>
                                 {
                                     row.RelativeItem(1).Text("Current Balance :").FontSize(11).Bold();
-                                    row.RelativeItem(1).AlignRight().Text($"₹ {receiptData.CurrentBalance:N2}").FontSize(13).Bold();
-                                });
-                                
-                                // Total Due
-                                details.Item().Row(row =>
-                                {
-                                    row.RelativeItem(1).Text("Total Due Amount :").FontSize(9);
-                                    row.RelativeItem(1).AlignRight().Text($"₹ {receiptData.TotalDueAmount:N2}").FontSize(10);
+                                    row.RelativeItem(1).AlignRight().Text($"₹ {receiptData.CurrentBalance:N2}").FontSize(13).Bold().FontColor("#EF4444");
                                 });
                             });
                         });
@@ -696,7 +749,7 @@ public class GenerateFeeReceiptPdfCommandHandler : IRequestHandler<GenerateFeeRe
                                 row.RelativeItem(1).Column(col2 =>
                                 {
                                     col2.Item().AlignRight().Text("Payment Method :").FontSize(8);
-                                    col2.Item().AlignRight().Text(receiptData.PaymentMethod).FontSize(10).Bold();
+                                    col2.Item().AlignRight().Text(receiptData.PaymentMethod ?? "N/A").FontSize(10).Bold();
                                 });
                             });
                         });
@@ -714,7 +767,7 @@ public class GenerateFeeReceiptPdfCommandHandler : IRequestHandler<GenerateFeeRe
 
                         // Footer spacer
                         col.Item().Height(20);
-                        col.Item().BorderTop(1);
+                        col.Item().BorderBottom(1);
                         
                         // Footer
                         col.Item().PaddingVertical(10).AlignCenter().Column(footer =>
@@ -741,6 +794,200 @@ public class GenerateFeeReceiptPdfCommandHandler : IRequestHandler<GenerateFeeRe
         catch (Exception ex)
         {
             throw new InvalidOperationException("Failed to generate PDF", ex);
+        }
+    }
+}
+
+/// <summary>
+/// Handler for GenerateStudentFeePdfCommand
+/// Generates a professional fee statement/schedule for a student
+/// </summary>
+public class GenerateStudentFeePdfCommandHandler : IRequestHandler<GenerateStudentFeePdfCommand, byte[]>
+{
+    private readonly IMediator _mediator;
+
+    public GenerateStudentFeePdfCommandHandler(IMediator mediator)
+    {
+        _mediator = mediator;
+    }
+
+    public async Task<byte[]> Handle(GenerateStudentFeePdfCommand request, CancellationToken cancellationToken)
+    {
+        var data = await _mediator.Send(new GetStudentFeeStatementDataQuery { StudentFeeId = request.StudentFeeId }, cancellationToken);
+
+        if (data == null)
+            throw new InvalidOperationException("Student fee assignment not found");
+
+        try
+        {
+            return Document.Create(container =>
+            {
+                container.Page(page =>
+                {
+                    page.Size(595, 842); // A4
+                    page.Margin(20);
+                    page.DefaultTextStyle(x => x.FontSize(10));
+
+                    // Header
+                    page.Header().Column(col =>
+                    {
+                        col.Spacing(10);
+                        col.Item().Row(row =>
+                        {
+                            if (!string.IsNullOrEmpty(data.SchoolLogoBase64))
+                            {
+                                try
+                                {
+                                    var logoBytes = Convert.FromBase64String(data.SchoolLogoBase64!);
+                                    row.AutoItem().Height(60).Image(logoBytes);
+                                }
+                                catch { }
+                            }
+
+                            row.RelativeItem().Column(header =>
+                            {
+                                header.Item().AlignRight().Text(data.SchoolName ?? "School Management System")
+                                    .FontSize(20).Bold().FontColor("#3B82F6");
+                                
+                                if (!string.IsNullOrEmpty(data.SchoolAddress))
+                                    header.Item().AlignRight().Text(data.SchoolAddress ?? string.Empty).FontSize(9).FontColor("#4B5563");
+                                
+                                if (!string.IsNullOrEmpty(data.SchoolPhone) || !string.IsNullOrEmpty(data.SchoolEmail))
+                                    header.Item().AlignRight().Text($"Phone: {data.SchoolPhone ?? "N/A"} | Email: {data.SchoolEmail ?? "N/A"}").FontSize(8);
+                            });
+                        });
+
+                        col.Item().PaddingVertical(5).BorderBottom(2).BorderColor("#3B82F6");
+                        
+                        col.Item().Row(row =>
+                        {
+                            row.RelativeItem().Text("FEE SCHEDULE / STATEMENT").FontSize(14).Bold().FontColor("#1D4ED8");
+                            row.RelativeItem().AlignRight().Text($"Date: {DateTime.Now:dd/MM/yyyy}").FontSize(10);
+                        });
+                        
+                        col.Item().BorderBottom(1).BorderColor("#E2E8F0");
+                    });
+
+                    // Content
+                    page.Content().Column(col =>
+                    {
+                        col.Spacing(15);
+
+                        // Student Information
+                        col.Item().Column(section =>
+                        {
+                            section.Spacing(5);
+                            section.Item().Text("STUDENT INFORMATION").FontSize(11).Bold();
+                            section.Item().PaddingVertical(2).BorderBottom(1).BorderColor("#CBD5E1");
+                            
+                            section.Item().Row(row =>
+                            {
+                                row.RelativeItem().Column(c =>
+                                {
+                                    c.Item().Text("Student Name:").FontSize(8).FontColor("#64748B");
+                                    c.Item().Text(data.StudentName ?? "N/A").Bold();
+                                });
+                                row.RelativeItem().Column(c =>
+                                {
+                                    c.Item().AlignRight().Text("Enrollment #:").FontSize(8).FontColor("#64748B");
+                                    c.Item().AlignRight().Text(data.EnrollmentNumber ?? "N/A").Bold();
+                                });
+                            });
+
+                            section.Item().Row(row =>
+                            {
+                                row.RelativeItem().Column(c =>
+                                {
+                                    c.Item().Text("Class:").FontSize(8).FontColor("#64748B");
+                                    c.Item().Text($"{data.ClassName} - {data.SectionName}");
+                                });
+                                row.RelativeItem().Column(c =>
+                                {
+                                    c.Item().AlignRight().Text("Academic Year:").FontSize(8).FontColor("#64748B");
+                                    c.Item().AlignRight().Text(data.StartDate.Year.ToString());
+                                });
+                            });
+                        });
+
+                        // Fee Breakdown
+                        col.Item().Column(section =>
+                        {
+                            section.Spacing(5);
+                            section.Item().Text("FEE BREAKDOWN").FontSize(11).Bold();
+                            section.Item().PaddingVertical(2).BorderBottom(1).BorderColor("#CBD5E1");
+                            
+                            section.Item().PaddingTop(5).Table(table =>
+                            {
+                                table.ColumnsDefinition(columns =>
+                                {
+                                    columns.RelativeColumn();
+                                    columns.ConstantColumn(120);
+                                });
+
+                                table.Header(header =>
+                                {
+                                    header.Cell().BorderBottom(1).Padding(5).Text("Component").Bold();
+                                    header.Cell().BorderBottom(1).Padding(5).AlignRight().Text("Amount").Bold();
+                                });
+
+                                foreach (var cat in data.Categories)
+                                {
+                                    table.Cell().BorderBottom(0.5f).BorderColor("#E2E8F0").Padding(5).Text(cat.Category ?? "N/A");
+                                    table.Cell().BorderBottom(0.5f).BorderColor("#E2E8F0").Padding(5).AlignRight().Text($"₹ {cat.Amount:N2}");
+                                }
+
+                                table.Footer(footer =>
+                                {
+                                    footer.Cell().Padding(5).Text("Total Structure Amount").Bold();
+                                    footer.Cell().Padding(5).AlignRight().Text($"₹ {data.TotalAmount:N2}").Bold();
+                                });
+                            });
+                        });
+
+                        // Financial Summary
+                        col.Item().PaddingTop(10).Background("#F8FAFC").Padding(10).Column(section =>
+                        {
+                            section.Spacing(2);
+                            section.Item().Row(row =>
+                            {
+                                row.RelativeItem().Text("Total Amount Due").SemiBold();
+                                row.RelativeItem().AlignRight().Text($"₹ {data.TotalAmount:N2}");
+                            });
+                            section.Item().Row(row =>
+                            {
+                                row.RelativeItem().Text("Total Amount Paid").SemiBold().FontColor("#10B981");
+                                row.RelativeItem().AlignRight().Text($"₹ {data.PaidAmount:N2}").FontColor("#10B981");
+                            });
+                            section.Item().PaddingTop(2).BorderTop(1).BorderColor("#E2E8F0").Row(row =>
+                            {
+                                row.RelativeItem().Text("Remaining Balance").Bold().FontColor("#EF4444");
+                                row.RelativeItem().AlignRight().Text($"₹ {data.BalanceAmount:N2}").Bold().FontColor("#EF4444");
+                            });
+                        });
+
+                        if (!string.IsNullOrEmpty(data.Notes))
+                        {
+                            col.Item().PaddingTop(10).Column(n =>
+                            {
+                                n.Item().Text("Notes").FontSize(9).Bold();
+                                n.Item().Text(data.Notes!).FontSize(8).FontColor("#475569");
+                            });
+                        }
+                    });
+
+                    page.Footer().AlignCenter().Text(x =>
+                    {
+                        x.Span("Page ");
+                        x.CurrentPageNumber();
+                        x.Span(" of ");
+                        x.TotalPages();
+                    });
+                });
+            }).GeneratePdf();
+        }
+        catch (Exception ex)
+        {
+            throw new InvalidOperationException("Failed to generate Fee Schedule PDF", ex);
         }
     }
 }

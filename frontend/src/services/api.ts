@@ -520,6 +520,13 @@ export const feeApi = {
     return response.data;
   },
 
+  downloadStudentFeePdf: async (id: string) => {
+    const response = await api.get(`/fees/student-fees/${id}/pdf`, {
+      responseType: 'arraybuffer',
+    });
+    return response.data;
+  },
+
   // Payments
   getAllPayments: async (params?: { pageNumber?: number; pageSize?: number; studentFeeId?: string }) => {
     const response = await api.get<PaginatedFeePaymentList>('/fees/payments', { params });
@@ -1450,6 +1457,20 @@ export type CreateTimetableEntryDto = {
   academicYearId: string;
 };
 
+export type BulkCopyResultDto = {
+  successCount: number;
+  skippedCount: number;
+  errors: string[];
+};
+
+export type BulkCopyRoutineDto = {
+  academicYearId: string;
+  sectionId?: string;
+  staffId?: string;
+  sourceDay: number;
+  targetDays: number[];
+};
+
 // Timetable API
 export const timetableApi = {
   // TimeSlots
@@ -1508,6 +1529,16 @@ export const timetableApi = {
     const response = await api.get(`/timetable/entries/staff/${staffId}/${academicYearId}/export`, {
       responseType: 'blob'
     });
+    return response.data;
+  },
+
+  bulkCreateTimeSlots: async (data: { academicYearId: string, sourceDay: number, targetDays: number[] }) => {
+    const response = await api.post<boolean>(`/timetable/timeslots/bulk`, data);
+    return response.data;
+  },
+
+  bulkCopyRoutine: async (data: BulkCopyRoutineDto) => {
+    const response = await api.post<BulkCopyResultDto>(`/timetable/entries/bulk-copy`, data);
     return response.data;
   },
 };

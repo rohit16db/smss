@@ -9,7 +9,8 @@ namespace SMS.Application.Features.Timetable.Handlers.CommandHandlers;
 public class TimeSlotCommandHandlers : 
     IRequestHandler<CreateTimeSlotCommand, Guid>,
     IRequestHandler<UpdateTimeSlotCommand, bool>,
-    IRequestHandler<DeleteTimeSlotCommand, bool>
+    IRequestHandler<DeleteTimeSlotCommand, bool>,
+    IRequestHandler<BulkCreateTimeSlotsCommand, bool>
 {
     private readonly IApplicationDbContext _context;
 
@@ -29,6 +30,8 @@ public class TimeSlotCommandHandlers :
             IsBreak = request.TimeSlot.IsBreak,
             AcademicYearId = request.TimeSlot.AcademicYearId
         };
+
+        await ValidateTimeSlot(entity, null, cancellationToken);
 
         _context.TimeSlots.Add(entity);
         await _context.SaveChangesAsync(cancellationToken);
@@ -50,6 +53,59 @@ public class TimeSlotCommandHandlers :
         entity.IsBreak = request.TimeSlot.IsBreak;
         entity.AcademicYearId = request.TimeSlot.AcademicYearId;
 
+        await ValidateTimeSlot(entity, request.Id, cancellationToken);
+
+        await _context.SaveChangesAsync(cancellationToken);
+        return true;
+    }
+
+    public async Task<bool> Handle(BulkCreateTimeSlotsCommand request, CancellationToken cancellationToken)
+    {
+        var sourceSlots = await _context.TimeSlots
+            .Where(t => t.AcademicYearId == request.AcademicYearId && (int)t.DayOfWeek == request.SourceDay)
+            .ToListAsync(cancellationToken);
+
+        if (!sourceSlots.Any()) return false;
+
+        foreach (var targetDay in request.TargetDays)
+        {
+            foreach (var source in sourceSlots)
+            {
+                var overlapping = await _context.TimeSlots.AnyAsync(t => 
+                    t.AcademicYearId == request.AcademicYearId && 
+                    (int)t.DayOfWeek == targetDay &&
+                    t.StartTime < source.EndTime && 
+                    source.StartTime < t.EndTime, cancellationToken);
+
+                if (overlapping)
+                {
+                    // If it's an exact match (same start/end), we skip it as it's already "synced"
+                    var exactMatch = await _context.TimeSlots.AnyAsync(t => 
+                        t.AcademicYearId == request.AcademicYearId && 
+                        (int)t.DayOfWeek == targetDay &&
+                        t.StartTime == source.StartTime &&
+                        t.EndTime == source.EndTime, cancellationToken);
+
+                    if (!exactMatch)
+                    {
+                        throw new InvalidOperationException($"Cannot sync structure: {source.Name} overlaps with an existing slot on {((DayOfWeek)targetDay)}.");
+                    }
+                    continue;
+                }
+
+                var newSlot = new TimeSlot
+                {
+                    Name = source.Name,
+                    StartTime = source.StartTime,
+                    EndTime = source.EndTime,
+                    IsBreak = source.IsBreak,
+                    DayOfWeek = (DayOfWeek)targetDay,
+                    AcademicYearId = request.AcademicYearId
+                };
+                _context.TimeSlots.Add(newSlot);
+            }
+        }
+
         await _context.SaveChangesAsync(cancellationToken);
         return true;
     }
@@ -64,5 +120,25 @@ public class TimeSlotCommandHandlers :
         _context.TimeSlots.Remove(entity);
         await _context.SaveChangesAsync(cancellationToken);
         return true;
+    }
+
+    private async Task ValidateTimeSlot(TimeSlot slot, Guid? currentId, CancellationToken cancellationToken)
+    {
+        if (slot.StartTime >= slot.EndTime)
+        {
+            throw new InvalidOperationException("Start time must be before end time.");
+        }
+
+        var overlapping = await _context.TimeSlots
+            .AnyAsync(t => t.AcademicYearId == slot.AcademicYearId &&
+                           t.DayOfWeek == slot.DayOfWeek &&
+                           t.Id != currentId &&
+                           t.StartTime < slot.EndTime && 
+                           slot.StartTime < t.EndTime, cancellationToken);
+
+        if (overlapping)
+        {
+            throw new InvalidOperationException("This time slot overlaps with an existing one on the same day.");
+        }
     }
 }

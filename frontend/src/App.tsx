@@ -40,6 +40,7 @@ import { LoginPage } from './pages/LoginPage';
 import { ChangePasswordPage } from './pages/ChangePasswordPage';
 import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
 import { ResetPasswordPage } from './pages/ResetPasswordPage';
+import { TransportManagementPage } from './pages/TransportManagementPage';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { ToastProvider } from './components/providers/ToastProvider';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
@@ -305,6 +306,14 @@ function App() {
                   element={
                     <ProtectedRoute allowedRoles={["Admin"]}>
                       <HolidaysPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="transport"
+                  element={
+                    <ProtectedRoute allowedRoles={["Admin", "Clerk"]}>
+                      <TransportManagementPage />
                     </ProtectedRoute>
                   }
                 />

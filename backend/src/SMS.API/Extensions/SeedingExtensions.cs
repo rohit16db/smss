@@ -24,12 +24,12 @@ namespace SMS.API.Extensions
             catch (Exception ex)
             {
                 var logger = app.Services.GetRequiredService<ILogger<Program>>();
-                logger.LogError(ex, "[Database] ✗ Error applying migrations: {Message}", ex.Message);
+                logger.LogWarning(ex, "[Database] ✗ Error applying migrations during startup: {Message}. App will continue.", ex.Message);
                 if (ex.InnerException != null)
                 {
-                    logger.LogError(ex.InnerException, "[Database] ✗ Inner exception: {Message}", ex.InnerException.Message);
+                    logger.LogWarning(ex.InnerException, "[Database] ✗ Inner exception: {Message}", ex.InnerException.Message);
                 }
-                throw; // Rethrow in production - migration failure is critical
+                // Don't throw here to allow DesignTime tools to work even if DB is not reachable
             }
         }
 

@@ -17,12 +17,20 @@ public class StudentFee : BaseEntity
     /// <summary>End date of this fee assignment</summary>
     public DateOnly? EndDate { get; set; }
     
-    /// <summary>Total amount due for this fee assignment (cached from structure)</summary>
-    public decimal TotalAmount { get; set; }
-    
     /// <summary>Whether this fee assignment is currently active</summary>
     public bool IsActive { get; set; } = true;
     
+    public decimal StructureAmount { get; set; }
+    public decimal TransportFeeAmount { get; set; }
+    
+    [System.ComponentModel.DataAnnotations.Schema.NotMapped]
+    public decimal TotalAmount => StructureAmount + TransportFeeAmount;
+    
+    public decimal PaidAmount { get; set; }
+    
+    [System.ComponentModel.DataAnnotations.Schema.NotMapped]
+    public decimal BalanceAmount => TotalAmount - PaidAmount;
+
     // Navigation properties
     public Enrollment? Enrollment { get; set; }
     public FeeStructure? FeeStructure { get; set; }

@@ -107,3 +107,11 @@ public class GetFeeReceiptDataQuery : IRequest<FeeReceiptDto?>
 {
     public required string PaymentId { get; set; }
 }
+
+/// <summary>
+/// Query to get student fee statement data for PDF generation
+/// </summary>
+public class GetStudentFeeStatementDataQuery : IRequest<StudentFeeStatementDto?>
+{
+    public required string StudentFeeId { get; set; }
+}
