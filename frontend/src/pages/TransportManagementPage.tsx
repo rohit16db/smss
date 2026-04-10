@@ -17,7 +17,8 @@ import {
   LocalShipping
 } from '@mui/icons-material';
 import { transportService, type Vehicle, type TransportRoute } from '../services/transportService';
-import { studentApi, type Student } from '../services/api';
+import { studentApi, notificationApi, type Student } from '../services/api';
+import { WhatsAppIcon } from '../components/WhatsAppIcon';
 import toast from 'react-hot-toast';
 
 interface TabPanelProps {
@@ -159,6 +160,39 @@ export const TransportManagementPage: React.FC = () => {
         console.error('Failed to deactivate assignment', error);
         toast.error('Failed to remove student from transport');
       }
+    }
+  };
+
+  const handleNotifyParent = async (assignment: any, channel: 'SMS' | 'WhatsApp') => {
+    if (!assignment.guardianPhone) {
+      toast.error('No guardian phone number found for this student');
+      return;
+    }
+
+    const templateName = channel === 'WhatsApp' ? 'TRANSPORT_UPDATE_WA' : 'TRANSPORT_UPDATE_SMS';
+    
+    try {
+      const result = await notificationApi.sendNotification({
+        templateName,
+        recipientPhone: assignment.guardianPhone,
+        placeholders: {
+          'StudentName': assignment.studentName,
+          'RouteName': assignment.routeName,
+          'VehicleDetails': assignment.vehicleReg,
+          'StopName': assignment.stopName,
+          'SchoolName': 'Our School'
+        },
+        relatedEntityType: 'TransportAssignment',
+        relatedEntityId: assignment.id
+      });
+
+      if (result.success) {
+        toast.success(`Notification sent via ${channel}`);
+      } else {
+        toast.error(result.errorMessage || `Failed to send ${channel} notification`);
+      }
+    } catch (error) {
+      toast.error(`Failed to trigger notification: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
 
@@ -582,12 +616,28 @@ export const TransportManagementPage: React.FC = () => {
                             {new Date(assignment.effectiveDate).toLocaleDateString()}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-right">
-                            <button
-                              onClick={() => handleDeactivateAssignment(assignment.id)}
-                              className="text-red-600 hover:bg-red-100 px-3 py-1.5 rounded-lg border border-red-200 transition-all text-xs font-bold uppercase tracking-wider"
-                            >
-                              Remove
-                            </button>
+                            <div className="flex gap-2 justify-end">
+                              <button
+                                onClick={() => handleNotifyParent(assignment, 'SMS')}
+                                className="p-1.5 text-orange-600 hover:bg-orange-50 rounded-lg border border-orange-100 transition-all opacity-80 hover:opacity-100"
+                                title="Notify Parent (SMS)"
+                              >
+                                📱
+                              </button>
+                              <button
+                                onClick={() => handleNotifyParent(assignment, 'WhatsApp')}
+                                className="p-1.5 text-green-600 hover:bg-green-50 rounded-lg border border-green-100 transition-all opacity-80 hover:opacity-100"
+                                title="Notify Parent (WhatsApp)"
+                              >
+                                <WhatsAppIcon size={16} className="text-[#25D366]" />
+                              </button>
+                              <button
+                                onClick={() => handleDeactivateAssignment(assignment.id)}
+                                className="text-red-600 hover:bg-red-100 px-3 py-1.5 rounded-lg border border-red-200 transition-all text-xs font-bold uppercase tracking-wider"
+                              >
+                                Remove
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       ))}

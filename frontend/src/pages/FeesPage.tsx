@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
 import toast from 'react-hot-toast';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { feeApi, studentApi, classApi, type CreateFeeStructureDto, type FeeStructure, type CreateStudentFeeDto, type StudentFee, type CreateFeePaymentDto, type Student, type BulkAssignStudentFeeDto, type SectionListDto } from '../services/api';
+import { feeApi, studentApi, classApi, notificationApi, type CreateFeeStructureDto, type FeeStructure, type CreateStudentFeeDto, type StudentFee, type CreateFeePaymentDto, type Student, type BulkAssignStudentFeeDto, type SectionListDto } from '../services/api';
 import { formatDate } from '../utils/dateFormat';
 import type { AxiosError } from 'axios';
 import { useAcademicYear } from '../hooks/useAcademicYear';
+import { WhatsAppIcon } from '../components/WhatsAppIcon';
 
 type TabType = 'structures' | 'assignments' | 'payments';
 
@@ -622,6 +623,38 @@ function StudentFeesTab() {
     }
   };
 
+  const handleNotifyParent = async (fee: StudentFee, channel: 'SMS' | 'WhatsApp') => {
+    if (!fee.guardianPhone) {
+      toast.error('No guardian phone number found for this student');
+      return;
+    }
+
+    const templateName = channel === 'WhatsApp' ? 'FEE_DUE_WA' : 'FEE_DUE_SMS';
+    
+    try {
+      const result = await notificationApi.sendNotification({
+        templateName,
+        recipientPhone: fee.guardianPhone,
+        placeholders: {
+          'StudentName': fee.studentName,
+          'Amount': fee.balanceAmount.toFixed(2),
+          'DueDate': fee.endDate ? formatDate(fee.endDate) : 'N/A',
+          'SchoolName': 'Our School' // In a real app, get from settings
+        },
+        relatedEntityType: 'StudentFee',
+        relatedEntityId: fee.id
+      });
+
+      if (result.success) {
+        toast.success(`Notification sent via ${channel}`);
+      } else {
+        toast.error(result.errorMessage || `Failed to send ${channel} notification`);
+      }
+    } catch (error) {
+      toast.error(`Failed to trigger notification: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  };
+
   const handleDownloadFeeDetails = async (id: string, studentName: string) => {
     try {
       const data = await feeApi.downloadStudentFeePdf(id);
@@ -772,6 +805,22 @@ function StudentFeesTab() {
                         <td className="px-6 py-4 text-right">
                           <div className="flex gap-2 justify-end">
                             <button
+                              onClick={() => handleNotifyParent(fee, 'SMS')}
+                              disabled={!fee.isActive || !fee.guardianPhone || fee.balanceAmount <= 0}
+                              className="text-orange-600 hover:text-orange-800 p-2 hover:bg-orange-50 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                              title="Notify Parent (SMS)"
+                            >
+                              📱
+                            </button>
+                            <button
+                              onClick={() => handleNotifyParent(fee, 'WhatsApp')}
+                              disabled={!fee.isActive || !fee.guardianPhone || fee.balanceAmount <= 0}
+                              className="text-green-600 hover:text-green-800 p-2 hover:bg-green-50 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                              title="Notify Parent (WhatsApp)"
+                            >
+                              <WhatsAppIcon size={18} className="text-[#25D366]" />
+                            </button>
+                            <button
                               onClick={() => handleDownloadFeeDetails(fee.id, fee.studentName)}
                               className="text-blue-600 hover:text-blue-900 p-2 hover:bg-blue-50 rounded-lg transition-colors"
                               title="Download Fee Details"
@@ -783,7 +832,7 @@ function StudentFeesTab() {
                             <button
                               onClick={() => handleTerminate(fee.id)}
                               disabled={!fee.isActive}
-                              className="text-orange-600 hover:text-orange-900 p-2 hover:bg-orange-50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                              className="text-red-500 hover:text-red-900 p-2 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                               title="Terminate"
                             >
                               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">

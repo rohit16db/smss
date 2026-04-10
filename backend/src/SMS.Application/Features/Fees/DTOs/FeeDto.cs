@@ -119,6 +119,7 @@ public class StudentFeeDto
     // Section context (read-only - from student's current enrollment)
     public string? SectionId { get; set; }
     public string? SectionName { get; set; }
+    public string? GuardianPhone { get; set; }
     
     public DateTime CreatedAt { get; set; }
 }

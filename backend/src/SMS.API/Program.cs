@@ -86,6 +86,15 @@ builder.Services.AddScoped<IGradeCalculationService, GradeCalculationService>();
 builder.Services.AddScoped<IMarksCalculationService, MarksCalculationService>();
 builder.Services.AddScoped<IClassPositionService, ClassPositionService>();
 
+// Register Notification Services
+builder.Services.AddTransient<INotificationProvider>(sp => 
+    new SMS.Infrastructure.Services.Messaging.MockNotificationProvider(
+        sp.GetRequiredService<ILogger<SMS.Infrastructure.Services.Messaging.MockNotificationProvider>>(), "SMS"));
+builder.Services.AddTransient<INotificationProvider>(sp => 
+    new SMS.Infrastructure.Services.Messaging.MockNotificationProvider(
+        sp.GetRequiredService<ILogger<SMS.Infrastructure.Services.Messaging.MockNotificationProvider>>(), "WhatsApp"));
+builder.Services.AddScoped<INotificationService, SMS.Infrastructure.Services.Messaging.NotificationService>();
+
 // Configure JWT Authentication
 var jwtSecret = builder.Configuration["JWT_SECRET"]
     ?? throw new InvalidOperationException("JWT_SECRET not configured");

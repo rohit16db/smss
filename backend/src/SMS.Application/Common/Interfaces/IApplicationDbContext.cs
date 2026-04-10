@@ -63,6 +63,10 @@ public interface IApplicationDbContext
     // School Configuration
     DbSet<School> Schools { get; }
 
+    // Notification Management
+    DbSet<NotificationTemplate> NotificationTemplates { get; }
+    DbSet<NotificationHistory> NotificationHistories { get; }
+
     /// <summary>
     /// Save all changes to the database
     /// </summary>

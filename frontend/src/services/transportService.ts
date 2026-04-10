@@ -76,6 +76,7 @@ export interface StudentTransportAssignment {
   vehicleReg: string;
   monthlyFee: number;
   effectiveDate: string;
+  guardianPhone?: string;
   isActive: boolean;
 }
 

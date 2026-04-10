@@ -11,7 +11,10 @@ namespace SMS.Infrastructure.Seeders
         {
             try
             {
-                // Only seed if database is empty
+                // Seed Notification Templates
+                await NotificationTemplateSeeder.SeedAsync(context);
+
+                // Only seed other data if database is empty
                 if (await context.Users.AnyAsync())
                 {
                     Console.WriteLine("Database already seeded. Skipping initialization.");

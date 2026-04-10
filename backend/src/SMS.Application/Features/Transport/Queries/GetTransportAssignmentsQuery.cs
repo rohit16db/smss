@@ -59,6 +59,7 @@ public class GetTransportAssignmentsHandler : IRequestHandler<GetTransportAssign
                 MonthlyFee = a.Route.MonthlyFee,
                 VehicleReg = a.Route.Vehicle != null ? a.Route.Vehicle.RegistrationNumber : "N/A",
                 EffectiveDate = a.EffectiveDate,
+                GuardianPhone = a.Enrollment.Student.GuardianPhone,
                 IsActive = a.IsActive
             })
             .ToListAsync(cancellationToken);
