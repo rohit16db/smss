@@ -153,7 +153,8 @@ public class GetStudentAttendanceHistoryQueryHandler : IRequestHandler<GetStuden
                     SectionId = enrollment.SectionId.ToString(),
                     AttendanceDate = attendance.AttendanceDate.ToDateTime(TimeOnly.MinValue),
                     Status = attendance.Status,
-                    Reason = attendance.Reason
+                    Reason = attendance.Reason,
+                    GuardianPhone = enrollment.Student != null ? enrollment.Student.GuardianPhone : null
                 })
             .ToListAsync(cancellationToken);
 

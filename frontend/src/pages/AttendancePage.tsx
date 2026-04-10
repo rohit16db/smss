@@ -1,8 +1,9 @@
 import { useState, useRef, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { attendanceApi, studentApi, StaffApi, holidayApi, type CreateStudentAttendanceDto, type CreateStaffAttendanceDto, type StudentAttendance, type StaffAttendance, type Student, type Staff } from '../services/api';
+import { attendanceApi, studentApi, StaffApi, holidayApi, notificationApi, type CreateStudentAttendanceDto, type CreateStaffAttendanceDto, type StudentAttendance, type StaffAttendance, type Student, type Staff } from '../services/api';
 import { useAcademicYear } from '../hooks/useAcademicYear';
+import { WhatsAppIcon } from '../components/WhatsAppIcon';
 
 export function AttendancePage() {
   const queryClient = useQueryClient();
@@ -380,6 +381,38 @@ export function AttendancePage() {
       } else {
         StaffDeleteMutation.mutate(id);
       }
+    }
+  };
+
+  const handleNotifyParent = async (record: StudentAttendance, channel: 'SMS' | 'WhatsApp') => {
+    if (!record.guardianPhone) {
+      toast.error('No guardian phone number found for this student');
+      return;
+    }
+
+    const templateName = channel === 'WhatsApp' ? 'ATTENDANCE_ABSENT_WA' : 'ATTENDANCE_ABSENT_SMS';
+    
+    try {
+      const result = await notificationApi.sendNotification({
+        templateName,
+        recipientPhone: record.guardianPhone,
+        placeholders: {
+          'StudentName': record.studentName || 'Student',
+          'Date': new Date(record.attendanceDate).toLocaleDateString(),
+          'Status': record.status,
+          'SchoolName': 'Our School'
+        },
+        relatedEntityType: 'StudentAttendance',
+        relatedEntityId: record.id
+      });
+
+      if (result.success) {
+        toast.success(`Notification sent via ${channel}`);
+      } else {
+        toast.error(result.errorMessage || `Failed to send ${channel} notification`);
+      }
+    } catch (error) {
+      toast.error(`Failed to trigger notification: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
 
@@ -969,6 +1002,24 @@ export function AttendancePage() {
                               >
                                 Delete
                               </button>
+                              {activeTab === 'student' && record.status.toLowerCase() === 'absent' && (
+                                <>
+                                  <button
+                                    onClick={() => handleNotifyParent(record as StudentAttendance, 'SMS')}
+                                    className="p-1 text-orange-600 hover:bg-orange-50 rounded transition"
+                                    title="Notify Parent (SMS)"
+                                  >
+                                    📱
+                                  </button>
+                                  <button
+                                    onClick={() => handleNotifyParent(record as StudentAttendance, 'WhatsApp')}
+                                    className="p-1 text-green-600 hover:bg-green-50 rounded transition"
+                                    title="Notify Parent (WhatsApp)"
+                                  >
+                                    <WhatsAppIcon size={16} className="text-[#25D366]" />
+                                  </button>
+                                </>
+                              )}
                             </div>
                           </td>
                         </tr>
@@ -1051,6 +1102,24 @@ export function AttendancePage() {
                         >
                           Delete
                         </button>
+                        {activeTab === 'student' && record.status.toLowerCase() === 'absent' && (
+                          <div className="flex gap-2 ml-auto">
+                            <button
+                              onClick={() => handleNotifyParent(record as StudentAttendance, 'SMS')}
+                              className="p-2 text-orange-600 hover:bg-orange-50 rounded-lg border border-orange-100 transition"
+                              title="Notify SMS"
+                            >
+                              📱
+                            </button>
+                            <button
+                              onClick={() => handleNotifyParent(record as StudentAttendance, 'WhatsApp')}
+                              className="p-2 text-green-600 hover:bg-green-50 rounded-lg border border-green-100 transition"
+                              title="Notify WhatsApp"
+                            >
+                              <WhatsAppIcon size={18} className="text-[#25D366]" />
+                            </button>
+                          </div>
+                        )}
                       </div>
                     </div>
                   ))}

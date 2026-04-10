@@ -69,6 +69,10 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     // School Configuration
     public DbSet<School> Schools => Set<School>();
 
+    // Notification Management
+    public DbSet<NotificationTemplate> NotificationTemplates => Set<NotificationTemplate>();
+    public DbSet<NotificationHistory> NotificationHistories => Set<NotificationHistory>();
+
     /// <summary>
     /// Save changes with automatic audit field updates and DateTime UTC conversion
     /// </summary>

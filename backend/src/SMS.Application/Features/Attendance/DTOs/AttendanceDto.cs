@@ -52,6 +52,7 @@ public class StudentAttendanceListDto
     public DateTime AttendanceDate { get; set; }
     public string Status { get; set; } = string.Empty;
     public string? Reason { get; set; }
+    public string? GuardianPhone { get; set; }
 }
 
 /// <summary>

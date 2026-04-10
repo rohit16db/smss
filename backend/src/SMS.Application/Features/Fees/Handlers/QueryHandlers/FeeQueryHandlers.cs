@@ -206,6 +206,7 @@ public class GetStudentFeesByStudentIdQueryHandler : IRequestHandler<GetStudentF
                 IsActive = sf.IsActive,
                 SectionId = currentSection?.SectionId.ToString(),
                 SectionName = currentSection?.SectionName,
+                GuardianPhone = sf.Enrollment?.Student?.GuardianPhone,
                 CreatedAt = sf.CreatedAt
             };
         }).ToList();
@@ -263,6 +264,12 @@ public class GetAllStudentFeesQueryHandler : IRequestHandler<GetAllStudentFeesQu
 
         var sectionMap = studentSections.ToDictionary(x => x.StudentId, x => new { x.SectionId, x.SectionName });
 
+        // Get guardian phones
+        var guardianPhones = await _context.Students
+            .Where(s => studentIds.Contains(s.Id))
+            .Select(s => new { s.Id, s.GuardianPhone })
+            .ToDictionaryAsync(x => x.Id, x => x.GuardianPhone, cancellationToken);
+
         return new PaginatedStudentFeeListDto
         {
             Items = studentFees.Select(sf =>
@@ -285,6 +292,7 @@ public class GetAllStudentFeesQueryHandler : IRequestHandler<GetAllStudentFeesQu
                     IsActive = sf.IsActive,
                     SectionId = sectionInfo?.SectionId.ToString(),
                     SectionName = sectionInfo?.SectionName,
+                    GuardianPhone = sf.Enrollment != null && guardianPhones.ContainsKey(sf.Enrollment.StudentId) ? guardianPhones[sf.Enrollment.StudentId] : null,
                     CreatedAt = sf.CreatedAt
                 };
             }).ToList(),
@@ -345,6 +353,7 @@ public class GetStudentFeeByIdQueryHandler : IRequestHandler<GetStudentFeeByIdQu
             IsActive = studentFee.IsActive,
             SectionId = currentSection?.SectionId.ToString(),
             SectionName = currentSection?.SectionName,
+            GuardianPhone = studentFee.Enrollment?.Student?.GuardianPhone,
             CreatedAt = studentFee.CreatedAt
         };
     }
@@ -502,6 +511,7 @@ public class GetFeesBySectionQueryHandler : IRequestHandler<GetFeesBySectionQuer
                 IsActive = sf.IsActive,
                 SectionId = sectionId.ToString(),
                 SectionName = section?.SectionName,
+                GuardianPhone = sf.Enrollment?.Student?.GuardianPhone,
                 CreatedAt = sf.CreatedAt
             };
         }).ToList();

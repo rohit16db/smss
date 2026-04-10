@@ -357,6 +357,7 @@ export type StudentFee = {
   // Section context (student's current enrolled section)
   sectionId?: string;
   sectionName?: string;
+  guardianPhone?: string;
 };
 
 export type CreateStudentFeeDto = {
@@ -576,6 +577,7 @@ export type StudentAttendance = {
   status: 'Present' | 'Absent' | 'Late' | 'Leave';
   reason?: string;
   remarks?: string;
+  guardianPhone?: string;
 };
 
 export type StaffAttendance = {
@@ -1601,5 +1603,76 @@ export const departmentApi = {
 
   delete: async (id: string) => {
     await api.delete(`/departments/${id}`);
+  },
+};
+
+// Notification Types
+export type NotificationTemplate = {
+  id: string;
+  name: string;
+  description: string;
+  content: string;
+  channel: 'SMS' | 'WhatsApp';
+  category: string;
+  isActive: boolean;
+};
+
+export type CreateNotificationTemplateDto = {
+  name: string;
+  description: string;
+  content: string;
+  channel: 'SMS' | 'WhatsApp';
+  category: string;
+};
+
+export type UpdateNotificationTemplateDto = {
+  id: string;
+  name: string;
+  description: string;
+  content: string;
+  channel: 'SMS' | 'WhatsApp';
+  category: string;
+  isActive: boolean;
+};
+
+export type SendNotificationRequest = {
+  templateName: string;
+  recipientPhone: string;
+  placeholders: Record<string, string>;
+  relatedEntityType?: string;
+  relatedEntityId?: string;
+};
+
+// Notification API
+export const notificationApi = {
+  getTemplates: async (category?: string) => {
+    const response = await api.get<NotificationTemplate[]>('/settings/notifications/templates', {
+      params: category ? { category } : undefined,
+    });
+    return response.data;
+  },
+
+  getTemplateById: async (id: string) => {
+    const response = await api.get<NotificationTemplate>(`/settings/notifications/templates/${id}`);
+    return response.data;
+  },
+
+  createTemplate: async (data: CreateNotificationTemplateDto) => {
+    const response = await api.post<NotificationTemplate>('/settings/notifications/templates', data);
+    return response.data;
+  },
+
+  updateTemplate: async (id: string, data: UpdateNotificationTemplateDto) => {
+    const response = await api.put<NotificationTemplate>(`/settings/notifications/templates/${id}`, data);
+    return response.data;
+  },
+
+  deleteTemplate: async (id: string) => {
+    await api.delete(`/settings/notifications/templates/${id}`);
+  },
+
+  sendNotification: async (data: SendNotificationRequest) => {
+    const response = await api.post<{ success: boolean; errorMessage?: string }>('/notifications/send', data);
+    return response.data;
   },
 };

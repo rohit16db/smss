@@ -45,5 +45,6 @@ public class StudentTransportAssignmentDto
     public decimal MonthlyFee { get; set; }
     public string VehicleReg { get; set; } = string.Empty;
     public DateTime EffectiveDate { get; set; }
+    public string? GuardianPhone { get; set; }
     public bool IsActive { get; set; }
 }

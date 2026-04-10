@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Calendar, Trash2, Edit2, CheckCircle, Clock } from "lucide-react";
+import { Calendar } from "lucide-react";
 import { useExams, useCreateExam, usePublishExam, useDeleteExam, useUpdateExam } from "../hooks/useExamHooks";
 import { useNavigate, Outlet, useLocation } from "react-router-dom";
 import { api } from "../services/api";
