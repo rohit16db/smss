@@ -12,7 +12,7 @@ namespace SMS.API.Controllers;
 /// </summary>
 [ApiController]
 [Route("api/v1/[controller]")]
-[Authorize(Policy = "AcademicAccess")]
+[Authorize(Policy = "AcademicViewAccess")]
 public class ClassesController : ControllerBase
 {
     private readonly IMediator _mediator;
@@ -62,6 +62,7 @@ public class ClassesController : ControllerBase
     /// Create a new class
     /// </summary>
     [HttpPost]
+    [Authorize(Policy = "AcademicAccess")]
     [ProducesResponseType(typeof(ClassDto), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Create([FromBody] CreateClassDto dto)
@@ -80,6 +81,7 @@ public class ClassesController : ControllerBase
     /// Update an existing class
     /// </summary>
     [HttpPut("{id}")]
+    [Authorize(Policy = "AcademicAccess")]
     [ProducesResponseType(typeof(ClassDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Update(string id, [FromBody] UpdateClassDto dto)
@@ -107,6 +109,7 @@ public class ClassesController : ControllerBase
     /// Delete a class
     /// </summary>
     [HttpDelete("{id}")]
+    [Authorize(Policy = "AcademicAccess")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Delete(string id)
@@ -157,6 +160,7 @@ public class ClassesController : ControllerBase
     /// Create a new section within a class
     /// </summary>
     [HttpPost("sections")]
+    [Authorize(Policy = "AcademicAccess")]
     [ProducesResponseType(typeof(SectionDto), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> CreateSection([FromBody] CreateSectionDto dto)
@@ -182,6 +186,7 @@ public class ClassesController : ControllerBase
     /// Update a section
     /// </summary>
     [HttpPut("sections/{id}")]
+    [Authorize(Policy = "AcademicAccess")]
     [ProducesResponseType(typeof(SectionDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> UpdateSection(string id, [FromBody] UpdateSectionDto dto)
@@ -208,6 +213,7 @@ public class ClassesController : ControllerBase
     /// Delete a section
     /// </summary>
     [HttpDelete("sections/{id}")]
+    [Authorize(Policy = "AcademicAccess")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DeleteSection(string id)
@@ -258,6 +264,7 @@ public class ClassesController : ControllerBase
     /// Move a student to a different section
     /// </summary>
     [HttpPost("students/{studentId}/move-section")]
+    [Authorize(Policy = "AcademicAccess")]
     [ProducesResponseType(typeof(StudentSectionDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> MoveStudentToSection(string studentId, [FromBody] MoveStudentSectionDto dto)
@@ -304,6 +311,7 @@ public class ClassesController : ControllerBase
     /// Auto-assign sequential roll numbers to all students in a section
     /// </summary>
     [HttpPost("sections/{sectionId}/auto-assign-roll-numbers")]
+    [Authorize(Policy = "AcademicAccess")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> AutoAssignRollNumbers(string sectionId)
@@ -328,6 +336,7 @@ public class ClassesController : ControllerBase
     /// Update a student's roll number in a section
     /// </summary>
     [HttpPut("student-sections/{studentSectionId}/roll-number")]
+    [Authorize(Policy = "AcademicAccess")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> UpdateRollNumber(string studentSectionId, [FromBody] UpdateRollNumberDto dto)
@@ -353,6 +362,7 @@ public class ClassesController : ControllerBase
     /// Bulk update roll numbers for multiple students in a section
     /// </summary>
     [HttpPut("sections/{sectionId}/bulk-update-roll-numbers")]
+    [Authorize(Policy = "AcademicAccess")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> BulkUpdateRollNumbers(string sectionId, [FromBody] BulkUpdateRollNumbersDto dto)

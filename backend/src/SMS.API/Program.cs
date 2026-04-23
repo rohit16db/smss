@@ -126,8 +126,12 @@ builder.Services.AddAuthorization(options =>
 {
     options.AddPolicy("AdminOnly", policy =>
         policy.RequireRole(RoleAdmin));
+    options.AddPolicy("AcademicViewAccess", policy =>
+        policy.RequireRole(RoleAdmin, RoleClerk, RoleTeacher));
     options.AddPolicy("AcademicAccess", policy =>
         policy.RequireRole(RoleAdmin, RoleClerk));
+    options.AddPolicy("FeesViewAccess", policy =>
+        policy.RequireRole(RoleAdmin, RoleAccountant, RoleClerk, RoleTeacher));
     options.AddPolicy("FeesAccess", policy =>
         policy.RequireRole(RoleAdmin, RoleAccountant));
     options.AddPolicy("SalaryAccess", policy =>
@@ -139,11 +143,11 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy("AttendanceAccess", policy =>
         policy.RequireRole(RoleAdmin, RoleClerk, RoleTeacher));
     options.AddPolicy("DashboardAccess", policy =>
-        policy.RequireRole(RoleAdmin, RoleAccountant, RoleClerk));
+        policy.RequireRole(RoleAdmin, RoleAccountant, RoleClerk, RoleTeacher));
 });
 
 // Configure CORS
-var corsOrigins = builder.Configuration.GetSection("CorsOrigins").Get<string[]>() ?? new[] { "http://localhost:3000", "http://localhost:5173" };
+var corsOrigins = builder.Configuration.GetSection("CorsOrigins").Get<string[]>() ?? new[] { "http://localhost:3000", "http://localhost:5173","http://192.168.1.6:5173" };
 
 builder.Services.AddCors(options =>
 {
