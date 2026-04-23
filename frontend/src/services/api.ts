@@ -1676,3 +1676,136 @@ export const notificationApi = {
     return response.data;
   },
 };
+
+// Inventory Management Types
+export type InventoryCategory = {
+  id: string;
+  name: string;
+  description?: string;
+  isActive: boolean;
+};
+
+export type InventoryItem = {
+  id: string;
+  name: string;
+  sku: string;
+  description?: string;
+  categoryId: string;
+  categoryName: string;
+  totalQuantity: number;
+  reorderLevel: number;
+  unitPrice: number;
+  isActive: boolean;
+};
+
+export type InventoryTransaction = {
+  id: string;
+  itemId: string;
+  itemName: string;
+  transactionType: 'StockIn' | 'StockOut' | 'Adjust';
+  quantity: number;
+  transactionDate: string;
+  receivedBy?: string;
+  remarks?: string;
+};
+
+export type PaginatedInventoryItemList = {
+  items: InventoryItem[];
+  pageNumber: number;
+  pageSize: number;
+  totalCount: number;
+  totalPages: number;
+};
+
+export type PaginatedInventoryTransactionList = {
+  items: InventoryTransaction[];
+  pageNumber: number;
+  pageSize: number;
+  totalCount: number;
+  totalPages: number;
+};
+
+export type InventorySummary = {
+  totalCategories: number;
+  totalItems: number;
+  lowStockItemsCount: number;
+  totalInventoryValue: number;
+};
+
+export type CreateInventoryItemDto = {
+  name: string;
+  sku: string;
+  description?: string;
+  categoryId: string;
+  initialQuantity: number;
+  reorderLevel: number;
+  unitPrice: number;
+  academicYearId: string;
+};
+
+export type CreateInventoryCategoryDto = {
+  name: string;
+  description?: string;
+};
+
+export type UpdateInventoryCategoryDto = {
+  id: string;
+  name: string;
+  description?: string;
+};
+
+export type StockTransactionDto = {
+  itemId: string;
+  transactionType: 'StockIn' | 'StockOut';
+  quantity: number;
+  receivedBy?: string;
+  remarks?: string;
+  academicYearId: string;
+};
+
+// Inventory API
+export const inventoryApi = {
+  getSummary: async () => {
+    const response = await api.get<InventorySummary>('/inventory/summary');
+    return response.data;
+  },
+
+  getItems: async (pageNumber: number = 1, pageSize: number = 10, categoryId?: string, searchQuery?: string, onlyLowStock = false) => {
+    const response = await api.get<PaginatedInventoryItemList>('/inventory/items', {
+      params: { categoryId, onlyLowStock, searchQuery, pageNumber, pageSize },
+    });
+    return response.data;
+  },
+
+  getCategories: async () => {
+    const response = await api.get<InventoryCategory[]>('/inventory/categories');
+    return response.data;
+  },
+
+  getTransactions: async (pageNumber: number = 1, pageSize: number = 10, itemId?: string, searchQuery?: string) => {
+    const response = await api.get<PaginatedInventoryTransactionList>('/inventory/transactions', {
+      params: { itemId, searchQuery, pageNumber, pageSize },
+    });
+    return response.data;
+  },
+
+  addItem: async (data: CreateInventoryItemDto) => {
+    const response = await api.post<string>('/inventory/items', data);
+    return response.data;
+  },
+
+  createCategory: async (data: CreateInventoryCategoryDto) => {
+    const response = await api.post<string>('/inventory/categories', data);
+    return response.data;
+  },
+
+  updateCategory: async (id: string, data: UpdateInventoryCategoryDto) => {
+    const response = await api.put<boolean>(`/inventory/categories/${id}`, data);
+    return response.data;
+  },
+
+  processTransaction: async (data: StockTransactionDto) => {
+    const response = await api.post<boolean>('/inventory/transactions', data);
+    return response.data;
+  },
+};

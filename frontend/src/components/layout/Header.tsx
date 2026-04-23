@@ -302,6 +302,12 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
                     >
                       🚌 Transport Management
                     </button>
+                    <button
+                      onClick={() => navigate('/inventory')}
+                      className="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-colors flex items-center gap-2 whitespace-nowrap"
+                    >
+                      📦 Inventory Management
+                    </button>
                     {(isAdmin || isClerk) && (
                       <button
                         onClick={() => navigate('/roll-numbers')}

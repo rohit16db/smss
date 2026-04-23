@@ -73,6 +73,11 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<NotificationTemplate> NotificationTemplates => Set<NotificationTemplate>();
     public DbSet<NotificationHistory> NotificationHistories => Set<NotificationHistory>();
 
+    // Phase: Inventory Management
+    public DbSet<InventoryCategory> InventoryCategories => Set<InventoryCategory>();
+    public DbSet<InventoryItem> InventoryItems => Set<InventoryItem>();
+    public DbSet<InventoryTransaction> InventoryTransactions => Set<InventoryTransaction>();
+
     /// <summary>
     /// Save changes with automatic audit field updates and DateTime UTC conversion
     /// </summary>
