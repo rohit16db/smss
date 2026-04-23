@@ -67,6 +67,11 @@ public interface IApplicationDbContext
     DbSet<NotificationTemplate> NotificationTemplates { get; }
     DbSet<NotificationHistory> NotificationHistories { get; }
 
+    // Phase: Inventory Management
+    DbSet<InventoryCategory> InventoryCategories { get; }
+    DbSet<InventoryItem> InventoryItems { get; }
+    DbSet<InventoryTransaction> InventoryTransactions { get; }
+
     /// <summary>
     /// Save all changes to the database
     /// </summary>

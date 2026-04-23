@@ -41,6 +41,7 @@ import { ChangePasswordPage } from './pages/ChangePasswordPage';
 import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
 import { ResetPasswordPage } from './pages/ResetPasswordPage';
 import { TransportManagementPage } from './pages/TransportManagementPage';
+import { InventoryManagementPage } from './pages/InventoryManagementPage';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { ToastProvider } from './components/providers/ToastProvider';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
@@ -314,6 +315,14 @@ function App() {
                   element={
                     <ProtectedRoute allowedRoles={["Admin", "Clerk"]}>
                       <TransportManagementPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="inventory"
+                  element={
+                    <ProtectedRoute allowedRoles={["Admin", "Clerk"]}>
+                      <InventoryManagementPage />
                     </ProtectedRoute>
                   }
                 />
