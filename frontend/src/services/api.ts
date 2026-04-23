@@ -761,6 +761,40 @@ export const attendanceApi = {
     });
     return response.data;
   },
+
+  // Bulk Attendance
+  getStudentAttendanceByDate: async (sectionId: string, date: string) => {
+    const response = await api.get<StudentAttendance[]>('/attendance/students/by-date', {
+      params: { sectionId, date }
+    });
+    return response.data;
+  },
+
+  bulkMarkStudentAttendance: async (data: BulkMarkAttendanceRequest) => {
+    const response = await api.post<BulkAttendanceResult>('/attendance/students/bulk', data);
+    return response.data;
+  },
+};
+
+// Bulk Attendance Types
+export type BulkAttendanceEntry = {
+  studentId: string;
+  status: string;
+  reason?: string;
+};
+
+export type BulkMarkAttendanceRequest = {
+  sectionId: string;
+  attendanceDate: string;
+  entries: BulkAttendanceEntry[];
+};
+
+export type BulkAttendanceResult = {
+  totalProcessed: number;
+  created: number;
+  updated: number;
+  failed: number;
+  errors: string[];
 };
 
 // Class & Section Types

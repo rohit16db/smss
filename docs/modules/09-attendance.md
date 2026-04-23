@@ -40,7 +40,8 @@ Present = 0, Absent = 1, Late = 2, HalfDay = 3, Excused = 4
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | GET | `/api/attendance/students` | Student attendance list (filtered) |
-| POST | `/api/attendance/students` | Save/update student attendance (bulk) |
+| POST | `/api/attendance/students` | Save/update single student attendance |
+| POST | `/api/attendance/students/bulk` | Save/update student attendance in bulk (section-wide) |
 | GET | `/api/attendance/students/section/{sectionId}` | Attendance for section on date |
 | GET | `/api/attendance/students/report` | Student attendance report |
 | GET | `/api/attendance/students/summary` | Attendance summary stats |
@@ -54,8 +55,9 @@ Present = 0, Absent = 1, Late = 2, HalfDay = 3, Excused = 4
 ## CQRS (in `Features/Attendance`)
 
 ### Commands
-- `SaveStudentAttendanceCommand` — SectionId, Date, List of (EnrollmentId, Status, Remarks)
-- `SaveStaffAttendanceCommand` — Date, List of (StaffId, Status, Remarks)
+- `MarkStudentAttendanceCommand` — Mark individual student attendance
+- `BulkMarkStudentAttendanceCommand` — Bulk mark attendance for a section (upsert pattern)
+- `RecordStaffAttendanceCommand` — Record individual staff attendance
 
 ### Queries
 - `GetStudentAttendanceQuery` — SectionId, Date
@@ -86,6 +88,7 @@ Present = 0, Absent = 1, Late = 2, HalfDay = 3, Excused = 4
 | DB Config | `backend/src/SMS.Infrastructure/Data/Configurations/StudentAttendanceConfiguration.cs` |
 | DB Config | `backend/src/SMS.Infrastructure/Data/Configurations/StaffAttendanceConfiguration.cs` |
 | Frontend Page | `frontend/src/pages/AttendancePage.tsx` |
+| Frontend Comp | `frontend/src/components/attendance/BulkAttendanceTab.tsx` |
 | Report Page | `frontend/src/pages/AttendanceReportPage.tsx` |
 | Frontend API | `frontend/src/services/api.ts` (attendanceApi section) |
 

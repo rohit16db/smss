@@ -66,3 +66,25 @@ public class DeleteStaffAttendanceCommand : IRequest<bool>
 {
     public string Id { get; set; } = string.Empty;
 }
+
+/// <summary>
+/// Command to mark attendance for an entire section in bulk (upsert pattern).
+/// Creates new records or updates existing ones for each student on the given date.
+/// </summary>
+public class BulkMarkStudentAttendanceCommand : IRequest<BulkAttendanceResultDto>
+{
+    public string SectionId { get; set; } = string.Empty;
+    public DateTime AttendanceDate { get; set; }
+    public string CreatedByUserId { get; set; } = string.Empty;
+    public List<BulkAttendanceEntry> Entries { get; set; } = new();
+}
+
+/// <summary>
+/// Individual student attendance entry within a bulk operation
+/// </summary>
+public class BulkAttendanceEntry
+{
+    public string StudentId { get; set; } = string.Empty;
+    public string Status { get; set; } = "present";
+    public string? Reason { get; set; }
+}

@@ -16,7 +16,7 @@ namespace SMS.API.Controllers;
 /// </summary>
 [ApiController]
 [Route("api/staff")]
-[Authorize(Policy = "AcademicAccess")]
+[Authorize(Policy = "AcademicViewAccess")]
 public class StaffController : ControllerBase
 {
     private readonly IMediator _mediator;
@@ -105,6 +105,7 @@ public class StaffController : ControllerBase
     /// <param name="command">Staff creation data</param>
     /// <returns>Created staff details</returns>
     [HttpPost]
+    [Authorize(Policy = "AcademicAccess")]
     [ProducesResponseType(typeof(StaffDto), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Create(
@@ -123,6 +124,7 @@ public class StaffController : ControllerBase
     /// <param name="command">Staff update data</param>
     /// <returns>Updated staff details</returns>
     [HttpPut("{id}")]
+    [Authorize(Policy = "AcademicAccess")]
     [ProducesResponseType(typeof(StaffDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -153,6 +155,7 @@ public class StaffController : ControllerBase
     /// <param name="id">Staff ID (GUID)</param>
     /// <returns>Success status</returns>
     [HttpPatch("{id}/deactivate")]
+    [Authorize(Policy = "AcademicAccess")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Deactivate(string id, CancellationToken cancellationToken)
@@ -180,6 +183,7 @@ public class StaffController : ControllerBase
     /// <param name="id">Staff ID (GUID)</param>
     /// <returns>Success status</returns>
     [HttpPatch("{id}/activate")]
+    [Authorize(Policy = "AcademicAccess")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Activate(string id, CancellationToken cancellationToken)
@@ -207,6 +211,7 @@ public class StaffController : ControllerBase
     /// <param name="id">Staff ID (GUID)</param>
     /// <returns>Success status</returns>
     [HttpDelete("{id}")]
+    [Authorize(Policy = "AcademicAccess")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Delete(string id, CancellationToken cancellationToken)
@@ -319,6 +324,7 @@ public class StaffController : ControllerBase
     /// <param name="dto">Assignment details</param>
     /// <returns>Created assignment</returns>
     [HttpPost("{id}/assignments")]
+    [Authorize(Policy = "AcademicAccess")]
     [ProducesResponseType(typeof(StaffAssignmentDto), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -351,6 +357,7 @@ public class StaffController : ControllerBase
     /// <param name="dto">Removal details</param>
     /// <returns>Success response</returns>
     [HttpDelete("{id}/assignments/{assignmentId}")]
+    [Authorize(Policy = "AcademicAccess")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> RemoveAssignment(
@@ -385,6 +392,7 @@ public class StaffController : ControllerBase
     /// Upload staff profile image
     /// </summary>
     [HttpPost("{id:guid}/upload-image")]
+    [Authorize(Policy = "AcademicAccess")]
     [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

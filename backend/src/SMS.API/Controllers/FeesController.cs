@@ -13,7 +13,7 @@ namespace SMS.API.Controllers;
 /// </summary>
 [ApiController]
 [Route("api/[controller]")]
-[Authorize(Policy = "FeesAccess")]
+[Authorize(Policy = "FeesViewAccess")]
 public class FeesController : ControllerBase
 {
     private readonly IMediator _mediator;
@@ -121,6 +121,7 @@ public class FeesController : ControllerBase
     /// <param name="command">Fee structure creation data</param>
     /// <returns>Created fee structure</returns>
     [HttpPost("structures")]
+    [Authorize(Policy = "FeesAccess")]
     [ProducesResponseType(typeof(FeeStructureDto), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> CreateFeeStructure([FromBody] CreateFeeStructureDto dto)
@@ -153,6 +154,7 @@ public class FeesController : ControllerBase
     /// <param name="dto">Updated fee structure data</param>
     /// <returns>Updated fee structure</returns>
     [HttpPut("structures/{id}")]
+    [Authorize(Policy = "FeesAccess")]
     [ProducesResponseType(typeof(FeeStructureDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -195,6 +197,7 @@ public class FeesController : ControllerBase
     /// <param name="id">Fee structure ID</param>
     /// <returns>No content on success</returns>
     [HttpDelete("structures/{id}")]
+    [Authorize(Policy = "FeesAccess")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DeleteFeeStructure(string id)
@@ -346,6 +349,7 @@ public class FeesController : ControllerBase
     /// <param name="dto">Student fee assignment data</param>
     /// <returns>Created student fee</returns>
     [HttpPost("student-fees")]
+    [Authorize(Policy = "FeesAccess")]
     [ProducesResponseType(typeof(StudentFeeDto), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> AssignStudentFee([FromBody] AssignStudentFeeDto dto)
@@ -384,6 +388,7 @@ public class FeesController : ControllerBase
     /// <param name="dto">Termination data including end date</param>
     /// <returns>Updated student fee</returns>
     [HttpPatch("student-fees/{id}/terminate")]
+    [Authorize(Policy = "FeesAccess")]
     [ProducesResponseType(typeof(StudentFeeDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -418,6 +423,7 @@ public class FeesController : ControllerBase
     /// <param name="dto">Bulk assignment data including fee structure, section, and dates</param>
     /// <returns>Result with success/skip/failure counts</returns>
     [HttpPost("student-fees/bulk-assign")]
+    [Authorize(Policy = "FeesAccess")]
     [ProducesResponseType(typeof(BulkAssignmentResultDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> BulkAssignStudentFee([FromBody] BulkAssignStudentFeeDto dto)
@@ -514,6 +520,7 @@ public class FeesController : ControllerBase
     /// <param name="dto">Fee payment data</param>
     /// <returns>Created fee payment</returns>
     [HttpPost("payments")]
+    [Authorize(Policy = "FeesAccess")]
     [ProducesResponseType(typeof(FeePaymentDto), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> RecordFeePayment([FromBody] RecordFeePaymentDto dto)

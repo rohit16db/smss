@@ -294,3 +294,113 @@ public class DeleteStaffAttendanceCommandHandler : IRequestHandler<DeleteStaffAt
         return true;
     }
 }
+
+/// <summary>
+/// Handler for BulkMarkStudentAttendanceCommand.
+/// Implements upsert pattern: creates new attendance records or updates existing ones.
+/// </summary>
+public class BulkMarkStudentAttendanceCommandHandler : IRequestHandler<BulkMarkStudentAttendanceCommand, BulkAttendanceResultDto>
+{
+    private readonly IApplicationDbContext _context;
+    private readonly IAcademicYearContext _academicYearContext;
+
+    public BulkMarkStudentAttendanceCommandHandler(IApplicationDbContext context, IAcademicYearContext academicYearContext)
+    {
+        _context = context;
+        _academicYearContext = academicYearContext;
+    }
+
+    public async Task<BulkAttendanceResultDto> Handle(BulkMarkStudentAttendanceCommand request, CancellationToken cancellationToken)
+    {
+        var result = new BulkAttendanceResultDto();
+
+        if (!Guid.TryParse(request.SectionId, out var sectionId))
+            throw new InvalidOperationException($"Invalid section ID format: {request.SectionId}");
+
+        if (!Guid.TryParse(request.CreatedByUserId, out var markedByUserId))
+            throw new InvalidOperationException($"Invalid user ID format: {request.CreatedByUserId}");
+
+        var attendanceDate = DateOnly.FromDateTime(request.AttendanceDate);
+        var academicYearId = _academicYearContext.RequiredAcademicYearId;
+
+        // Get all active enrollments for this section in the current academic year
+        var enrollments = await _context.Enrollments
+            .Where(e => e.SectionId == sectionId && e.AcademicYearId == academicYearId && e.Status == "Enrolled")
+            .ToListAsync(cancellationToken);
+
+        var enrollmentByStudent = enrollments.ToDictionary(e => e.StudentId);
+
+        // Get all existing attendance records for these enrollments on this date
+        var enrollmentIds = enrollments.Select(e => e.Id).ToList();
+        var existingAttendances = await _context.StudentAttendances
+            .Where(a => enrollmentIds.Contains(a.EnrollmentId) && a.AttendanceDate == attendanceDate)
+            .ToListAsync(cancellationToken);
+
+        var existingByEnrollment = existingAttendances.ToDictionary(a => a.EnrollmentId);
+
+        foreach (var entry in request.Entries)
+        {
+            try
+            {
+                if (!Guid.TryParse(entry.StudentId, out var studentId))
+                {
+                    result.Failed++;
+                    result.Errors.Add($"Invalid student ID format: {entry.StudentId}");
+                    continue;
+                }
+
+                if (!enrollmentByStudent.TryGetValue(studentId, out var enrollment))
+                {
+                    result.Failed++;
+                    result.Errors.Add($"Student {entry.StudentId} is not enrolled in this section");
+                    continue;
+                }
+
+                var normalizedStatus = entry.Status.ToLower();
+
+                if (existingByEnrollment.TryGetValue(enrollment.Id, out var existing))
+                {
+                    // Update existing record
+                    existing.Status = normalizedStatus;
+                    existing.Reason = entry.Reason;
+                    existing.MarkedByUserId = markedByUserId;
+                    existing.MarkedAt = DateTime.UtcNow;
+                    existing.UpdatedAt = DateTime.UtcNow;
+                    existing.UpdatedBy = request.CreatedByUserId;
+                    _context.StudentAttendances.Update(existing);
+                    result.Updated++;
+                }
+                else
+                {
+                    // Create new record
+                    var attendance = new StudentAttendance
+                    {
+                        Id = Guid.NewGuid(),
+                        EnrollmentId = enrollment.Id,
+                        AttendanceDate = attendanceDate,
+                        Status = normalizedStatus,
+                        Reason = entry.Reason,
+                        MarkedByUserId = markedByUserId,
+                        MarkedAt = DateTime.UtcNow,
+                        CreatedBy = request.CreatedByUserId,
+                        UpdatedBy = request.CreatedByUserId
+                    };
+                    _context.StudentAttendances.Add(attendance);
+                    result.Created++;
+                }
+            }
+            catch (Exception ex)
+            {
+                result.Failed++;
+                result.Errors.Add($"Error processing student {entry.StudentId}: {ex.Message}");
+            }
+        }
+
+        result.TotalProcessed = result.Created + result.Updated + result.Failed;
+
+        await _context.SaveChangesAsync(cancellationToken);
+
+        return result;
+    }
+}
+
