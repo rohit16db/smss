@@ -167,3 +167,51 @@ public class DeleteStaffAttendanceCommandValidator : AbstractValidator<DeleteSta
 
     private bool BeValidGuid(string id) => Guid.TryParse(id, out _);
 }
+
+/// <summary>
+/// Validator for BulkMarkStudentAttendanceCommand
+/// </summary>
+public class BulkMarkStudentAttendanceCommandValidator : AbstractValidator<BulkMarkStudentAttendanceCommand>
+{
+    public BulkMarkStudentAttendanceCommandValidator()
+    {
+        RuleFor(x => x.SectionId)
+            .NotEmpty()
+            .Must(BeValidGuid)
+            .WithMessage("Section ID must be a valid GUID");
+
+        RuleFor(x => x.AttendanceDate)
+            .NotEmpty()
+            .LessThanOrEqualTo(DateTime.UtcNow.AddDays(1))
+            .WithMessage("Attendance date cannot be more than 1 day in the future");
+
+        RuleFor(x => x.CreatedByUserId)
+            .NotEmpty()
+            .Must(BeValidGuid)
+            .WithMessage("Created by user ID must be a valid GUID");
+
+        RuleFor(x => x.Entries)
+            .NotEmpty()
+            .WithMessage("At least one attendance entry is required");
+
+        RuleForEach(x => x.Entries).ChildRules(entry =>
+        {
+            entry.RuleFor(e => e.StudentId)
+                .NotEmpty()
+                .Must(BeValidGuid)
+                .WithMessage("Student ID must be a valid GUID");
+
+            entry.RuleFor(e => e.Status)
+                .NotEmpty()
+                .Must(AttendanceStatus.IsValid)
+                .WithMessage($"Status must be one of: {string.Join(", ", AttendanceStatus.ValidStatuses)}");
+
+            entry.RuleFor(e => e.Reason)
+                .MaximumLength(500)
+                .When(e => !string.IsNullOrEmpty(e.Reason));
+        });
+    }
+
+    private bool BeValidGuid(string id) => Guid.TryParse(id, out _);
+}
+

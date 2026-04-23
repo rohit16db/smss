@@ -4,11 +4,12 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { attendanceApi, studentApi, StaffApi, holidayApi, notificationApi, type CreateStudentAttendanceDto, type CreateStaffAttendanceDto, type StudentAttendance, type StaffAttendance, type Student, type Staff } from '../services/api';
 import { useAcademicYear } from '../hooks/useAcademicYear';
 import { WhatsAppIcon } from '../components/WhatsAppIcon';
+import { BulkAttendanceTab } from '../components/attendance/BulkAttendanceTab';
 
 export function AttendancePage() {
   const queryClient = useQueryClient();
   const { activeYear } = useAcademicYear();
-  const [activeTab, setActiveTab] = useState<'student' | 'Staff'>('student');
+  const [activeTab, setActiveTab] = useState<'student' | 'Staff' | 'bulk'>('student');
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [searchTerm, setSearchTerm] = useState('');
@@ -636,9 +637,27 @@ export function AttendancePage() {
             >
               👨‍🏫 Staff Attendance
             </button>
+            <button
+              onClick={() => {
+                setActiveTab('bulk');
+                setPage(0);
+              }}
+              className={`px-6 py-3 font-medium rounded-lg transition-colors ${
+                activeTab === 'bulk'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              📋 Bulk Attendance
+            </button>
           </div>
         </div>
 
+        {/* Bulk Attendance Tab */}
+        {activeTab === 'bulk' && <BulkAttendanceTab />}
+
+        {/* Student/Staff Tab Content */}
+        {activeTab !== 'bulk' && (<>
         {/* Filter and Action Bar */}
         <div className="bg-white rounded-lg shadow-md p-4 mb-6">
           {/* Filters Row */}
@@ -1145,6 +1164,7 @@ export function AttendancePage() {
             </div>
           </>
         )}
+        </>)}
       </div>
 
       {/* Add/Edit Dialog */}

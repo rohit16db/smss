@@ -208,3 +208,36 @@ public class ClassAttendanceSummaryDto
     public int Year { get; set; }
     public int Month { get; set; }
 }
+
+/// <summary>
+/// Result DTO for bulk attendance operation
+/// </summary>
+public class BulkAttendanceResultDto
+{
+    public int TotalProcessed { get; set; }
+    public int Created { get; set; }
+    public int Updated { get; set; }
+    public int Failed { get; set; }
+    public List<string> Errors { get; set; } = new();
+}
+
+/// <summary>
+/// DTO for bulk marking student attendance (API request body)
+/// </summary>
+public class BulkMarkStudentAttendanceDto
+{
+    public string SectionId { get; set; } = string.Empty;
+    public DateTime AttendanceDate { get; set; }
+    public List<BulkAttendanceEntryDto> Entries { get; set; } = new();
+}
+
+/// <summary>
+/// Individual entry within a bulk attendance request
+/// </summary>
+public class BulkAttendanceEntryDto
+{
+    public string StudentId { get; set; } = string.Empty;
+    public string Status { get; set; } = "present";
+    public string? Reason { get; set; }
+}
+

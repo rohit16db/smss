@@ -27,6 +27,47 @@ public class AttendanceController : ControllerBase
     #region Student Attendance Endpoints
 
     /// <summary>
+    /// Bulk mark student attendance for an entire section.
+    /// Creates new records or updates existing ones (upsert pattern).
+    /// </summary>
+    /// <param name="dto">Bulk attendance data with section, date, and student entries</param>
+    /// <returns>Result with counts of created, updated, and failed records</returns>
+    [HttpPost("students/bulk")]
+    [ProducesResponseType(typeof(BulkAttendanceResultDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> BulkMarkStudentAttendance([FromBody] BulkMarkStudentAttendanceDto dto)
+    {
+        try
+        {
+            var command = new BulkMarkStudentAttendanceCommand
+            {
+                SectionId = dto.SectionId,
+                AttendanceDate = dto.AttendanceDate,
+                CreatedByUserId = GetCurrentUserId(),
+                Entries = dto.Entries.Select(e => new BulkAttendanceEntry
+                {
+                    StudentId = e.StudentId,
+                    Status = e.Status,
+                    Reason = e.Reason
+                }).ToList()
+            };
+
+            var result = await _mediator.Send(command);
+            return Ok(result);
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogWarning(ex, "Invalid bulk attendance request");
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error processing bulk student attendance");
+            return StatusCode(StatusCodes.Status500InternalServerError, "Error processing bulk student attendance");
+        }
+    }
+
+    /// <summary>
     /// Mark student attendance
     /// Section is auto-detected from student's current enrollment
     /// </summary>
