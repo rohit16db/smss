@@ -2,9 +2,11 @@ import { useState } from 'react';
 import toast from 'react-hot-toast';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { studentApi, classApi, type CreateStudentDto, type UpdateStudentDto, type Student } from '../services/api';
+import { useDebounce } from '../hooks/useDebounce';
 import { transportService } from '../services/transportService';
 import { LoadingSkeleton } from '../components/common/LoadingSkeleton';
 import { ImageCropModal } from '../components/common/ImageCropModal';
+import { CameraCaptureModal } from '../components/common/CameraCaptureModal';
 
 export function StudentsPage() {
   const queryClient = useQueryClient();
@@ -20,6 +22,10 @@ export function StudentsPage() {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [cropModalOpen, setCropModalOpen] = useState(false);
   const [tempImageFile, setTempImageFile] = useState<File | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const debouncedSearchTerm = useDebounce(searchTerm, 500);
+  const [downloadingStudentId, setDownloadingStudentId] = useState<string | null>(null);
+  const [cameraModalOpen, setCameraModalOpen] = useState(false);
   const [formData, setFormData] = useState<CreateStudentDto>({
     firstName: '',
     lastName: '',
@@ -37,11 +43,12 @@ export function StudentsPage() {
   });
 
   const { data: studentsData, isLoading } = useQuery({
-    queryKey: ['students', page + 1, rowsPerPage],
+    queryKey: ['students', page + 1, rowsPerPage, debouncedSearchTerm],
     queryFn: () => studentApi.getAll({
       pageNumber: page + 1,
       pageSize: rowsPerPage,
       isActive: true, // Only show active students
+      searchTerm: debouncedSearchTerm || undefined,
     }),
   });
 
@@ -209,6 +216,7 @@ export function StudentsPage() {
     setImagePreview(null);
     setTempImageFile(null);
     setCropModalOpen(false);
+    setCameraModalOpen(false);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -308,6 +316,30 @@ export function StudentsPage() {
     setPage(newPage);
   };
 
+  const handleDownloadRegistrationForm = async (studentId: string) => {
+    try {
+      setDownloadingStudentId(studentId);
+      const response = await studentApi.downloadRegistrationFormPdf(studentId);
+      
+      const blob = new Blob([response], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `registration-form-${studentId}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      
+      toast.success('Registration form downloaded successfully!');
+    } catch (error) {
+      console.error('Failed to download registration form:', error);
+      toast.error('Failed to download registration form');
+    } finally {
+      setDownloadingStudentId(null);
+    }
+  };
+
   const totalPages = studentsData ? Math.ceil(studentsData.totalCount / rowsPerPage) : 0;
   const getInitials = (firstName: string, lastName: string) => {
     return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
@@ -340,6 +372,28 @@ export function StudentsPage() {
               Add Student
             </button>
           </div>
+
+          {/* Search bar */}
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
+            <div className="relative">
+              <span className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                <svg className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </span>
+              <input
+                type="text"
+                placeholder="Search students by name, enrollment number, phone number..."
+                value={searchTerm}
+                onChange={(e) => {
+                  setSearchTerm(e.target.value);
+                  setPage(0); // Reset page to 0 when search changes
+                }}
+                className="block w-full pl-10 pr-3 py-3 border border-gray-200 rounded-xl text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all bg-gray-50/50"
+              />
+            </div>
+          </div>
+
           {/* Table */}
           {!isLoading && studentsData?.items && studentsData.items.length > 0 ? (
             <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden hover:shadow-xl transition-shadow duration-300">
@@ -419,6 +473,23 @@ export function StudentsPage() {
                               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                               </svg>
+                            </button>
+                            <button
+                              onClick={() => handleDownloadRegistrationForm(student.id)}
+                              disabled={downloadingStudentId === student.id}
+                              className="p-2 text-green-600 hover:bg-green-100 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                              title="Print Registration Form"
+                            >
+                              {downloadingStudentId === student.id ? (
+                                <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+                                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                              ) : (
+                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                              )}
                             </button>
                             <button
                               onClick={() => handleOpenDialog(student)}
@@ -744,77 +815,91 @@ export function StudentsPage() {
                   <svg className="w-6 h-6 text-pink-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                   </svg>
-                  Profile Image
+                  Profile Photograph
                 </h3>
-                <div className="grid grid-cols-2 gap-6">
-                  <div>
-                    <label htmlFor="image" className="block text-sm font-medium text-gray-700 mb-3">Upload Image</label>
-                    <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:border-blue-400 hover:bg-blue-50 transition-all cursor-pointer group">
-                      <input
-                        id="image"
-                        type="file"
-                        accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          if (file) {
-                            // Check file size (5MB)
-                            if (file.size > 5 * 1024 * 1024) {
-                              toast.error('Image size must be less than 5MB');
-                              return;
-                            }
-                            handleImageSelect(file);
-                          }
-                        }}
-                        className="hidden"
-                      />
-                      <label htmlFor="image" className="cursor-pointer block">
-                        <svg className="w-12 h-12 mx-auto text-blue-500 group-hover:text-blue-600 mb-3 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                        </svg>
-                        <p className="text-base font-semibold text-gray-700 group-hover:text-blue-600 transition-colors">Click to upload</p>
-                        <p className="text-xs text-gray-500 mt-1">PNG, JPG, GIF, WebP (Max 5MB)</p>
-                      </label>
+                <div className="flex flex-col md:flex-row items-center gap-6">
+                  {/* Photo Avatar Preview */}
+                  <div className="relative group flex-shrink-0">
+                    <div className="w-32 h-32 rounded-2xl overflow-hidden bg-slate-100 border-2 border-slate-200 shadow-inner flex items-center justify-center transition-all duration-300 group-hover:border-blue-400">
+                      {imagePreview ? (
+                        <img
+                          src={imagePreview}
+                          alt="Student Profile"
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="flex flex-col items-center justify-center text-slate-400">
+                          <svg className="w-12 h-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                          </svg>
+                          <span className="text-[10px] font-medium text-slate-400 mt-1">No Image</span>
+                        </div>
+                      )}
                     </div>
                   </div>
-                  <div>
-                    {imagePreview ? (
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-3">Preview</label>
-                        <div className="rounded-xl overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center h-56 shadow-inner border-2 border-gray-300">
-                          <img
-                            src={imagePreview}
-                            alt="Preview"
-                            className="max-w-full max-h-full object-contain"
-                          />
-                        </div>
+
+                  {/* Upload / Capture Controls */}
+                  <div className="flex-1 flex flex-col items-center md:items-start text-center md:text-left">
+                    <h4 className="text-sm font-semibold text-gray-700 mb-1">Upload or capture photo</h4>
+                    <p className="text-xs text-gray-500 mb-4">PNG, JPG or WebP (Max 5MB). Photo will be printed on the registration sheet.</p>
+                    
+                    <div className="flex flex-wrap items-center justify-center md:justify-start gap-3">
+                      {/* Upload Button */}
+                      <label className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm font-semibold text-gray-700 shadow-sm hover:bg-gray-50 hover:border-gray-400 transition-all cursor-pointer">
+                        <svg className="w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                        </svg>
+                        Upload Photo
+                        <input
+                          id="image"
+                          type="file"
+                          accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              if (file.size > 5 * 1024 * 1024) {
+                                toast.error('Image size must be less than 5MB');
+                                return;
+                              }
+                              handleImageSelect(file);
+                            }
+                          }}
+                          className="hidden"
+                        />
+                      </label>
+
+                      {/* Camera Button */}
+                      <button
+                        type="button"
+                        onClick={() => setCameraModalOpen(true)}
+                        className="flex items-center gap-2 px-4 py-2.5 bg-blue-50 border border-blue-200 rounded-xl text-sm font-semibold text-blue-700 shadow-sm hover:bg-blue-100 hover:border-blue-300 transition-all"
+                      >
+                        <svg className="w-4 h-4 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                        Take Live Photo
+                      </button>
+
+                      {/* Remove Button */}
+                      {imagePreview && (
                         <button
                           type="button"
                           onClick={() => {
                             setImageFile(null);
                             setImagePreview(null);
+                            const input = document.getElementById('image') as HTMLInputElement;
+                            if (input) input.value = '';
                           }}
-                          className="mt-3 w-full text-sm font-medium px-4 py-2.5 border-2 border-red-300 text-red-700 rounded-lg hover:bg-red-50 hover:border-red-400 transition-all flex items-center justify-center gap-2"
+                          className="flex items-center gap-2 px-4 py-2.5 bg-red-50 border border-red-200 rounded-xl text-sm font-semibold text-red-600 shadow-sm hover:bg-red-100 hover:border-red-300 transition-all animate-fade-in"
                         >
-                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <svg className="w-4 h-4 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                           </svg>
-                          Remove Image
+                          Remove
                         </button>
-                      </div>
-                    ) : (
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-3">Preview</label>
-                        <div className="h-56 rounded-xl bg-gradient-to-br from-gray-100 to-gray-200 border-2 border-dashed border-gray-300 flex items-center justify-center">
-                          <div className="text-center">
-                            <svg className="w-16 h-16 mx-auto text-gray-400 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                            </svg>
-                            <p className="text-sm font-medium text-gray-500">Image preview</p>
-                            <p className="text-xs text-gray-400 mt-1">Upload an image to see preview</p>
-                          </div>
-                        </div>
-                      </div>
-                    )}
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -941,6 +1026,16 @@ export function StudentsPage() {
         imageFile={tempImageFile}
         onCropDone={handleImageCropDone}
         onCancel={handleCropCancel}
+      />
+
+      {/* Camera Capture Modal */}
+      <CameraCaptureModal
+        isOpen={cameraModalOpen}
+        onCapture={(file) => {
+          handleImageSelect(file);
+          setCameraModalOpen(false);
+        }}
+        onCancel={() => setCameraModalOpen(false)}
       />
     </div>
   );

@@ -244,4 +244,38 @@ public class StudentsController : ControllerBase
             return BadRequest(new { message = "Error uploading image" });
         }
     }
+
+    /// <summary>
+    /// Generate and download student registration form PDF
+    /// </summary>
+    /// <param name="id">Student ID (GUID)</param>
+    /// <param name="cancellationToken">Cancellation Token</param>
+    /// <returns>PDF file</returns>
+    [HttpGet("{id:guid}/registration-form")]
+    [ProducesResponseType(typeof(FileResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetRegistrationFormPdf(Guid id, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var command = new GenerateStudentRegistrationFormPdfCommand
+            {
+                StudentId = id
+            };
+
+            var pdf = await _mediator.Send(command, cancellationToken);
+
+            return File(pdf, "application/pdf", $"registration-form-{id}.pdf");
+        }
+        catch (SMS.Domain.Exceptions.EntityNotFoundException ex)
+        {
+            _logger.LogWarning(ex, "Student not found for registration form PDF generation: {StudentId}", id);
+            return NotFound(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error generating student registration form PDF for {StudentId}", id);
+            return StatusCode(StatusCodes.Status500InternalServerError, "Error generating registration form");
+        }
+    }
 }
