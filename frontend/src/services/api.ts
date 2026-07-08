@@ -161,6 +161,13 @@ export const studentApi = {
     });
     return response.data;
   },
+
+  downloadRegistrationFormPdf: async (id: string) => {
+    const response = await api.get(`/students/${id}/registration-form`, {
+      responseType: 'arraybuffer',
+    });
+    return response.data;
+  },
 };
 
 // Staff Types

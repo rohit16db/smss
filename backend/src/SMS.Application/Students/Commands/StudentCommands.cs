@@ -51,3 +51,8 @@ public class DeactivateStudentCommand : IRequest<bool>
 {
     public required string Id { get; set; }
 }
+
+public class GenerateStudentRegistrationFormPdfCommand : IRequest<byte[]>
+{
+    public Guid StudentId { get; set; }
+}
